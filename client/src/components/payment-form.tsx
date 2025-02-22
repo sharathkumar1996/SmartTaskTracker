@@ -30,11 +30,15 @@ const fundFormSchema = insertChitFundSchema
     amount: z.coerce.number().min(1, "Amount must be greater than 0"),
     duration: z.coerce.number().min(20).max(20),
     memberCount: z.coerce.number().min(1, "Member count must be at least 1").max(20, "Maximum 20 members allowed"),
-    startDate: z.date({
-      required_error: "Start date is required",
+    startDate: z.string().refine((str) => {
+        return !isNaN(new Date(str).getTime());
+    }, {
+        message: "Invalid start date"
     }),
-    endDate: z.date({
-      required_error: "End date is required",
+    endDate: z.string().refine((str) => {
+        return !isNaN(new Date(str).getTime());
+    }, {
+        message: "Invalid end date"
     }),
   })
   .transform((data) => ({
@@ -59,8 +63,8 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       duration: 20,
       memberCount: 1,
       status: "active" as const,
-      startDate: new Date(),
-      endDate: addMonths(new Date(), 20), // Default end date is 20 months from start date
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: addMonths(new Date(), 20).toISOString().split('T')[0], // Default end date is 20 months from start date
     },
   });
 
@@ -89,8 +93,8 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                 amount: String(values.amount),
                 duration: values.duration,
                 memberCount: values.memberCount,
-                startDate: values.startDate.toISOString(),
-                endDate: values.endDate.toISOString(),
+                startDate: values.startDate,
+                endDate: values.endDate,
                 status: values.status,
               };
 
@@ -187,13 +191,8 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       <Input
                         type="date"
                         {...field}
-                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
                         onChange={(e) => {
-                          const startDate = new Date(e.target.value);
-                          field.onChange(startDate);
-                          // Update end date when start date changes
-                          const endDate = addMonths(startDate, 20);
-                          fundForm.setValue('endDate', endDate);
+                          field.onChange(e.target.value);
                         }}
                       />
                     </FormControl>
@@ -211,9 +210,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       <Input
                         type="date"
                         {...field}
-                        value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
-                        onChange={(e) => field.onChange(new Date(e.target.value))}
-                        disabled // End date is automatically calculated
+                        onChange={(e) => field.onChange(e.target.value)}
                       />
                     </FormControl>
                     <FormMessage />

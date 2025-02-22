@@ -47,8 +47,14 @@ export const fundMembers = pgTable("fund_members", {
   pk: primaryKey({ columns: [table.fundId, table.userId] }),
 }));
 
+// Modified schema to handle string dates
+const baseChitFundSchema = createInsertSchema(chitFunds);
+export const insertChitFundSchema = baseChitFundSchema.extend({
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
 export const insertUserSchema = createInsertSchema(users);
-export const insertChitFundSchema = createInsertSchema(chitFunds);
 export const insertPaymentSchema = createInsertSchema(payments);
 export const insertFundMemberSchema = createInsertSchema(fundMembers);
 
