@@ -18,7 +18,6 @@ export const chitFunds = pgTable("chit_funds", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   duration: integer("duration").notNull(), // in months
   memberCount: integer("member_count").notNull(),
-  agentCommission: decimal("agent_commission", { precision: 10, scale: 2 }).notNull(),
   status: text("status", { enum: ["active", "completed"] }).notNull(),
 });
 

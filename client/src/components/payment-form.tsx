@@ -23,7 +23,7 @@ interface PaymentFormProps {
   userId?: number;
 }
 
-// Extend the schemas to handle form-specific validation
+// Update the fund form schema to remove agentCommission
 const fundFormSchema = insertChitFundSchema.extend({
   amount: z.number().min(1, "Amount must be greater than 0"),
   duration: z.number().min(20).max(20),
@@ -45,7 +45,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       amount: 0,
       duration: 20,
       memberCount: 1,
-      agentCommission: 3000,
       status: "active" as const,
     },
   });
@@ -134,24 +133,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                         const value = Math.min(Number(e.target.value), 20);
                         field.onChange(value);
                       }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={fundForm.control}
-              name="agentCommission"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Agent Commission</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </FormControl>
                   <FormMessage />
