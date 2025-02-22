@@ -24,13 +24,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AuthPage() {
+  // Move all hooks to the top
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
-
-  if (user) {
-    setLocation("/");
-    return null;
-  }
 
   const loginForm = useForm({
     defaultValues: {
@@ -44,12 +40,18 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
-      role: "member",
+      role: "member" as const, // Fix the type issue by asserting const
       fullName: "",
       email: "",
       phone: "",
     },
   });
+
+  // Only redirect after all hooks are declared
+  if (user) {
+    setLocation("/");
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex">
