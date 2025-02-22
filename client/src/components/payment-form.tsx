@@ -95,6 +95,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
 
             await apiRequest("POST", endpoint, {
               ...values,
+              amount: String(values.amount), // Convert to string as per schema
               startDate: startDate.toISOString(),
               endDate: endDate.toISOString(),
             });
@@ -137,7 +138,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                     <Input
                       type="number"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
+                        field.onChange(value);
+                      }}
                       className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </FormControl>
@@ -158,7 +162,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       min={1}
                       max={20}
                       onChange={(e) => {
-                        const value = Math.min(Number(e.target.value), 20);
+                        const value = Math.min(parseInt(e.target.value.replace(/^0+/, '') || '1'), 20);
                         field.onChange(value);
                       }}
                     />
@@ -211,7 +215,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                   <Input
                     type="number"
                     {...field}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
+                      field.onChange(value);
+                    }}
                     className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </FormControl>
