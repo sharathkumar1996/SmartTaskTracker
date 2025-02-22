@@ -78,7 +78,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
-    const [chitFund] = await db.insert(chitFunds).values(fund).returning();
+    // Convert string dates to Date objects for PostgreSQL
+    const fundData = {
+      ...fund,
+      startDate: new Date(fund.startDate),
+      endDate: new Date(fund.endDate)
+    };
+
+    const [chitFund] = await db.insert(chitFunds).values(fundData).returning();
     return chitFund;
   }
 
