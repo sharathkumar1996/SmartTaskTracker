@@ -32,6 +32,7 @@ export interface IStorage {
   getMemberFunds(userId: number): Promise<ChitFund[]>;
   getUsersByRole(role: string): Promise<Omit<User, "password">[]>;
   updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -224,6 +225,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(chitFunds.id, id))
       .returning();
     return updatedFund;
+  }
+  async deleteUser(id: number): Promise<boolean> {
+    const [deleted] = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
+    return !!deleted;
   }
 }
 

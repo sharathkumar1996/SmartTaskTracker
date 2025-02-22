@@ -37,11 +37,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Loader2, Trash2 } from "lucide-react";
 
 export function MemberManagement() {
   const { user } = useAuth();
@@ -112,6 +125,26 @@ export function MemberManagement() {
     },
   });
 
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/users/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "Member deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="space-y-6">
       <Card>
@@ -170,84 +203,33 @@ export function MemberManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">Edit Member</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Edit Member Details</DialogTitle>
-                                <DialogDescription>
-                                  Update member information and preferences
-                                </DialogDescription>
-                              </DialogHeader>
-                              <Form {...form}>
-                                <form onSubmit={form.handleSubmit((data) => 
-                                  updateMemberMutation.mutate({ id: member.id, data })
-                                )} 
-                                className="space-y-4"
-                                >
-                                  <FormField
-                                    control={form.control}
-                                    name="fullName"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
-                                        <FormControl>
-                                          <Input {...field} defaultValue={member.fullName} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={form.control}
-                                    name="email"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                          <Input {...field} defaultValue={member.email} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={form.control}
-                                    name="phone"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Phone</FormLabel>
-                                        <FormControl>
-                                          <Input {...field} defaultValue={member.phone} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={form.control}
-                                    name="address"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Address</FormLabel>
-                                        <FormControl>
-                                          <Textarea {...field} defaultValue={member.address || ''} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <div className="grid grid-cols-3 gap-4">
+                          <div className="flex space-x-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">Edit</Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Edit Member Details</DialogTitle>
+                                  <DialogDescription>
+                                    Update member information and preferences
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <Form {...form}>
+                                  <form 
+                                    onSubmit={form.handleSubmit((data) => 
+                                      updateMemberMutation.mutate({ id: member.id, data })
+                                    )} 
+                                    className="space-y-4"
+                                  >
                                     <FormField
                                       control={form.control}
-                                      name="city"
+                                      name="fullName"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>City</FormLabel>
+                                          <FormLabel>Full Name</FormLabel>
                                           <FormControl>
-                                            <Input {...field} defaultValue={member.city || ''} />
+                                            <Input {...field} defaultValue={member.fullName} />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
@@ -255,12 +237,12 @@ export function MemberManagement() {
                                     />
                                     <FormField
                                       control={form.control}
-                                      name="state"
+                                      name="email"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>State</FormLabel>
+                                          <FormLabel>Email</FormLabel>
                                           <FormControl>
-                                            <Input {...field} defaultValue={member.state || ''} />
+                                            <Input {...field} defaultValue={member.email} />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
@@ -268,66 +250,157 @@ export function MemberManagement() {
                                     />
                                     <FormField
                                       control={form.control}
-                                      name="pincode"
+                                      name="phone"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Pincode</FormLabel>
+                                          <FormLabel>Phone</FormLabel>
                                           <FormControl>
-                                            <Input {...field} defaultValue={member.pincode || ''} />
+                                            <Input {...field} defaultValue={member.phone} />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
                                       )}
                                     />
-                                  </div>
-                                  <FormField
-                                    control={form.control}
-                                    name="fundPreferences"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Fund Preferences</FormLabel>
-                                        <FormControl>
-                                          <Textarea 
-                                            {...field} 
-                                            defaultValue={member.fundPreferences || ''} 
-                                            placeholder="Enter preferred fund amounts, duration, etc."
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={form.control}
-                                    name="status"
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Status</FormLabel>
-                                        <Select
-                                          onValueChange={field.onChange}
-                                          defaultValue={member.status}
-                                        >
+                                    <FormField
+                                      control={form.control}
+                                      name="address"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Address</FormLabel>
                                           <FormControl>
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select status" />
-                                            </SelectTrigger>
+                                            <Textarea {...field} defaultValue={member.address || ''} />
                                           </FormControl>
-                                          <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="inactive">Inactive</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <Button type="submit" className="w-full">
-                                    Update Member
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <div className="grid grid-cols-3 gap-4">
+                                      <FormField
+                                        control={form.control}
+                                        name="city"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>City</FormLabel>
+                                            <FormControl>
+                                              <Input {...field} defaultValue={member.city || ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <FormField
+                                        control={form.control}
+                                        name="state"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>State</FormLabel>
+                                            <FormControl>
+                                              <Input {...field} defaultValue={member.state || ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                      <FormField
+                                        control={form.control}
+                                        name="pincode"
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Pincode</FormLabel>
+                                            <FormControl>
+                                              <Input {...field} defaultValue={member.pincode || ''} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </div>
+                                    <FormField
+                                      control={form.control}
+                                      name="fundPreferences"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Fund Preferences</FormLabel>
+                                          <FormControl>
+                                            <Textarea 
+                                              {...field} 
+                                              defaultValue={member.fundPreferences || ''} 
+                                              placeholder="Enter preferred fund amounts, duration, etc."
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={form.control}
+                                      name="status"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Status</FormLabel>
+                                          <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={member.status}
+                                          >
+                                            <FormControl>
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select status" />
+                                              </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                              <SelectItem value="active">Active</SelectItem>
+                                              <SelectItem value="inactive">Inactive</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <Button 
+                                      type="submit" 
+                                      className="w-full"
+                                      disabled={updateMemberMutation.isPending}
+                                    >
+                                      {updateMemberMutation.isPending && (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                      )}
+                                      Update Member
+                                    </Button>
+                                  </form>
+                                </Form>
+                              </DialogContent>
+                            </Dialog>
+
+                            {user?.role === "admin" && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm">
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
-                                </form>
-                              </Form>
-                            </DialogContent>
-                          </Dialog>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Member</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this member? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteMemberMutation.mutate(member.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      {deleteMemberMutation.isPending && (
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                      )}
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -478,7 +551,16 @@ export function MemberManagement() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full">Add Member</Button>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={memberMutation.isPending}
+                  >
+                    {memberMutation.isPending && (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    )}
+                    Add Member
+                  </Button>
                 </form>
               </Form>
             </TabsContent>

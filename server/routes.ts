@@ -59,6 +59,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(user);
   });
 
+  app.delete("/api/users/:id", async (req, res) => {
+    if (req.user?.role !== "admin") {
+      return res.sendStatus(403);
+    }
+
+    const success = await storage.deleteUser(parseInt(req.params.id));
+    if (!success) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.sendStatus(200);
+  });
+
   // Chit Fund Management Routes
   app.post("/api/chitfunds", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
