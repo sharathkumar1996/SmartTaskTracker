@@ -1,0 +1,110 @@
+both documenting the requirements and creating a prototype. Here's how I can break this down:
+
+1. Requirements Documentation
+Chit Fund Management System Requirements
+
+Core Features
+Member Registration and Management
+
+Registration for new members with essential personal and financial details.
+Track member details like name, contact info, address, and fund preferences.
+Admin or Agent should be able to update and manage member details.
+Track the number of members in each chit group.
+Chit Fund Payment and Bonus Structure
+
+Core Payment Logic:
+Member contributes to a chit fund for a specific duration (e.g., 20 months).
+Each member receives a fixed monthly bonus once the chit fund is successful.
+Agent/Admin Commission (variable between ₹3,000–₹5,000) is subtracted from the payout.
+Bonus Calculation:
+Calculate the bonus for each member monthly.
+Bonus is based on total amount, duration of payment, and commission.
+Early Payout Adjustments:
+If a member opts for early payouts, adjust the bonus and admin fee accordingly.
+Example case: Member Sharath pays ₹5,000 for 10 months and ₹50,000 for 11th month, getting ₹1.05 lakh after commission.
+Financial Transaction Tracking
+
+Track individual member payments for each month.
+Record and monitor any adjustments or changes in payments.
+Admin and Agent can see both contributions and payouts.
+Ensure the system adjusts for early or delayed payments and calculates dues accordingly.
+Reporting
+
+Generate monthly/annual financial statements for each member and chit fund.
+Include reports such as: total funds collected, member payouts, bonus distributed, admin commission.
+Track individual member's status on funds, bonus, and payments.
+Communication Tools Integration
+
+Integrate communication methods (SMS/Email/WhatsApp) to notify members and agents about payments, reminders, and updates.
+Use tools like Twilio for messaging services to integrate SMS and WhatsApp features.
+Platform Requirements
+Role-Based Access Control:
+
+Admin Role: Full control over all features and can add/edit member profiles, create new chit funds, track financials, manage agent commissions, and generate reports.
+Agent Role: Limited access to manage members under their supervision, monitor payments, and generate reports.
+Member Role: Access to track their payments, bonuses, and status in a chit fund.
+Authentication System:
+
+Multi-role login (Member, Agent, Admin).
+Session management with secure authentication methods (JWT tokens or similar).
+Centralized logout system for all roles.
+Registration with email verification.
+Fund Management:
+
+Fund Creation: Admin should be able to create new chit funds with specific parameters (amount, duration, number of members).
+Fund Metrics: Total fund amount, total members, and duration for each fund should be tracked.
+Monthly Contributions: Track members’ payments on a monthly basis, auto-calculate contributions, bonuses, and agent commissions.
+Payment System:
+
+Tracking Contributions: Log regular monthly payments.
+Bonus and Fee Calculation: Auto-calculate bonus and manager fees for every member.
+Early Withdrawal: Calculate how early withdrawal impacts the total payout and generate adjusted reports.
+Payment History: Track the history of payments, contributions, and adjustments.
+Analytics and Reporting:
+
+Performance Metrics: Display fund performance over time, showing how much has been contributed, bonus distribution, and commissions.
+Member Statistics: Visuals showing the number of active members, payouts, and contribution health.
+Exportable Reports: PDF/Excel downloadable reports for financial tracking.
+UI/UX Features:
+
+Responsive and Interactive Design: Web app should be mobile-friendly with clean and intuitive design.
+Data Visualization: Use graphs and charts to display financial and performance data.
+Role-Specific Dashboards: Admin, agent, and member dashboards tailored to their role.
+Alerts and Notifications: Timely payment reminders and overdue alerts.
+Database Integration:
+
+PostgreSQL: Use PostgreSQL for secure and efficient database management.
+Transaction Tracking: Ensure every payment, contribution, and adjustment is recorded.
+Data Security: Ensure encrypted data storage and secure access to sensitive information.
+2. Prototype Creation
+Since I don't have direct access to Adobe XD or other design tools at the moment, I can guide you through creating the prototype, or I can create a textual flow and layout idea for the application, and you could either use that as a base for the prototype or I can help create one in other tools.
+
+High-Level Prototype Flow:
+Login Screen (Role Selection)
+
+Fields: Username, Password, Role (Admin, Agent, Member).
+Action: Successful login leads to respective dashboards.
+Admin Dashboard:
+
+Header: Includes Admin Profile, Logout.
+Main Menu: Fund Management, Member Management, Reports, Transactions.
+Quick Access: Ongoing chit fund status, commission rates.
+Financial Overview: Charts and KPIs about fund performance, total contributions, member count.
+Action: Create New Fund, Add Member, Generate Report.
+Agent Dashboard:
+
+Header: Includes Agent Profile, Logout.
+Main Menu: Member Management, Transactions, Reports.
+Quick Access: Active members, pending payments, commission tracker.
+Financial Overview: Contributions and payouts of the agent’s members.
+Member Dashboard:
+
+Header: Includes Member Profile, Logout.
+Main Menu: View Contributions, View Bonus, Payment History, Upcoming Payments.
+Financial Overview: Monthly contributions, total bonus, payout status.
+Action: Pay for next month, track current fund status.
+Design Components:
+Cards for financial overviews on dashboards.
+Graphs and Charts for payment trends, fund contributions, and bonus distribution.
+Tables for tracking member contributions and history.
+Buttons for adding members, creating chit funds, generating reports.
