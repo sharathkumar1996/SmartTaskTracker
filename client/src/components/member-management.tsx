@@ -39,11 +39,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 export function MemberManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: members = [] } = useQuery<User[]>({ 
+  const { data: members = [], isLoading } = useQuery<User[]>({ 
     queryKey: ["/api/users"],
     enabled: user?.role === "admin" || user?.role === "agent"
   });
@@ -88,6 +91,27 @@ export function MemberManagement() {
     },
   });
 
+  const updateMemberMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<User> }) => {
+      const res = await apiRequest("PATCH", `/api/users/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "Member updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="space-y-6">
       <Card>
@@ -98,20 +122,224 @@ export function MemberManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-end mb-4">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>Add New Member</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Add New Member</DialogTitle>
-                  <DialogDescription>
-                    Fill in the member details
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit((data) => memberMutation.mutate(data))} className="space-y-4">
+          <Tabs defaultValue="members" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="members">Member List</TabsTrigger>
+              <TabsTrigger value="add">Add Member</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="members">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact Info</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Fund Preferences</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {members.filter(m => m.role === "member").map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>
+                          <div className="font-medium">{member.fullName}</div>
+                          <div className="text-sm text-muted-foreground">@{member.username}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{member.email}</div>
+                          <div className="text-sm text-muted-foreground">{member.phone}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{member.address}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {member.city}, {member.state} {member.pincode}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{member.fundPreferences || "Not specified"}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={member.status === "active" ? "default" : "secondary"}
+                            className="capitalize"
+                          >
+                            {member.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">Edit Member</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Edit Member Details</DialogTitle>
+                                <DialogDescription>
+                                  Update member information and preferences
+                                </DialogDescription>
+                              </DialogHeader>
+                              <Form {...form}>
+                                <form onSubmit={form.handleSubmit((data) => 
+                                  updateMemberMutation.mutate({ id: member.id, data })
+                                )} 
+                                className="space-y-4"
+                                >
+                                  <FormField
+                                    control={form.control}
+                                    name="fullName"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} defaultValue={member.fullName} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="email"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} defaultValue={member.email} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="phone"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Phone</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} defaultValue={member.phone} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="address"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Address</FormLabel>
+                                        <FormControl>
+                                          <Textarea {...field} defaultValue={member.address || ''} />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <div className="grid grid-cols-3 gap-4">
+                                    <FormField
+                                      control={form.control}
+                                      name="city"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>City</FormLabel>
+                                          <FormControl>
+                                            <Input {...field} defaultValue={member.city || ''} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={form.control}
+                                      name="state"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>State</FormLabel>
+                                          <FormControl>
+                                            <Input {...field} defaultValue={member.state || ''} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={form.control}
+                                      name="pincode"
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Pincode</FormLabel>
+                                          <FormControl>
+                                            <Input {...field} defaultValue={member.pincode || ''} />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <FormField
+                                    control={form.control}
+                                    name="fundPreferences"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Fund Preferences</FormLabel>
+                                        <FormControl>
+                                          <Textarea 
+                                            {...field} 
+                                            defaultValue={member.fundPreferences || ''} 
+                                            placeholder="Enter preferred fund amounts, duration, etc."
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name="status"
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Status</FormLabel>
+                                        <Select
+                                          onValueChange={field.onChange}
+                                          defaultValue={member.status}
+                                        >
+                                          <FormControl>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <Button type="submit" className="w-full">
+                                    Update Member
+                                  </Button>
+                                </form>
+                              </Form>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="add">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit((data) => memberMutation.mutate(data))} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="username"
@@ -138,12 +366,40 @@ export function MemberManagement() {
                         </FormItem>
                       )}
                     />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="fullName"
+                      name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -151,40 +407,27 @@ export function MemberManagement() {
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input type="email" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
-                      name="address"
+                      name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Address</FormLabel>
+                          <FormLabel>City</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -192,103 +435,54 @@ export function MemberManagement() {
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-3 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>City</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="state"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>State</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="pincode"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Pincode</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
                     <FormField
                       control={form.control}
-                      name="fundPreferences"
+                      name="state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Fund Preferences</FormLabel>
+                          <FormLabel>State</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., Preferred fund amount, duration" />
+                            <Input {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <Button type="submit" className="w-full">Add Member</Button>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members.filter(m => m.role === "member").map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>{member.fullName}</TableCell>
-                  <TableCell>
-                    <div>{member.email}</div>
-                    <div className="text-sm text-muted-foreground">{member.phone}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div>{member.city}, {member.state}</div>
-                    <div className="text-sm text-muted-foreground">{member.pincode}</div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      member.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    }`}>
-                      {member.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm">View Details</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    <FormField
+                      control={form.control}
+                      name="pincode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pincode</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="fundPreferences"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fund Preferences</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            {...field} 
+                            placeholder="Enter preferred fund amounts, duration, etc."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full">Add Member</Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
