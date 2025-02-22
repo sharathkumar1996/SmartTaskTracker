@@ -28,9 +28,9 @@ export interface IStorage {
   getUserPayments(userId: number): Promise<Payment[]>;
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
-  getFundMembers(fundId: number): Promise<User[]>;
+  getFundMembers(fundId: number): Promise<Omit<User, "password">[]>;
   getMemberFunds(userId: number): Promise<ChitFund[]>;
-  getUsersByRole(role: string): Promise<User[]>;
+  getUsersByRole(role: string): Promise<Omit<User, "password">[]>;
   updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined>;
 }
 
@@ -129,7 +129,7 @@ export class DatabaseStorage implements IStorage {
     return !!deleted;
   }
 
-  async getFundMembers(fundId: number): Promise<User[]> {
+  async getFundMembers(fundId: number): Promise<Omit<User, "password">[]> {
     const result = await db
       .select({
         id: users.id,
@@ -173,7 +173,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getUsersByRole(role: string): Promise<User[]> {
+  async getUsersByRole(role: string): Promise<Omit<User, "password">[]> {
     return await db
       .select({
         id: users.id,
@@ -192,7 +192,7 @@ export class DatabaseStorage implements IStorage {
         agentCommission: users.agentCommission
       })
       .from(users)
-      .where(eq(users.role, role));
+      .where(eq(users.role, role as any));
   }
   async updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined> {
     const [updatedFund] = await db
