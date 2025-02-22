@@ -1,4 +1,4 @@
-import { ChitFund } from "@shared/schema";
+import { ChitFund, User } from "@shared/schema";
 import {
   Table,
   TableBody,
@@ -33,7 +33,6 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { User } from "@/types/user";
 import {
   Dialog,
   DialogContent,
@@ -155,7 +154,6 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
             <TableHead>Amount</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Members</TableHead>
-            <TableHead>Commission</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -167,7 +165,6 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
               <TableCell>{formatCurrency(Number(fund.amount))}</TableCell>
               <TableCell>{fund.duration} months</TableCell>
               <TableCell>{fund.memberCount}</TableCell>
-              <TableCell>{formatCurrency(Number(fund.agentCommission))}</TableCell>
               <TableCell>
                 <Badge
                   variant={fund.status === "active" ? "default" : "secondary"}
