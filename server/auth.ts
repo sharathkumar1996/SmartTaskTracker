@@ -80,15 +80,17 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      // Only allow member and agent roles from registration
-      if (req.body.role === 'admin') {
-        return res.status(403).json({ message: "Invalid role" });
+      // Validate role
+      const allowedRoles = ['member', 'agent'];
+      if (!allowedRoles.includes(req.body.role)) {
+        return res.status(400).json({ message: "Invalid role. Only member and agent roles are allowed." });
       }
 
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
+        status: 'active', // Ensure new users are active by default
       });
 
       req.login(user, (err) => {
@@ -96,6 +98,10 @@ export function setupAuth(app: Express) {
         res.status(201).json(user);
       });
     } catch (error) {
+      console.error("Registration error:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
       next(error);
     }
   });
@@ -116,20 +122,40 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
-  // Add new endpoints for fetching users by role
+  // Improve role-based access control for user listing endpoints
   app.get("/api/users/members", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    if (req.user?.role !== 'admin') return res.sendStatus(403);
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
-    const members = await storage.getUsersByRole('member');
-    res.json(members);
+      if (req.user?.role !== 'admin' && req.user?.role !== 'agent') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const members = await storage.getUsersByRole('member');
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      res.status(500).json({ message: "Failed to fetch members" });
+    }
   });
 
   app.get("/api/users/agents", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    if (req.user?.role !== 'admin') return res.sendStatus(403);
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
-    const agents = await storage.getUsersByRole('agent');
-    res.json(agents);
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      const agents = await storage.getUsersByRole('agent');
+      res.json(agents);
+    } catch (error) {
+      console.error("Error fetching agents:", error);
+      res.status(500).json({ message: "Failed to fetch agents" });
+    }
   });
 }
