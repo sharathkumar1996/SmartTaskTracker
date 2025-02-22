@@ -32,6 +32,9 @@ const fundFormSchema = insertChitFundSchema
     startDate: z.date({
       required_error: "Start date is required",
     }),
+    endDate: z.date({
+      required_error: "End date is required",
+    }),
   })
   .transform((data) => ({
     ...data,
@@ -56,6 +59,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       memberCount: 1,
       status: "active" as const,
       startDate: new Date(),
+      endDate: addMonths(new Date(), 20), // Default end date is 20 months from start date
     },
   });
 
@@ -78,33 +82,32 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       <Form {...fundForm}>
         <form onSubmit={fundForm.handleSubmit(async (values) => {
           try {
-            const startDate = values.startDate;
-            const endDate = addMonths(startDate, values.duration);
-
             const fundData = {
               name: values.name,
-              amount: String(values.amount), // Convert to string as per schema
+              amount: String(values.amount),
               duration: values.duration,
               memberCount: values.memberCount,
-              startDate: startDate.toISOString(),
-              endDate: endDate.toISOString(),
+              startDate: values.startDate.toISOString(),
+              endDate: values.endDate.toISOString(),
               status: values.status,
             };
 
-            console.log("Submitting fund data:", fundData); // Debug log
-
             const response = await apiRequest("POST", endpoint, fundData);
-            const result = await response.json();
-            console.log("Fund creation response:", result); // Debug log
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || "Failed to create fund");
+            }
 
-            await queryClient.invalidateQueries({ queryKey: [endpoint] });
+            const result = await response.json();
+
+            await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
             toast({
               title: "Success",
               description: "Chit fund created successfully",
             });
             fundForm.reset();
           } catch (error) {
-            console.error("Fund creation error:", error); // Debug log
+            console.error("Fund creation error:", error);
             toast({
               title: "Error",
               description: error instanceof Error ? error.message : "Failed to create fund",
@@ -180,7 +183,32 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       type="date"
                       {...field}
                       value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const startDate = new Date(e.target.value);
+                        field.onChange(startDate);
+                        // Update end date when start date changes
+                        const endDate = addMonths(startDate, 20);
+                        fundForm.setValue('endDate', endDate);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={fundForm.control}
+              name="endDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>End Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
                       onChange={(e) => field.onChange(new Date(e.target.value))}
+                      disabled // End date is automatically calculated
                     />
                   </FormControl>
                   <FormMessage />
@@ -199,7 +227,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     );
   }
 
-  // Payment form remains unchanged
   return (
     <Form {...paymentForm}>
       <form onSubmit={paymentForm.handleSubmit(async (values) => {
