@@ -31,6 +31,7 @@ export interface IStorage {
   getFundMembers(fundId: number): Promise<User[]>;
   getMemberFunds(userId: number): Promise<ChitFund[]>;
   getUsersByRole(role: string): Promise<User[]>;
+  updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -144,8 +145,7 @@ export class DatabaseStorage implements IStorage {
         status: users.status,
         fundPreferences: users.fundPreferences,
         agentId: users.agentId,
-        agentCommission: users.agentCommission,
-        password: users.password //Added password field here
+        agentCommission: users.agentCommission
       })
       .from(fundMembers)
       .innerJoin(users, eq(fundMembers.userId, users.id))
@@ -156,7 +156,16 @@ export class DatabaseStorage implements IStorage {
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
     const result = await db
-      .select()
+      .select({
+        id: chitFunds.id,
+        name: chitFunds.name,
+        amount: chitFunds.amount,
+        duration: chitFunds.duration,
+        memberCount: chitFunds.memberCount,
+        startDate: chitFunds.startDate,
+        endDate: chitFunds.endDate,
+        status: chitFunds.status
+      })
       .from(fundMembers)
       .innerJoin(chitFunds, eq(fundMembers.fundId, chitFunds.id))
       .where(eq(fundMembers.userId, userId));
@@ -166,9 +175,32 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersByRole(role: string): Promise<User[]> {
     return await db
-      .select()
+      .select({
+        id: users.id,
+        username: users.username,
+        role: users.role,
+        fullName: users.fullName,
+        email: users.email,
+        phone: users.phone,
+        address: users.address,
+        city: users.city,
+        state: users.state,
+        pincode: users.pincode,
+        status: users.status,
+        fundPreferences: users.fundPreferences,
+        agentId: users.agentId,
+        agentCommission: users.agentCommission
+      })
       .from(users)
       .where(eq(users.role, role));
+  }
+  async updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined> {
+    const [updatedFund] = await db
+      .update(chitFunds)
+      .set(updates)
+      .where(eq(chitFunds.id, id))
+      .returning();
+    return updatedFund;
   }
 }
 

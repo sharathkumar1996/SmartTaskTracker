@@ -77,6 +77,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
+  // Add patch endpoint for chit funds
+  app.patch("/api/chitfunds/:id", async (req, res) => {
+    if (req.user?.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const updatedFund = await storage.updateChitFund(parseInt(req.params.id), req.body);
+      if (!updatedFund) {
+        return res.status(404).json({ message: "Chit fund not found" });
+      }
+      res.json(updatedFund);
+    } catch (error) {
+      console.error("Error updating chit fund:", error);
+      res.status(500).json({ message: "Failed to update chit fund" });
+    }
+  });
+
   app.post("/api/payments", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     const payment = await storage.createPayment({
