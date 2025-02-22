@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { z } from "zod";
 
 interface PaymentFormProps {
   type: "fund" | "payment";
@@ -22,45 +23,56 @@ interface PaymentFormProps {
   userId?: number;
 }
 
+// Extend the schemas to handle form-specific validation
+const fundFormSchema = insertChitFundSchema.extend({
+  amount: z.number().min(1, "Amount must be greater than 0"),
+  duration: z.number().min(1, "Duration must be at least 1 month"),
+  memberCount: z.number().min(1, "Member count must be at least 1"),
+});
+
+const paymentFormSchema = insertPaymentSchema.extend({
+  amount: z.number().min(1, "Amount must be greater than 0"),
+});
+
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const fundForm = useForm({
-    resolver: zodResolver(insertChitFundSchema),
+    resolver: zodResolver(fundFormSchema),
     defaultValues: {
       name: "",
       amount: 0,
       duration: 20,
       memberCount: 0,
       agentCommission: 3000,
-      status: "active",
+      status: "active" as const,
     },
   });
 
   const paymentForm = useForm({
-    resolver: zodResolver(insertPaymentSchema),
+    resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      userId: userId,
-      chitFundId: chitFundId,
+      userId: userId || 0,
+      chitFundId: chitFundId || 0,
       amount: 0,
-      paymentDate: new Date(),
-      paymentType: "monthly",
+      paymentDate: new Date().toISOString(),
+      paymentType: "monthly" as const,
     },
   });
 
-  const form = type === "fund" ? fundForm : paymentForm;
+  const currentForm = type === "fund" ? fundForm : paymentForm;
   const endpoint = type === "fund" ? "/api/chitfunds" : "/api/payments";
 
-  async function onSubmit(data: any) {
+  async function onSubmit(values: any) {
     try {
-      await apiRequest("POST", endpoint, data);
+      await apiRequest("POST", endpoint, values);
       await queryClient.invalidateQueries({ queryKey: [endpoint] });
       toast({
         title: "Success",
         description: `${type === "fund" ? "Chit fund created" : "Payment recorded"} successfully`,
       });
-      form.reset();
+      currentForm.reset();
     } catch (error) {
       toast({
         title: "Error",
@@ -70,13 +82,13 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     }
   }
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        {type === "fund" ? (
-          <>
+  if (type === "fund") {
+    return (
+      <Form {...fundForm}>
+        <form onSubmit={fundForm.handleSubmit(onSubmit)} className={className}>
+          <div className="space-y-4">
             <FormField
-              control={form.control}
+              control={fundForm.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -89,15 +101,15 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               )}
             />
             <FormField
-              control={form.control}
+              control={fundForm.control}
               name="amount"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
+                    <Input
+                      type="number"
+                      {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -106,15 +118,15 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               )}
             />
             <FormField
-              control={form.control}
+              control={fundForm.control}
               name="duration"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Duration (months)</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
+                    <Input
+                      type="number"
+                      {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -123,15 +135,15 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               )}
             />
             <FormField
-              control={form.control}
+              control={fundForm.control}
               name="memberCount"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Member Count</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
+                    <Input
+                      type="number"
+                      {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -140,15 +152,15 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               )}
             />
             <FormField
-              control={form.control}
+              control={fundForm.control}
               name="agentCommission"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Agent Commission</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
+                    <Input
+                      type="number"
+                      {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
@@ -156,18 +168,29 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                 </FormItem>
               )}
             />
-          </>
-        ) : (
+            <Button type="submit" className="w-full">
+              Create Fund
+            </Button>
+          </div>
+        </form>
+      </Form>
+    );
+  }
+
+  return (
+    <Form {...paymentForm}>
+      <form onSubmit={paymentForm.handleSubmit(onSubmit)} className={className}>
+        <div className="space-y-4">
           <FormField
-            control={form.control}
+            control={paymentForm.control}
             name="amount"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Payment Amount</FormLabel>
                 <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
+                  <Input
+                    type="number"
+                    {...field}
                     onChange={(e) => field.onChange(Number(e.target.value))}
                   />
                 </FormControl>
@@ -175,10 +198,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               </FormItem>
             )}
           />
-        )}
-        <Button type="submit" className="w-full mt-4">
-          {type === "fund" ? "Create Fund" : "Make Payment"}
-        </Button>
+          <Button type="submit" className="w-full">
+            Make Payment
+          </Button>
+        </div>
       </form>
     </Form>
   );
