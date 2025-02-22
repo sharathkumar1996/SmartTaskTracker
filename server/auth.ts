@@ -95,4 +95,21 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+
+  // Add new endpoints for fetching users by role
+  app.get("/api/users/members", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (req.user?.role !== 'admin') return res.sendStatus(403);
+
+    const members = await storage.getUsersByRole('member');
+    res.json(members);
+  });
+
+  app.get("/api/users/agents", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    if (req.user?.role !== 'admin') return res.sendStatus(403);
+
+    const agents = await storage.getUsersByRole('agent');
+    res.json(agents);
+  });
 }

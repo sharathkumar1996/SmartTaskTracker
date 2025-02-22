@@ -32,6 +32,7 @@ export interface IStorage {
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<User[]>;
   getMemberFunds(userId: number): Promise<ChitFund[]>;
+  getUsersByRole(role: string): Promise<User[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -196,6 +197,10 @@ export class MemStorage implements IStorage {
       }
     });
     return userFunds;
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return Array.from(this.users.values()).filter(user => user.role === role);
   }
 }
 
