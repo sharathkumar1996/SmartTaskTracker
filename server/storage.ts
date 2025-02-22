@@ -96,15 +96,22 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId.users++;
-    const user: User = { 
-      ...insertUser, 
+    const user: User = {
       id,
-      address: insertUser.address || "",
-      city: insertUser.city || "",
-      state: insertUser.state || "",
-      pincode: insertUser.pincode || "",
+      username: insertUser.username,
+      password: insertUser.password,
+      role: insertUser.role,
+      fullName: insertUser.fullName,
+      email: insertUser.email,
+      phone: insertUser.phone,
+      address: insertUser.address || null,
+      city: insertUser.city || null,
+      state: insertUser.state || null,
+      pincode: insertUser.pincode || null,
       status: insertUser.status || "active",
-      fundPreferences: insertUser.fundPreferences || null
+      fundPreferences: insertUser.fundPreferences || null,
+      agentId: null,
+      agentCommission: null
     };
     this.users.set(id, user);
     return user;
@@ -182,12 +189,12 @@ export class MemStorage implements IStorage {
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
     const userFunds: ChitFund[] = [];
-    for (const [fundId, members] of this.fundMembers.entries()) {
+    this.fundMembers.forEach((members, fundId) => {
       if (members.has(userId)) {
         const fund = this.chitFunds.get(fundId);
         if (fund) userFunds.push(fund);
       }
-    }
+    });
     return userFunds;
   }
 }
