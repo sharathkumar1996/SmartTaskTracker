@@ -3,7 +3,7 @@ import { Loader2, LogOut } from "lucide-react";
 import { ChitFundTable } from "@/components/chitfund-table";
 import { PaymentForm } from "@/components/payment-form";
 import { StatsCards } from "@/components/stats-cards";
-import { MemberManagement } from "@/components/member-management";
+import { UserManagement } from "@/components/user-management";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -60,8 +60,8 @@ export default function Dashboard() {
           <Tabs defaultValue="funds" className="space-y-8">
             <TabsList>
               <TabsTrigger value="funds">Chit Funds</TabsTrigger>
-              {(user.role === "admin" || user.role === "agent") && (
-                <TabsTrigger value="members">Members</TabsTrigger>
+              {user.role === "admin" && (
+                <TabsTrigger value="users">Users</TabsTrigger>
               )}
             </TabsList>
 
@@ -99,9 +99,9 @@ export default function Dashboard() {
               )}
             </TabsContent>
 
-            {(user.role === "admin" || user.role === "agent") && (
-              <TabsContent value="members">
-                <MemberManagement />
+            {user.role === "admin" && (
+              <TabsContent value="users">
+                <UserManagement />
               </TabsContent>
             )}
           </Tabs>
