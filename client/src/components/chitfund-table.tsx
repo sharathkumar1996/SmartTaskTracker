@@ -17,7 +17,21 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChitFundTableProps {
   chitFunds: ChitFund[];
@@ -26,6 +40,28 @@ interface ChitFundTableProps {
 }
 
 export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProps) {
+  const { toast } = useToast();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/chitfunds/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
+      toast({
+        title: "Success",
+        description: "Chit fund deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -44,7 +80,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
             <TableHead>Members</TableHead>
             <TableHead>Commission</TableHead>
             <TableHead>Status</TableHead>
-            {userRole === "member" && <TableHead>Actions</TableHead>}
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -62,8 +98,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                   {fund.status}
                 </Badge>
               </TableCell>
-              {userRole === "member" && (
-                <TableCell>
+              <TableCell className="space-x-2">
+                {userRole === "member" && (
                   <Sheet>
                     <SheetTrigger asChild>
                       <Button variant="outline" size="sm">
@@ -85,8 +121,34 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                       />
                     </SheetContent>
                   </Sheet>
-                </TableCell>
-              )}
+                )}
+                {userRole === "admin" && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Chit Fund</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this chit fund? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteMutation.mutate(fund.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

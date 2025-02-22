@@ -21,6 +21,7 @@ export interface IStorage {
   getUsers(): Promise<User[]>;
   createChitFund(fund: InsertChitFund): Promise<ChitFund>;
   getChitFunds(): Promise<ChitFund[]>;
+  deleteChitFund(id: number): Promise<boolean>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   getUserPayments(userId: number): Promise<Payment[]>;
 }
@@ -127,6 +128,10 @@ export class MemStorage implements IStorage {
 
   async getChitFunds(): Promise<ChitFund[]> {
     return Array.from(this.chitFunds.values());
+  }
+
+  async deleteChitFund(id: number): Promise<boolean> {
+    return this.chitFunds.delete(id);
   }
 
   async createPayment(payment: InsertPayment): Promise<Payment> {

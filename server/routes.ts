@@ -54,6 +54,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(chitFunds);
   });
 
+  // Add delete endpoint for chit funds
+  app.delete("/api/chitfunds/:id", async (req, res) => {
+    if (req.user?.role !== "admin") return res.sendStatus(403);
+
+    const success = await storage.deleteChitFund(parseInt(req.params.id));
+    if (!success) {
+      return res.status(404).json({ message: "Chit fund not found" });
+    }
+    res.sendStatus(200);
+  });
+
   app.post("/api/payments", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     const payment = await storage.createPayment({
