@@ -54,13 +54,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Edit } from "lucide-react";
 
 export function MemberManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: members = [], isLoading } = useQuery<User[]>({ 
-    queryKey: ["/api/users/members"],
+    queryKey: ["/api/users"],
     enabled: user?.role === "admin" || user?.role === "agent"
   });
 
@@ -88,7 +88,7 @@ export function MemberManagement() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
         description: "Member added successfully",
@@ -110,7 +110,7 @@ export function MemberManagement() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
         description: "Member updated successfully",
@@ -130,7 +130,7 @@ export function MemberManagement() {
       await apiRequest("DELETE", `/api/users/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
         description: "Member deleted successfully",
@@ -206,7 +206,10 @@ export function MemberManagement() {
                           <div className="flex space-x-2">
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button variant="outline" size="sm">Edit</Button>
+                                <Button variant="outline" size="sm">
+                                  <Edit className="h-4 w-4 mr-1" />
+                                  Edit
+                                </Button>
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
