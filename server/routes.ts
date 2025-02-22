@@ -112,15 +112,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chitfunds/:fundId/members/:userId", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
 
-    const success = await storage.addMemberToFund(
-      parseInt(req.params.fundId),
-      parseInt(req.params.userId)
-    );
+    try {
+      const success = await storage.addMemberToFund(
+        parseInt(req.params.fundId),
+        parseInt(req.params.userId)
+      );
 
-    if (!success) {
-      return res.status(400).json({ message: "Failed to add member to fund" });
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Error adding member to fund:", error);
+      // Check if this is a duplicate member error
+      if (error instanceof Error && error.message.includes("already in this fund")) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Failed to add member to fund" });
     }
-    res.sendStatus(200);
   });
 
   app.delete("/api/chitfunds/:fundId/members/:userId", async (req, res) => {

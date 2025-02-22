@@ -115,11 +115,27 @@ export class DatabaseStorage implements IStorage {
 
   async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
     try {
+      // First check if the member is already in the fund
+      const existingMember = await db
+        .select()
+        .from(fundMembers)
+        .where(
+          and(
+            eq(fundMembers.fundId, fundId),
+            eq(fundMembers.userId, userId)
+          )
+        )
+        .limit(1);
+
+      if (existingMember.length > 0) {
+        throw new Error("Member is already in this fund");
+      }
+
       await db.insert(fundMembers).values({ fundId, userId });
       return true;
     } catch (error) {
       console.error('Error adding member to fund:', error);
-      return false;
+      throw error; // Propagate the error to be handled by the route handler
     }
   }
 
