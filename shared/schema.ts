@@ -10,6 +10,14 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  pincode: text("pincode").notNull(),
+  fundPreferences: text("fund_preferences"),
+  agentId: integer("agent_id"), // For members assigned to an agent
+  agentCommission: decimal("agent_commission", { precision: 10, scale: 2 }), // For agents
+  status: text("status", { enum: ["active", "inactive"] }).default("active").notNull(),
 });
 
 export const chitFunds = pgTable("chit_funds", {
