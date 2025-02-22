@@ -16,6 +16,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ChitFund, Payment, User } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
@@ -23,9 +24,14 @@ export default function Dashboard() {
     queryKey: ["/api/users"],
     enabled: user?.role === "admin" || user?.role === "agent"
   });
-  const { data: chitFunds = [], isLoading: isLoadingChitFunds } = useQuery<ChitFund[]>({ 
+
+  const { data: allChitFunds = [], isLoading: isLoadingChitFunds } = useQuery<ChitFund[]>({ 
     queryKey: ["/api/chitfunds"] 
   });
+
+  const activeChitFunds = allChitFunds.filter(fund => fund.status === "active");
+  const closedChitFunds = allChitFunds.filter(fund => fund.status === "closed" || fund.status === "completed");
+
   const { data: payments = [], isLoading: isLoadingPayments } = useQuery<Payment[]>({ 
     queryKey: ["/api/payments", user?.id],
     enabled: !!user
@@ -50,24 +56,27 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <StatsCards 
-          chitFunds={chitFunds} 
+          chitFunds={activeChitFunds} 
           payments={payments} 
           role={user.role}
           users={users}
         />
 
         <div className="mt-8">
-          <Tabs defaultValue="funds" className="space-y-8">
+          <Tabs defaultValue="active" className="space-y-8">
             <TabsList>
-              <TabsTrigger value="funds">Chit Funds</TabsTrigger>
+              <TabsTrigger value="active">Active Funds</TabsTrigger>
               {user.role === "admin" && (
-                <TabsTrigger value="users">Users</TabsTrigger>
+                <>
+                  <TabsTrigger value="closed">Closed Funds</TabsTrigger>
+                  <TabsTrigger value="users">Users</TabsTrigger>
+                </>
               )}
             </TabsList>
 
-            <TabsContent value="funds">
+            <TabsContent value="active">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Chit Funds</h2>
+                <h2 className="text-xl font-semibold">Active Chit Funds</h2>
                 {user.role === "admin" && (
                   <Sheet>
                     <SheetTrigger asChild>
@@ -92,7 +101,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <ChitFundTable 
-                  chitFunds={chitFunds} 
+                  chitFunds={activeChitFunds} 
                   userRole={user.role} 
                   userId={user.id}
                 />
@@ -100,9 +109,28 @@ export default function Dashboard() {
             </TabsContent>
 
             {user.role === "admin" && (
-              <TabsContent value="users">
-                <UserManagement />
-              </TabsContent>
+              <>
+                <TabsContent value="closed">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Closed Chit Funds</h2>
+                  </div>
+                  {isLoadingChitFunds ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <ChitFundTable 
+                      chitFunds={closedChitFunds} 
+                      userRole={user.role} 
+                      userId={user.id}
+                    />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="users">
+                  <UserManagement />
+                </TabsContent>
+              </>
             )}
           </Tabs>
         </div>

@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
+import { addMonths } from "date-fns";
 
 interface PaymentFormProps {
   type: "fund" | "payment";
@@ -23,11 +24,13 @@ interface PaymentFormProps {
   userId?: number;
 }
 
-// Update the fund form schema to remove agentCommission
 const fundFormSchema = insertChitFundSchema.extend({
   amount: z.number().min(1, "Amount must be greater than 0"),
   duration: z.number().min(20).max(20),
   memberCount: z.number().min(1, "Member count must be at least 1").max(20, "Maximum 20 members allowed"),
+  startDate: z.date({
+    required_error: "Start date is required",
+  }),
 });
 
 const paymentFormSchema = insertPaymentSchema.extend({
@@ -46,6 +49,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       duration: 20,
       memberCount: 1,
       status: "active" as const,
+      startDate: new Date(),
     },
   });
 
@@ -84,7 +88,31 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
   if (type === "fund") {
     return (
       <Form {...fundForm}>
-        <form onSubmit={fundForm.handleSubmit(onSubmit)} className={className}>
+        <form onSubmit={fundForm.handleSubmit(async (values) => {
+          try {
+            const startDate = values.startDate;
+            const endDate = addMonths(startDate, values.duration);
+
+            await apiRequest("POST", endpoint, {
+              ...values,
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString(),
+            });
+
+            await queryClient.invalidateQueries({ queryKey: [endpoint] });
+            toast({
+              title: "Success",
+              description: "Chit fund created successfully",
+            });
+            fundForm.reset();
+          } catch (error) {
+            toast({
+              title: "Error",
+              description: (error as Error).message,
+              variant: "destructive",
+            });
+          }
+        })} className={className}>
           <div className="space-y-4">
             <FormField
               control={fundForm.control}
@@ -133,6 +161,24 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                         const value = Math.min(Number(e.target.value), 20);
                         field.onChange(value);
                       }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={fundForm.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      value={field.value instanceof Date ? field.value.toISOString().split('T')[0] : ''}
+                      onChange={(e) => field.onChange(new Date(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />

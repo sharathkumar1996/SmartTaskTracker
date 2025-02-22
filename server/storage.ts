@@ -3,7 +3,10 @@ import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 
+const scryptAsync = promisify(scrypt);
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
@@ -37,7 +40,7 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new MemoryStore({ checkPeriod: 86400000 });
+    this.sessionStore = new MemoryStore({ checkPeriod: 86400000 }); // 24 hours
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -141,7 +144,8 @@ export class DatabaseStorage implements IStorage {
         status: users.status,
         fundPreferences: users.fundPreferences,
         agentId: users.agentId,
-        agentCommission: users.agentCommission
+        agentCommission: users.agentCommission,
+        password: users.password //Added password field here
       })
       .from(fundMembers)
       .innerJoin(users, eq(fundMembers.userId, users.id))
@@ -152,14 +156,7 @@ export class DatabaseStorage implements IStorage {
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
     const result = await db
-      .select({
-        id: chitFunds.id,
-        name: chitFunds.name,
-        amount: chitFunds.amount,
-        duration: chitFunds.duration,
-        memberCount: chitFunds.memberCount,
-        status: chitFunds.status
-      })
+      .select()
       .from(fundMembers)
       .innerJoin(chitFunds, eq(fundMembers.fundId, chitFunds.id))
       .where(eq(fundMembers.userId, userId));
@@ -168,11 +165,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, role));
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, role));
   }
 }
 
 export const storage = new DatabaseStorage();
+
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
