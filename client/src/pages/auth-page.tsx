@@ -24,7 +24,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AuthPage() {
-  // Move all hooks to the top
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -40,14 +39,19 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
-      role: "member" as const, // Fix the type issue by asserting const
+      role: "member" as const,
       fullName: "",
       email: "",
       phone: "",
+      // Set empty defaults for optional fields
+      address: "",
+      city: "",
+      state: "",
+      pincode: "",
+      status: "active" as const,
     },
   });
 
-  // Only redirect after all hooks are declared
   if (user) {
     setLocation("/");
     return null;
@@ -167,7 +171,6 @@ export default function AuthPage() {
                             <SelectContent>
                               <SelectItem value="member">Member</SelectItem>
                               <SelectItem value="agent">Agent</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
