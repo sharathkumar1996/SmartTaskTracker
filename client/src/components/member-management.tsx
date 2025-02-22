@@ -60,7 +60,7 @@ export function MemberManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: members = [], isLoading } = useQuery<User[]>({ 
-    queryKey: ["/api/users/members"], 
+    queryKey: ["/api/users/members"],
     enabled: user?.role === "admin" || user?.role === "agent"
   });
 

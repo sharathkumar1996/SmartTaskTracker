@@ -3,7 +3,7 @@ import { Loader2, LogOut } from "lucide-react";
 import { ChitFundTable } from "@/components/chitfund-table";
 import { PaymentForm } from "@/components/payment-form";
 import { StatsCards } from "@/components/stats-cards";
-import { UserManagement } from "@/components/user-management";
+import { MemberManagement } from "@/components/member-management";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -128,7 +128,7 @@ export default function Dashboard() {
                 </TabsContent>
 
                 <TabsContent value="users">
-                  <UserManagement />
+                  <MemberManagement />
                 </TabsContent>
               </>
             )}
