@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, decimal, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -38,9 +38,17 @@ export const payments = pgTable("payments", {
   paymentType: text("payment_type", { enum: ["monthly", "bonus"] }).notNull(),
 });
 
+export const fundMembers = pgTable("fund_members", {
+  fundId: integer("fund_id").notNull(),
+  userId: integer("user_id").notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.fundId, table.userId] }),
+}));
+
 export const insertUserSchema = createInsertSchema(users);
 export const insertChitFundSchema = createInsertSchema(chitFunds);
 export const insertPaymentSchema = createInsertSchema(payments);
+export const insertFundMemberSchema = createInsertSchema(fundMembers);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -48,3 +56,5 @@ export type ChitFund = typeof chitFunds.$inferSelect;
 export type InsertChitFund = z.infer<typeof insertChitFundSchema>;
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type FundMember = typeof fundMembers.$inferSelect;
+export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;

@@ -1,20 +1,17 @@
-import type { User, ChitFund, Payment, InsertUser, InsertChitFund, InsertPayment } from "@shared/schema";
-import createMemoryStore from "memorystore";
+import { users, chitFunds, payments, fundMembers, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import session from "express-session";
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
-
-const scryptAsync = promisify(scrypt);
+import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
-  users: Map<number, User>;
-  chitFunds: Map<number, ChitFund>;
-  payments: Map<number, Payment>;
+  users: any;
+  chitFunds: any;
+  payments: any;
   sessionStore: session.Store;
 
-  // Existing methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -26,8 +23,6 @@ export interface IStorage {
   deleteChitFund(id: number): Promise<boolean>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   getUserPayments(userId: number): Promise<Payment[]>;
-
-  // New methods for fund membership
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<User[]>;
@@ -35,179 +30,151 @@ export interface IStorage {
   getUsersByRole(role: string): Promise<User[]>;
 }
 
-export class MemStorage implements IStorage {
-  users: Map<number, User>;
-  chitFunds: Map<number, ChitFund>;
-  payments: Map<number, Payment>;
-  private currentId: { [key: string]: number };
+export class DatabaseStorage implements IStorage {
+  users: any;
+  chitFunds: any;
+  payments: any;
   sessionStore: session.Store;
-  private fundMembers: Map<number, Set<number>>; // fundId -> Set of userIds
 
   constructor() {
-    this.users = new Map();
-    this.chitFunds = new Map();
-    this.payments = new Map();
-    this.fundMembers = new Map();
-    this.currentId = { users: 1, chitFunds: 1, payments: 1 };
     this.sessionStore = new MemoryStore({ checkPeriod: 86400000 });
-
-    // Seed admin user
-    this.seedAdminUser();
-  }
-
-  private async seedAdminUser() {
-    const existingAdmin = Array.from(this.users.values()).find(
-      (user) => user.role === "admin"
-    );
-
-    if (!existingAdmin) {
-      const adminUser: InsertUser = {
-        username: "admin",
-        password: await hashPassword("admin123"),
-        role: "admin",
-        fullName: "System Admin",
-        email: "admin@chitfund.com",
-        phone: "1234567890",
-        address: "",
-        city: "",
-        state: "",
-        pincode: "123456",
-        fundPreferences: null,
-        status: "active",
-      };
-      await this.createUser(adminUser);
-    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email,
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId.users++;
-    const user: User = {
-      id,
-      username: insertUser.username,
-      password: insertUser.password,
-      role: insertUser.role,
-      fullName: insertUser.fullName,
-      email: insertUser.email,
-      phone: insertUser.phone,
-      address: insertUser.address || null,
-      city: insertUser.city || null,
-      state: insertUser.state || null,
-      pincode: insertUser.pincode || null,
-      status: insertUser.status || "active",
-      fundPreferences: insertUser.fundPreferences || null,
-      agentId: null,
-      agentCommission: null
-    };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const existingUser = this.users.get(id);
-    if (!existingUser) return undefined;
-
-    const updatedUser = { ...existingUser, ...updates };
-    this.users.set(id, updatedUser);
+    const [updatedUser] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
     return updatedUser;
   }
 
   async getUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
-    const id = this.currentId.chitFunds++;
-    const chitFund = { ...fund, id };
-    this.chitFunds.set(id, chitFund);
+    const [chitFund] = await db.insert(chitFunds).values(fund).returning();
     return chitFund;
   }
 
   async getChitFunds(): Promise<ChitFund[]> {
-    return Array.from(this.chitFunds.values());
+    return await db.select().from(chitFunds);
   }
 
   async deleteChitFund(id: number): Promise<boolean> {
-    return this.chitFunds.delete(id);
+    const [deleted] = await db
+      .delete(chitFunds)
+      .where(eq(chitFunds.id, id))
+      .returning();
+    return !!deleted;
   }
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
-    const id = this.currentId.payments++;
-    const newPayment = { ...payment, id };
-    this.payments.set(id, newPayment);
+    const [newPayment] = await db.insert(payments).values(payment).returning();
     return newPayment;
   }
 
   async getUserPayments(userId: number): Promise<Payment[]> {
-    return Array.from(this.payments.values()).filter(
-      (payment) => payment.userId === userId,
-    );
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.userId, userId));
   }
 
   async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
-    const fund = this.chitFunds.get(fundId);
-    const user = this.users.get(userId);
-
-    if (!fund || !user) return false;
-
-    if (!this.fundMembers.has(fundId)) {
-      this.fundMembers.set(fundId, new Set());
+    try {
+      await db.insert(fundMembers).values({ fundId, userId });
+      return true;
+    } catch (error) {
+      console.error('Error adding member to fund:', error);
+      return false;
     }
-
-    const members = this.fundMembers.get(fundId)!;
-    if (members.size >= fund.memberCount) return false;
-
-    members.add(userId);
-    return true;
   }
 
   async removeMemberFromFund(fundId: number, userId: number): Promise<boolean> {
-    const members = this.fundMembers.get(fundId);
-    if (!members) return false;
-    return members.delete(userId);
+    const [deleted] = await db
+      .delete(fundMembers)
+      .where(
+        and(
+          eq(fundMembers.fundId, fundId),
+          eq(fundMembers.userId, userId)
+        )
+      )
+      .returning();
+    return !!deleted;
   }
 
   async getFundMembers(fundId: number): Promise<User[]> {
-    const members = this.fundMembers.get(fundId);
-    if (!members) return [];
-    return Array.from(members).map(id => this.users.get(id)!).filter(Boolean);
+    const result = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        role: users.role,
+        fullName: users.fullName,
+        email: users.email,
+        phone: users.phone,
+        address: users.address,
+        city: users.city,
+        state: users.state,
+        pincode: users.pincode,
+        status: users.status,
+        fundPreferences: users.fundPreferences,
+        agentId: users.agentId,
+        agentCommission: users.agentCommission
+      })
+      .from(fundMembers)
+      .innerJoin(users, eq(fundMembers.userId, users.id))
+      .where(eq(fundMembers.fundId, fundId));
+
+    return result;
   }
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
-    const userFunds: ChitFund[] = [];
-    this.fundMembers.forEach((members, fundId) => {
-      if (members.has(userId)) {
-        const fund = this.chitFunds.get(fundId);
-        if (fund) userFunds.push(fund);
-      }
-    });
-    return userFunds;
+    const result = await db
+      .select({
+        id: chitFunds.id,
+        name: chitFunds.name,
+        amount: chitFunds.amount,
+        duration: chitFunds.duration,
+        memberCount: chitFunds.memberCount,
+        status: chitFunds.status
+      })
+      .from(fundMembers)
+      .innerJoin(chitFunds, eq(fundMembers.fundId, chitFunds.id))
+      .where(eq(fundMembers.userId, userId));
+
+    return result;
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return Array.from(this.users.values()).filter(user => user.role === role);
+    return await db.select().from(users).where(eq(users.role, role));
   }
 }
 
+export const storage = new DatabaseStorage();
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
 }
-
-export const storage = new MemStorage();
