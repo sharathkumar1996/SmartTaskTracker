@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { format } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ChitFundTableProps {
   chitFunds: ChitFund[];
@@ -234,28 +235,30 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                               </div>
                               <div>
                                 <h4 className="mb-2 text-sm font-medium">Current Members</h4>
-                                <div className="space-y-2">
-                                  {fundMembers.map((member) => (
-                                    <div
-                                      key={member.id}
-                                      className="flex items-center justify-between p-2 rounded-md border"
-                                    >
-                                      <span>{member.fullName}</span>
-                                      <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() =>
-                                          removeMemberMutation.mutate({
-                                            fundId: fund.id,
-                                            userId: member.id,
-                                          })
-                                        }
+                                <ScrollArea className="h-[200px]">
+                                  <div className="space-y-2 pr-4">
+                                    {fundMembers.map((member) => (
+                                      <div
+                                        key={member.id}
+                                        className="flex items-center justify-between p-2 rounded-md border"
                                       >
-                                        Remove
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
+                                        <span>{member.fullName}</span>
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          onClick={() =>
+                                            removeMemberMutation.mutate({
+                                              fundId: fund.id,
+                                              userId: member.id,
+                                            })
+                                          }
+                                        >
+                                          Remove
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </ScrollArea>
                               </div>
                             </div>
                           </DialogContent>
