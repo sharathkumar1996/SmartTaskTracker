@@ -60,7 +60,7 @@ export function MemberManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: members = [], isLoading } = useQuery<User[]>({ 
-    queryKey: ["/api/users"],
+    queryKey: ["/api/users/members"], 
     enabled: user?.role === "admin" || user?.role === "agent"
   });
 
@@ -88,7 +88,7 @@ export function MemberManagement() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
       toast({
         title: "Success",
         description: "Member added successfully",
@@ -110,7 +110,7 @@ export function MemberManagement() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
       toast({
         title: "Success",
         description: "Member updated successfully",
@@ -130,7 +130,7 @@ export function MemberManagement() {
       await apiRequest("DELETE", `/api/users/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
       toast({
         title: "Success",
         description: "Member deleted successfully",
@@ -175,7 +175,7 @@ export function MemberManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {members.filter(m => m.role === "member").map((member) => (
+                    {members.map((member) => (
                       <TableRow key={member.id}>
                         <TableCell>
                           <div className="font-medium">{member.fullName}</div>
