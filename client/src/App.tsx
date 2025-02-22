@@ -11,7 +11,11 @@ import { ProtectedRoute } from "./lib/protected-route";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
