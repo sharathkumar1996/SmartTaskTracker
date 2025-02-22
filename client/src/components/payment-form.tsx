@@ -26,8 +26,8 @@ interface PaymentFormProps {
 // Extend the schemas to handle form-specific validation
 const fundFormSchema = insertChitFundSchema.extend({
   amount: z.number().min(1, "Amount must be greater than 0"),
-  duration: z.number().min(1, "Duration must be at least 1 month"),
-  memberCount: z.number().min(1, "Member count must be at least 1"),
+  duration: z.number().min(20).max(20),
+  memberCount: z.number().min(1, "Member count must be at least 1").max(20, "Maximum 20 members allowed"),
 });
 
 const paymentFormSchema = insertPaymentSchema.extend({
@@ -44,7 +44,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       name: "",
       amount: 0,
       duration: 20,
-      memberCount: 0,
+      memberCount: 1,
       agentCommission: 3000,
       status: "active" as const,
     },
@@ -111,23 +111,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       type="number"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={fundForm.control}
-              name="duration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duration (months)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </FormControl>
                   <FormMessage />
@@ -139,12 +123,17 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               name="memberCount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Member Count</FormLabel>
+                  <FormLabel>Member Count (Max: 20)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
+                      min={1}
+                      max={20}
+                      onChange={(e) => {
+                        const value = Math.min(Number(e.target.value), 20);
+                        field.onChange(value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -162,12 +151,16 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       type="number"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <div className="text-sm text-muted-foreground">
+              Duration is fixed at 20 months
+            </div>
             <Button type="submit" className="w-full">
               Create Fund
             </Button>
@@ -192,6 +185,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                     type="number"
                     {...field}
                     onChange={(e) => field.onChange(Number(e.target.value))}
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </FormControl>
                 <FormMessage />
