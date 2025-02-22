@@ -13,6 +13,8 @@ export interface IStorage {
   chitFunds: Map<number, ChitFund>;
   payments: Map<number, Payment>;
   sessionStore: session.Store;
+
+  // Existing methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -24,12 +26,12 @@ export interface IStorage {
   deleteChitFund(id: number): Promise<boolean>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   getUserPayments(userId: number): Promise<Payment[]>;
-}
 
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  // New methods for fund membership
+  addMemberToFund(fundId: number, userId: number): Promise<boolean>;
+  removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
+  getFundMembers(fundId: number): Promise<User[]>;
+  getMemberFunds(userId: number): Promise<ChitFund[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -38,11 +40,13 @@ export class MemStorage implements IStorage {
   payments: Map<number, Payment>;
   private currentId: { [key: string]: number };
   sessionStore: session.Store;
+  private fundMembers: Map<number, Set<number>>; // fundId -> Set of userIds
 
   constructor() {
     this.users = new Map();
     this.chitFunds = new Map();
     this.payments = new Map();
+    this.fundMembers = new Map();
     this.currentId = { users: 1, chitFunds: 1, payments: 1 };
     this.sessionStore = new MemoryStore({ checkPeriod: 86400000 });
 
@@ -146,6 +150,52 @@ export class MemStorage implements IStorage {
       (payment) => payment.userId === userId,
     );
   }
+
+  async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
+    const fund = this.chitFunds.get(fundId);
+    const user = this.users.get(userId);
+
+    if (!fund || !user) return false;
+
+    if (!this.fundMembers.has(fundId)) {
+      this.fundMembers.set(fundId, new Set());
+    }
+
+    const members = this.fundMembers.get(fundId)!;
+    if (members.size >= fund.memberCount) return false;
+
+    members.add(userId);
+    return true;
+  }
+
+  async removeMemberFromFund(fundId: number, userId: number): Promise<boolean> {
+    const members = this.fundMembers.get(fundId);
+    if (!members) return false;
+    return members.delete(userId);
+  }
+
+  async getFundMembers(fundId: number): Promise<User[]> {
+    const members = this.fundMembers.get(fundId);
+    if (!members) return [];
+    return Array.from(members).map(id => this.users.get(id)!).filter(Boolean);
+  }
+
+  async getMemberFunds(userId: number): Promise<ChitFund[]> {
+    const userFunds: ChitFund[] = [];
+    for (const [fundId, members] of this.fundMembers.entries()) {
+      if (members.has(userId)) {
+        const fund = this.chitFunds.get(fundId);
+        if (fund) userFunds.push(fund);
+      }
+    }
+    return userFunds;
+  }
+}
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
 }
 
 export const storage = new MemStorage();

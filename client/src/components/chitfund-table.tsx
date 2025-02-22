@@ -29,9 +29,26 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { User } from "@/types/user";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ChitFundTableProps {
   chitFunds: ChitFund[];
@@ -41,6 +58,16 @@ interface ChitFundTableProps {
 
 export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProps) {
   const { toast } = useToast();
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: userRole === "admin",
+  });
+
+  const [selectedFund, setSelectedFund] = useState<number | null>(null);
+  const { data: fundMembers = [] } = useQuery<User[]>({
+    queryKey: ["/api/chitfunds", selectedFund, "members"],
+    enabled: !!selectedFund,
+  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -54,6 +81,52 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
       toast({
         title: "Success",
         description: "Chit fund deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: async ({ fundId, userId }: { fundId: number; userId: number }) => {
+      const res = await apiRequest("POST", `/api/chitfunds/${fundId}/members/${userId}`);
+      if (!res.ok) {
+        throw new Error("Failed to add member to fund");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", selectedFund, "members"] });
+      toast({
+        title: "Success",
+        description: "Member added to fund successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async ({ fundId, userId }: { fundId: number; userId: number }) => {
+      const res = await apiRequest("DELETE", `/api/chitfunds/${fundId}/members/${userId}`);
+      if (!res.ok) {
+        throw new Error("Failed to remove member from fund");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", selectedFund, "members"] });
+      toast({
+        title: "Success",
+        description: "Member removed from fund successfully",
       });
     },
     onError: (error: Error) => {
@@ -96,7 +169,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
               <TableCell>{fund.memberCount}</TableCell>
               <TableCell>{formatCurrency(Number(fund.agentCommission))}</TableCell>
               <TableCell>
-                <Badge 
+                <Badge
                   variant={fund.status === "active" ? "default" : "secondary"}
                   className="capitalize"
                 >
@@ -118,7 +191,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                           Make a payment for {fund.name}
                         </SheetDescription>
                       </SheetHeader>
-                      <PaymentForm 
+                      <PaymentForm
                         type="payment"
                         className="mt-4"
                         chitFundId={fund.id}
@@ -128,30 +201,98 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                   </Sheet>
                 )}
                 {userRole === "admin" && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Chit Fund</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this chit fund? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteMutation.mutate(fund.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
+                  <>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => setSelectedFund(fund.id)}>
+                          Manage Members
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Manage Fund Members</DialogTitle>
+                          <DialogDescription>
+                            Add or remove members from this fund
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="mb-2 text-sm font-medium">Add Member</h4>
+                            <Select
+                              onValueChange={(value) => {
+                                addMemberMutation.mutate({
+                                  fundId: fund.id,
+                                  userId: parseInt(value),
+                                });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a member" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {users
+                                  .filter((u) => u.role === "member")
+                                  .map((user) => (
+                                    <SelectItem key={user.id} value={user.id.toString()}>
+                                      {user.fullName}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <h4 className="mb-2 text-sm font-medium">Current Members</h4>
+                            <div className="space-y-2">
+                              {fundMembers.map((member) => (
+                                <div
+                                  key={member.id}
+                                  className="flex items-center justify-between p-2 rounded-md border"
+                                >
+                                  <span>{member.fullName}</span>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      removeMemberMutation.mutate({
+                                        fundId: fund.id,
+                                        userId: member.id,
+                                      })
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
                           Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Chit Fund</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this chit fund? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteMutation.mutate(fund.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
                 )}
               </TableCell>
             </TableRow>

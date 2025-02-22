@@ -80,6 +80,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payments);
   });
 
+  // Fund Membership Routes
+  app.post("/api/chitfunds/:fundId/members/:userId", async (req, res) => {
+    if (req.user?.role !== "admin") return res.sendStatus(403);
+
+    const success = await storage.addMemberToFund(
+      parseInt(req.params.fundId),
+      parseInt(req.params.userId)
+    );
+
+    if (!success) {
+      return res.status(400).json({ message: "Failed to add member to fund" });
+    }
+    res.sendStatus(200);
+  });
+
+  app.delete("/api/chitfunds/:fundId/members/:userId", async (req, res) => {
+    if (req.user?.role !== "admin") return res.sendStatus(403);
+
+    const success = await storage.removeMemberFromFund(
+      parseInt(req.params.fundId),
+      parseInt(req.params.userId)
+    );
+
+    if (!success) {
+      return res.status(404).json({ message: "Member not found in fund" });
+    }
+    res.sendStatus(200);
+  });
+
+  app.get("/api/chitfunds/:fundId/members", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    const members = await storage.getFundMembers(parseInt(req.params.fundId));
+    res.json(members);
+  });
+
+  app.get("/api/users/:userId/funds", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    const funds = await storage.getMemberFunds(parseInt(req.params.userId));
+    res.json(funds);
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
