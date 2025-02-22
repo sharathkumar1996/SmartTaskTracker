@@ -44,7 +44,10 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/chitfunds/${id}`);
+      const res = await apiRequest("DELETE", `/api/chitfunds/${id}`);
+      if (!res.ok) {
+        throw new Error("Failed to delete chit fund");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
@@ -65,7 +68,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'INR'
+      currency: 'INR',
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -94,6 +98,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
               <TableCell>
                 <Badge 
                   variant={fund.status === "active" ? "default" : "secondary"}
+                  className="capitalize"
                 >
                   {fund.status}
                 </Badge>
