@@ -45,8 +45,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chit Fund Management Routes
   app.post("/api/chitfunds", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
-    const chitFund = await storage.createChitFund(req.body);
-    res.json(chitFund);
+
+    const parseResult = insertChitFundSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      console.error("Validation error:", parseResult.error);
+      return res.status(400).json(parseResult.error);
+    }
+
+    try {
+      const chitFund = await storage.createChitFund(parseResult.data);
+      res.json(chitFund);
+    } catch (error) {
+      console.error("Error creating chit fund:", error);
+      res.status(500).json({ message: "Failed to create chit fund" });
+    }
   });
 
   app.get("/api/chitfunds", async (req, res) => {

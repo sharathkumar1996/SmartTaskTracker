@@ -24,17 +24,23 @@ interface PaymentFormProps {
   userId?: number;
 }
 
-const fundFormSchema = insertChitFundSchema.extend({
-  amount: z.number().min(1, "Amount must be greater than 0"),
-  duration: z.number().min(20).max(20),
-  memberCount: z.number().min(1, "Member count must be at least 1").max(20, "Maximum 20 members allowed"),
-  startDate: z.date({
-    required_error: "Start date is required",
-  }),
-});
+const fundFormSchema = insertChitFundSchema
+  .extend({
+    amount: z.coerce.number().min(1, "Amount must be greater than 0"),
+    duration: z.coerce.number().min(20).max(20),
+    memberCount: z.coerce.number().min(1, "Member count must be at least 1").max(20, "Maximum 20 members allowed"),
+    startDate: z.date({
+      required_error: "Start date is required",
+    }),
+  })
+  .transform((data) => ({
+    ...data,
+    duration: 20, // Always set to 20 months
+    amount: String(data.amount), // Convert to string for schema compatibility
+  }));
 
 const paymentFormSchema = insertPaymentSchema.extend({
-  amount: z.number().min(1, "Amount must be greater than 0"),
+  amount: z.coerce.number().min(1, "Amount must be greater than 0"),
 });
 
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
@@ -67,24 +73,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
   const currentForm = type === "fund" ? fundForm : paymentForm;
   const endpoint = type === "fund" ? "/api/chitfunds" : "/api/payments";
 
-  async function onSubmit(values: any) {
-    try {
-      await apiRequest("POST", endpoint, values);
-      await queryClient.invalidateQueries({ queryKey: [endpoint] });
-      toast({
-        title: "Success",
-        description: `${type === "fund" ? "Chit fund created" : "Payment recorded"} successfully`,
-      });
-      currentForm.reset();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    }
-  }
-
   if (type === "fund") {
     return (
       <Form {...fundForm}>
@@ -93,12 +81,21 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             const startDate = values.startDate;
             const endDate = addMonths(startDate, values.duration);
 
-            await apiRequest("POST", endpoint, {
-              ...values,
+            const fundData = {
+              name: values.name,
               amount: String(values.amount), // Convert to string as per schema
+              duration: values.duration,
+              memberCount: values.memberCount,
               startDate: startDate.toISOString(),
               endDate: endDate.toISOString(),
-            });
+              status: values.status,
+            };
+
+            console.log("Submitting fund data:", fundData); // Debug log
+
+            const response = await apiRequest("POST", endpoint, fundData);
+            const result = await response.json();
+            console.log("Fund creation response:", result); // Debug log
 
             await queryClient.invalidateQueries({ queryKey: [endpoint] });
             toast({
@@ -107,9 +104,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             });
             fundForm.reset();
           } catch (error) {
+            console.error("Fund creation error:", error); // Debug log
             toast({
               title: "Error",
-              description: (error as Error).message,
+              description: error instanceof Error ? error.message : "Failed to create fund",
               variant: "destructive",
             });
           }
@@ -201,9 +199,29 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     );
   }
 
+  // Payment form remains unchanged
   return (
     <Form {...paymentForm}>
-      <form onSubmit={paymentForm.handleSubmit(onSubmit)} className={className}>
+      <form onSubmit={paymentForm.handleSubmit(async (values) => {
+        try {
+          await apiRequest("POST", endpoint, {
+            ...values,
+            amount: String(values.amount), // Convert to string as per schema
+          });
+          await queryClient.invalidateQueries({ queryKey: [endpoint] });
+          toast({
+            title: "Success",
+            description: "Payment recorded successfully",
+          });
+          paymentForm.reset();
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Failed to record payment",
+            variant: "destructive",
+          });
+        }
+      })} className={className}>
         <div className="space-y-4">
           <FormField
             control={paymentForm.control}
