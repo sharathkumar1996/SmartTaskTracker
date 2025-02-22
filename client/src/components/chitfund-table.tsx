@@ -222,14 +222,16 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select a member" />
                                   </SelectTrigger>
-                                  <SelectContent>
-                                    {users
-                                      .filter((u) => u.role === "member")
-                                      .map((user) => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
-                                          {user.fullName}
-                                        </SelectItem>
-                                      ))}
+                                  <SelectContent className="max-h-[200px]">
+                                    <ScrollArea className="h-full">
+                                      {users
+                                        .filter((u) => u.role === "member")
+                                        .map((user) => (
+                                          <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.fullName}
+                                          </SelectItem>
+                                        ))}
+                                    </ScrollArea>
                                   </SelectContent>
                                 </Select>
                               </div>
