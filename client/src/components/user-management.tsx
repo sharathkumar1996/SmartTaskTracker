@@ -32,8 +32,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 type User = {
   id: number;
@@ -74,11 +75,7 @@ export function UserManagement() {
 
   const createUserMutation = useMutation({
     mutationFn: async (data: InsertUser) => {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/users", data);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to create user");
@@ -90,6 +87,7 @@ export function UserManagement() {
         title: "Success",
         description: "User created successfully",
       });
+      form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/users/members"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users/agents"] });
     },
@@ -129,11 +127,15 @@ export function UserManagement() {
         <TableBody>
           {users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell>{user.fullName}</TableCell>
+              <TableCell className="font-medium">{user.fullName}</TableCell>
               <TableCell>{user.username}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.phone}</TableCell>
-              <TableCell>{user.status}</TableCell>
+              <TableCell>
+                <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                  {user.status}
+                </Badge>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -161,9 +163,7 @@ export function UserManagement() {
             </DialogHeader>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit((data) =>
-                  createUserMutation.mutate(data)
-                )}
+                onSubmit={form.handleSubmit((data) => createUserMutation.mutate(data))}
                 className="space-y-4"
               >
                 <FormField
@@ -260,9 +260,9 @@ export function UserManagement() {
                   className="w-full"
                   disabled={createUserMutation.isPending}
                 >
-                  {createUserMutation.isPending ? (
+                  {createUserMutation.isPending && (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : null}
+                  )}
                   Create User
                 </Button>
               </form>

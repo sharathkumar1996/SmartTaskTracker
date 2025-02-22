@@ -16,6 +16,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(users);
   });
 
+  // Add new routes for getting members and agents
+  app.get("/api/users/members", async (req, res) => {
+    if (req.user?.role !== "admin" && req.user?.role !== "agent") {
+      return res.sendStatus(403);
+    }
+    const members = await storage.getUsersByRole("member");
+    res.json(members);
+  });
+
+  app.get("/api/users/agents", async (req, res) => {
+    if (req.user?.role !== "admin") {
+      return res.sendStatus(403);
+    }
+    const agents = await storage.getUsersByRole("agent");
+    res.json(agents);
+  });
+
   app.post("/api/users", async (req, res) => {
     if (req.user?.role !== "admin" && req.user?.role !== "agent") {
       return res.sendStatus(403);
