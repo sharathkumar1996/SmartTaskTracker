@@ -66,37 +66,21 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
   const [selectedFund, setSelectedFund] = useState<number | null>(null);
   const { data: fundMembers = [] } = useQuery<User[]>({
     queryKey: ["/api/chitfunds", selectedFund, "members"],
+    queryFn: async () => {
+      if (!selectedFund) return [];
+      const res = await fetch(`/api/chitfunds/${selectedFund}/members`);
+      if (!res.ok) throw new Error("Failed to fetch fund members");
+      return res.json();
+    },
     enabled: !!selectedFund,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/chitfunds/${id}`);
-      if (!res.ok) {
-        throw new Error("Failed to delete chit fund");
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
-      toast({
-        title: "Success",
-        description: "Chit fund deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   const addMemberMutation = useMutation({
     mutationFn: async ({ fundId, userId }: { fundId: number; userId: number }) => {
       const res = await apiRequest("POST", `/api/chitfunds/${fundId}/members/${userId}`);
       if (!res.ok) {
-        throw new Error("Failed to add member to fund");
+        const error = await res.json();
+        throw new Error(error.message || "Failed to add member to fund");
       }
     },
     onSuccess: () => {
@@ -208,7 +192,11 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                       <>
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedFund(fund.id)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedFund(fund.id)}
+                            >
                               Manage Members
                             </Button>
                           </DialogTrigger>
