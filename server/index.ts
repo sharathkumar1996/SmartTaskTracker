@@ -53,8 +53,8 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    // Use port 3000 instead of 5000 to avoid conflicts
-    const port = process.env.PORT || 3000;
+    // Use port 5000 as expected by the workflow
+    const port = process.env.PORT || 5000;
     server.listen({
       port,
       host: "0.0.0.0",

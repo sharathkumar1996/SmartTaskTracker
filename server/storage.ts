@@ -1,13 +1,29 @@
-import { IStorage } from "./storage";
+import type { User, ChitFund, Payment, InsertUser, InsertChitFund, InsertPayment } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
-import { User, ChitFund, Payment, InsertUser, InsertChitFund, InsertPayment } from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
 const scryptAsync = promisify(scrypt);
 
 const MemoryStore = createMemoryStore(session);
+
+export interface IStorage {
+  users: Map<number, User>;
+  chitFunds: Map<number, ChitFund>;
+  payments: Map<number, Payment>;
+  sessionStore: session.Store;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
+  createChitFund(fund: InsertChitFund): Promise<ChitFund>;
+  getChitFunds(): Promise<ChitFund[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getUserPayments(userId: number): Promise<Payment[]>;
+}
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -16,9 +32,9 @@ async function hashPassword(password: string) {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private chitFunds: Map<number, ChitFund>;
-  private payments: Map<number, Payment>;
+  users: Map<number, User>;
+  chitFunds: Map<number, ChitFund>;
+  payments: Map<number, Payment>;
   private currentId: { [key: string]: number };
   sessionStore: session.Store;
 
@@ -46,9 +62,9 @@ export class MemStorage implements IStorage {
         fullName: "System Admin",
         email: "admin@chitfund.com",
         phone: "1234567890",
-        address: "Admin Office",
-        city: "Admin City",
-        state: "Admin State",
+        address: "",
+        city: "",
+        state: "",
         pincode: "123456",
         fundPreferences: null,
         status: "active",
@@ -75,7 +91,16 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId.users++;
-    const user = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      address: insertUser.address || "",
+      city: insertUser.city || "",
+      state: insertUser.state || "",
+      pincode: insertUser.pincode || "",
+      status: insertUser.status || "active",
+      fundPreferences: insertUser.fundPreferences || null
+    };
     this.users.set(id, user);
     return user;
   }
