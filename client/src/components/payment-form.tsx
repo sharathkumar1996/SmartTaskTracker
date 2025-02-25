@@ -59,6 +59,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             chitFundId: chitFundId,
             amount: String(values.amount),
             paymentMethod: values.paymentMethod,
+            paymentType: "monthly", // Always set as monthly since UI doesn't need this option
             recordedBy: user?.id,
             notes: values.notes || null,
           };
