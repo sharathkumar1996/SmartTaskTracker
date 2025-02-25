@@ -1,7 +1,8 @@
-import { pgTable, text, serial, integer, decimal, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Updated schema with proper constraints
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -9,20 +10,20 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["admin", "agent", "member"] }).notNull(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
-  phone: text("phone").notNull(),
-  address: text("address"),
-  city: text("city"),
-  state: text("state"),
-  pincode: text("pincode"),
-  fundPreferences: text("fund_preferences"),
-  agentId: integer("agent_id"),
-  agentCommission: decimal("agent_commission", { precision: 10, scale: 2 }),
+  phone: text("phone", { length: 15 }).notNull(),
+  address: text("address", { length: 255 }),
+  city: text("city", { length: 100 }),
+  state: text("state", { length: 100 }),
+  pincode: text("pincode", { length: 10 }),
+  fundPreferences: text("fund_preferences", { length: 1000 }),
+  agentId: integer("agent_id").references(() => users.id, { onDelete: 'set null' }),
+  agentCommission: decimal("agent_commission", { precision: 5, scale: 2 }),
   status: text("status", { enum: ["active", "inactive"] }).default("active").notNull(),
 });
 
 export const chitFunds = pgTable("chit_funds", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name", { length: 100 }).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   duration: integer("duration").notNull(),
   memberCount: integer("member_count").notNull(),
@@ -33,20 +34,20 @@ export const chitFunds = pgTable("chit_funds", {
 
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  chitFundId: integer("chit_fund_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   paymentType: text("payment_type", { enum: ["monthly", "bonus"] }).notNull(),
   paymentMethod: text("payment_method", { enum: ["cash", "google_pay", "phone_pay", "online_portal"] }).notNull(),
-  recordedBy: integer("recorded_by").notNull(),
-  notes: text("notes"),
+  recordedBy: integer("recorded_by").notNull().references(() => users.id),
+  notes: text("notes", { length: 500 }),
   paymentDate: timestamp("payment_date").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const fundMembers = pgTable("fund_members", {
-  fundId: integer("fund_id").notNull(),
-  userId: integer("user_id").notNull(),
+  fundId: integer("fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.fundId, table.userId] }),
 }));
