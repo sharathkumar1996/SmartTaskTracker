@@ -91,7 +91,7 @@ export function MemberManagement() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
-        description: "Member added successfully",
+        description: "User added successfully",
       });
       form.reset();
     },
@@ -113,7 +113,7 @@ export function MemberManagement() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
-        description: "Member updated successfully",
+        description: "User updated successfully",
       });
     },
     onError: (error: Error) => {
@@ -133,7 +133,7 @@ export function MemberManagement() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
-        description: "Member deleted successfully",
+        description: "User deleted successfully",
       });
     },
     onError: (error: Error) => {
@@ -145,20 +145,24 @@ export function MemberManagement() {
     },
   });
 
+  const membersList = members.filter(m => m.role === "member");
+  const agentsList = members.filter(m => m.role === "agent");
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Member Management</CardTitle>
+          <CardTitle>User Management</CardTitle>
           <CardDescription>
-            Manage members and their details
+            Manage members and agents
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="members" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="members">Member List</TabsTrigger>
-              <TabsTrigger value="add">Add Member</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+              <TabsTrigger value="agents">Agents</TabsTrigger>
+              <TabsTrigger value="add">Add User</TabsTrigger>
             </TabsList>
 
             <TabsContent value="members">
@@ -175,7 +179,7 @@ export function MemberManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {members.map((member) => (
+                    {membersList.map((member) => (
                       <TableRow key={member.id}>
                         <TableCell>
                           <div className="font-medium">{member.fullName}</div>
@@ -412,6 +416,214 @@ export function MemberManagement() {
               </div>
             </TabsContent>
 
+            <TabsContent value="agents">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact Info</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {agentsList.map((agent) => (
+                      <TableRow key={agent.id}>
+                        <TableCell>
+                          <div className="font-medium">{agent.fullName}</div>
+                          <div className="text-sm text-muted-foreground">@{agent.username}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{agent.email}</div>
+                          <div className="text-sm text-muted-foreground">{agent.phone}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{agent.address}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {agent.city}, {agent.state} {agent.pincode}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={agent.status === "active" ? "default" : "secondary"}
+                            className="capitalize"
+                          >
+                            {agent.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            {user?.role === "admin" && (
+                              <>
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <Edit className="h-4 w-4 mr-1" />
+                                      Edit
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Edit Agent Details</DialogTitle>
+                                      <DialogDescription>
+                                        Update agent information
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <Form {...form}>
+                                      <form 
+                                        onSubmit={form.handleSubmit((data) => 
+                                          updateMemberMutation.mutate({ id: agent.id, data })
+                                        )} 
+                                        className="space-y-4"
+                                      >
+                                        <FormField
+                                          control={form.control}
+                                          name="fullName"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Full Name</FormLabel>
+                                              <FormControl>
+                                                <Input {...field} defaultValue={agent.fullName} />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name="email"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Email</FormLabel>
+                                              <FormControl>
+                                                <Input {...field} defaultValue={agent.email} />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name="phone"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Phone</FormLabel>
+                                              <FormControl>
+                                                <Input {...field} defaultValue={agent.phone} />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <FormField
+                                          control={form.control}
+                                          name="address"
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel>Address</FormLabel>
+                                              <FormControl>
+                                                <Textarea {...field} defaultValue={agent.address || ''} />
+                                              </FormControl>
+                                              <FormMessage />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        <div className="grid grid-cols-3 gap-4">
+                                          <FormField
+                                            control={form.control}
+                                            name="city"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>City</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} defaultValue={agent.city || ''} />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={form.control}
+                                            name="state"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>State</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} defaultValue={agent.state || ''} />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                          <FormField
+                                            control={form.control}
+                                            name="pincode"
+                                            render={({ field }) => (
+                                              <FormItem>
+                                                <FormLabel>Pincode</FormLabel>
+                                                <FormControl>
+                                                  <Input {...field} defaultValue={agent.pincode || ''} />
+                                                </FormControl>
+                                                <FormMessage />
+                                              </FormItem>
+                                            )}
+                                          />
+                                        </div>
+                                        <Button 
+                                          type="submit" 
+                                          className="w-full"
+                                          disabled={updateMemberMutation.isPending}
+                                        >
+                                          {updateMemberMutation.isPending && (
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                          )}
+                                          Update Agent
+                                        </Button>
+                                      </form>
+                                    </Form>
+                                  </DialogContent>
+                                </Dialog>
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Agent</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this agent? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteMemberMutation.mutate(agent.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        {deleteMemberMutation.isPending && (
+                                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        )}
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
             <TabsContent value="add">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit((data) => memberMutation.mutate(data))} className="space-y-4">
@@ -443,6 +655,34 @@ export function MemberManagement() {
                       )}
                     />
                   </div>
+
+                  {user?.role === "admin" && (
+                    <FormField
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Role</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="agent">Agent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <FormField
                     control={form.control}
                     name="fullName"
@@ -456,6 +696,7 @@ export function MemberManagement() {
                       </FormItem>
                     )}
                   />
+
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -484,6 +725,7 @@ export function MemberManagement() {
                       )}
                     />
                   </div>
+
                   <FormField
                     control={form.control}
                     name="address"
@@ -497,6 +739,7 @@ export function MemberManagement() {
                       </FormItem>
                     )}
                   />
+
                   <div className="grid grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
@@ -538,22 +781,26 @@ export function MemberManagement() {
                       )}
                     />
                   </div>
-                  <FormField
-                    control={form.control}
-                    name="fundPreferences"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fund Preferences</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            {...field} 
-                            placeholder="Enter preferred fund amounts, duration, etc."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
+                  {form.watch("role") === "member" && (
+                    <FormField
+                      control={form.control}
+                      name="fundPreferences"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fund Preferences</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field} 
+                              placeholder="Enter preferred fund amounts, duration, etc."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full"
@@ -562,7 +809,7 @@ export function MemberManagement() {
                     {memberMutation.isPending && (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     )}
-                    Add Member
+                    Add User
                   </Button>
                 </form>
               </Form>
