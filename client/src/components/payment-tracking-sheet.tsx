@@ -56,7 +56,9 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     const rows = data.members.map((member: FundMember) => {
       const row = [member.fullName];
       for (let month = 1; month <= 20; month++) {
+        // Get all payments for this month
         const monthPayments = member.payments.filter(p => p.month === month);
+        // Sum up all payments for this month
         const totalAmount = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0);
         row.push(totalAmount ? totalAmount.toString() : "");
       }

@@ -17,18 +17,15 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Calculate active members
   const activeMembers = users.filter(u => u.role === "member" && u.status === "active").length;
 
-  // Calculate total payments with proper null checks and type conversion
+  // Calculate total payments (sum of all payments ever made)
   const totalPayments = payments.reduce((sum, payment) => {
-    if (!payment.amount) return sum;
-    const amount = typeof payment.amount === 'string' 
-      ? parseFloat(payment.amount) 
-      : Number(payment.amount);
+    const amount = payment.amount ? Number(payment.amount) : 0;
     return sum + (isNaN(amount) ? 0 : amount);
   }, 0);
 
-  // Calculate average payment with null check
-  const validPayments = payments.filter(p => p.amount && !isNaN(Number(p.amount))).length;
-  const averagePayment = validPayments > 0 ? totalPayments / validPayments : 0;
+  // Calculate average payment (total amount / number of transactions)
+  const numberOfTransactions = payments.filter(p => p.amount && !isNaN(Number(p.amount))).length;
+  const averagePayment = numberOfTransactions > 0 ? totalPayments / numberOfTransactions : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -66,23 +63,23 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Collections</CardTitle>
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(totalPayments)}</div>
-          <p className="text-xs text-muted-foreground">Total payments received</p>
+          <p className="text-xs text-muted-foreground">Total amount collected till date</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Average Payment</CardTitle>
+          <CardTitle className="text-sm font-medium">Average Transaction</CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(averagePayment)}</div>
-          <p className="text-xs text-muted-foreground">Per transaction</p>
+          <p className="text-xs text-muted-foreground">Per transaction amount</p>
         </CardContent>
       </Card>
     </div>

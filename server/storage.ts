@@ -283,6 +283,7 @@ export class DatabaseStorage implements IStorage {
 
     const membersWithPayments = await Promise.all(
       members.map(async (member) => {
+        // Get all payments for this member in this fund
         const memberPayments = await db
           .select({
             amount: payments.amount,
@@ -297,6 +298,7 @@ export class DatabaseStorage implements IStorage {
             )
           );
 
+        // Process payments to calculate months from fund start date
         const paymentsWithMonth = memberPayments
           .filter(payment => payment.paymentDate)
           .map(payment => {
@@ -305,7 +307,7 @@ export class DatabaseStorage implements IStorage {
             // Calculate months since fund start
             const yearDiff = paymentDate.getFullYear() - fundStartDate.getFullYear();
             const monthDiff = paymentDate.getMonth() - fundStartDate.getMonth();
-            const month = yearDiff * 12 + monthDiff + 1;
+            const month = yearDiff * 12 + monthDiff + 1; // Adding 1 to make it 1-based
 
             return {
               month,
