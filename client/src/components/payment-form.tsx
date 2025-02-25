@@ -81,7 +81,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       userId: userId || 0,
       chitFundId: chitFundId || 0,
       amount: 0,
-      paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
+      paymentDate: format(new Date(), "yyyy-MM-dd"),
       paymentType: "monthly" as const,
       paymentMethod: "cash" as const,
       recordedBy: user?.id || 0,
@@ -247,7 +247,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           const paymentData = {
             ...values,
             amount: String(values.amount),
-            paymentDate: new Date().toISOString(),
+            paymentDate: new Date(values.paymentDate).toISOString(), // Ensure proper date format
             recordedBy: user?.id,
           };
 
