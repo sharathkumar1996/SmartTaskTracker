@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -21,6 +22,17 @@ export const users = pgTable("users", {
   status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
 
+// Define user relations
+export const usersRelations = relations(users, ({ many, one }) => ({
+  managedFunds: many(chitFunds),
+  payments: many(payments),
+  fundMemberships: many(fundMembers),
+  agent: one(users, {
+    fields: [users.agentId],
+    references: [users.id],
+  }),
+}));
+
 export const chitFunds = pgTable("chit_funds", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -31,6 +43,12 @@ export const chitFunds = pgTable("chit_funds", {
   endDate: timestamp("end_date").notNull(),
   status: text("status").$type<"active" | "completed" | "closed">().notNull(),
 });
+
+// Define chit fund relations
+export const chitFundsRelations = relations(chitFunds, ({ many }) => ({
+  payments: many(payments),
+  members: many(fundMembers),
+}));
 
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
@@ -45,11 +63,39 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Define payment relations
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  user: one(users, {
+    fields: [payments.userId],
+    references: [users.id],
+  }),
+  chitFund: one(chitFunds, {
+    fields: [payments.chitFundId],
+    references: [chitFunds.id],
+  }),
+  recorder: one(users, {
+    fields: [payments.recordedBy],
+    references: [users.id],
+  }),
+}));
+
 export const fundMembers = pgTable("fund_members", {
   fundId: integer("fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
 }, (table) => ({
   pk: primaryKey({ columns: [table.fundId, table.userId] }),
+}));
+
+// Define fund member relations
+export const fundMembersRelations = relations(fundMembers, ({ one }) => ({
+  user: one(users, {
+    fields: [fundMembers.userId],
+    references: [users.id],
+  }),
+  fund: one(chitFunds, {
+    fields: [fundMembers.fundId],
+    references: [chitFunds.id],
+  }),
 }));
 
 // Updated insert schemas with proper validation
