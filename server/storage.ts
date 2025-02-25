@@ -283,8 +283,7 @@ export class DatabaseStorage implements IStorage {
         const memberPayments = await db
           .select({
             amount: payments.amount,
-            // Use created_at instead of createdAt to match the database column name
-            paymentDate: sql<Date>`created_at`,
+            paymentDate: payments.createdAt,
           })
           .from(payments)
           .where(

@@ -40,6 +40,7 @@ export const payments = pgTable("payments", {
   paymentMethod: text("payment_method", { enum: ["cash", "google_pay", "phone_pay", "online_portal"] }).notNull(),
   recordedBy: integer("recorded_by").notNull(),
   notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const fundMembers = pgTable("fund_members", {
