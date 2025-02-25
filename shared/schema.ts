@@ -2,34 +2,34 @@ import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Updated schema with proper constraints
+// User table with fixed TypeScript issues and proper constraints
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role", { enum: ["admin", "agent", "member"] }).notNull(),
+  role: text("role").notNull().$type<"admin" | "agent" | "member">(),
   fullName: text("full_name").notNull(),
   email: text("email").notNull(),
-  phone: text("phone", { length: 15 }).notNull(),
-  address: text("address", { length: 255 }),
-  city: text("city", { length: 100 }),
-  state: text("state", { length: 100 }),
-  pincode: text("pincode", { length: 10 }),
-  fundPreferences: text("fund_preferences", { length: 1000 }),
+  phone: text("phone").notNull(),
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  pincode: text("pincode"),
+  fundPreferences: text("fund_preferences"),
   agentId: integer("agent_id").references(() => users.id, { onDelete: 'set null' }),
   agentCommission: decimal("agent_commission", { precision: 5, scale: 2 }),
-  status: text("status", { enum: ["active", "inactive"] }).default("active").notNull(),
+  status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
 
 export const chitFunds = pgTable("chit_funds", {
   id: serial("id").primaryKey(),
-  name: text("name", { length: 100 }).notNull(),
+  name: text("name").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   duration: integer("duration").notNull(),
   memberCount: integer("member_count").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  status: text("status", { enum: ["active", "completed", "closed"] }).notNull(),
+  status: text("status").$type<"active" | "completed" | "closed">().notNull(),
 });
 
 export const payments = pgTable("payments", {
@@ -37,10 +37,10 @@ export const payments = pgTable("payments", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paymentType: text("payment_type", { enum: ["monthly", "bonus"] }).notNull(),
-  paymentMethod: text("payment_method", { enum: ["cash", "google_pay", "phone_pay", "online_portal"] }).notNull(),
+  paymentType: text("payment_type").$type<"monthly" | "bonus">().notNull(),
+  paymentMethod: text("payment_method").$type<"cash" | "google_pay" | "phone_pay" | "online_portal">().notNull(),
   recordedBy: integer("recorded_by").notNull().references(() => users.id),
-  notes: text("notes", { length: 500 }),
+  notes: text("notes"),
   paymentDate: timestamp("payment_date").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -52,18 +52,24 @@ export const fundMembers = pgTable("fund_members", {
   pk: primaryKey({ columns: [table.fundId, table.userId] }),
 }));
 
-// Updated insert schemas
-export const insertUserSchema = createInsertSchema(users);
+// Updated insert schemas with proper validation
+export const insertUserSchema = createInsertSchema(users).extend({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().email("Invalid email format"),
+  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format"),
+});
 
 export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  amount: z.string().or(z.number()).transform(String)
+  amount: z.string().or(z.number()).transform(String),
+  duration: z.number().min(1, "Duration must be at least 1 month"),
+  memberCount: z.number().min(2, "Member count must be at least 2"),
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).extend({
   paymentDate: z.coerce.date(),
-  amount: z.string().or(z.number()).transform(String)
+  amount: z.string().or(z.number()).transform(String),
 });
 
 export const insertFundMemberSchema = createInsertSchema(fundMembers);
