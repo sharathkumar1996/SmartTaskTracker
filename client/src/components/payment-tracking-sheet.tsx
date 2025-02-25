@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Loader2 } from "lucide-react";
-import { format } from "date-fns";
 
 interface PaymentTrackingSheetProps {
   fundId: number;
@@ -95,64 +94,73 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Payment Tracking Sheet</CardTitle>
-        <Button onClick={downloadSheet} className="gap-2">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Monthly Payment Details</h2>
+        <Button onClick={downloadSheet} className="gap-2" variant="outline">
           <Download className="h-4 w-4" />
           Download Sheet
         </Button>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[600px]">
-          <div className="w-full">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="sticky left-0 bg-background">Member</TableHead>
-                  {Array.from({ length: 20 }, (_, i) => (
-                    <TableHead key={i} className="min-w-[120px]">Month {i + 1}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data?.members.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="sticky left-0 bg-background font-medium">
-                      {member.fullName}
-                    </TableCell>
-                    {Array.from({ length: 20 }, (_, month) => {
-                      const monthPayments = member.payments.filter(
-                        (p) => p.month === month + 1
-                      );
-                      const totalAmount = monthPayments.reduce(
-                        (sum, p) => sum + Number(p.amount),
-                        0
-                      );
-                      return (
-                        <TableCell key={month}>
-                          {totalAmount ? (
-                            <div>
-                              {formatCurrency(totalAmount)}
-                              {monthPayments.length > 1 && (
-                                <span className="text-xs text-muted-foreground ml-1">
-                                  ({monthPayments.length} payments)
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            "-"
-                          )}
-                        </TableCell>
-                      );
-                    })}
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <ScrollArea className="h-[600px] rounded-md border">
+            <div className="relative">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky left-0 z-20 bg-background">Member</TableHead>
+                    <div className="flex-1 overflow-x-auto">
+                      {Array.from({ length: 20 }, (_, i) => (
+                        <TableHead key={i} className="min-w-[100px] text-right">
+                          Month {i + 1}
+                        </TableHead>
+                      ))}
+                    </div>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {data?.members.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell className="sticky left-0 z-10 bg-background font-medium">
+                        {member.fullName}
+                      </TableCell>
+                      <div className="flex-1 overflow-x-auto">
+                        {Array.from({ length: 20 }, (_, month) => {
+                          const monthPayments = member.payments.filter(
+                            (p) => p.month === month + 1
+                          );
+                          const totalAmount = monthPayments.reduce(
+                            (sum, p) => sum + Number(p.amount),
+                            0
+                          );
+                          return (
+                            <TableCell key={month} className="text-right">
+                              {totalAmount ? (
+                                <div>
+                                  {formatCurrency(totalAmount)}
+                                  {monthPayments.length > 1 && (
+                                    <span className="text-xs text-muted-foreground ml-1">
+                                      ({monthPayments.length} payments)
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </div>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
