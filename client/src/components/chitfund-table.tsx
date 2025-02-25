@@ -28,11 +28,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +36,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -195,8 +195,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                             </SelectTrigger>
                             <SelectContent>
                               {fundMembers.map((member) => (
-                                <SelectItem 
-                                  key={member.id} 
+                                <SelectItem
+                                  key={member.id}
                                   value={member.id.toString()}
                                 >
                                   {member.fullName}

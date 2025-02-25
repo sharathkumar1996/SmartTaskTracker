@@ -114,8 +114,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                 throw new Error(error.message || "Failed to create fund");
               }
 
-              const result = await response.json();
-
               await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
               toast({
                 title: "Success",
@@ -201,9 +199,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       <Input
                         type="date"
                         {...field}
-                        onChange={(e) => {
-                          field.onChange(e.target.value);
-                        }}
+                        onChange={(e) => field.onChange(e.target.value)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -247,7 +243,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           const paymentData = {
             ...values,
             amount: String(values.amount),
-            paymentDate: new Date(values.paymentDate).toISOString(), // Ensure proper date format
+            paymentDate: new Date(values.paymentDate).toISOString(), // Convert to ISO string
             recordedBy: user?.id,
           };
 
@@ -319,6 +315,22 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                     <SelectItem value="online_portal">Online Portal</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={paymentForm.control}
+            name="paymentDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payment Date</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    {...field}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
