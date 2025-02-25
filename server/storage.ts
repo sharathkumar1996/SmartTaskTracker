@@ -112,19 +112,16 @@ export class DatabaseStorage implements IStorage {
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
     try {
-      // Ensure payment date is properly handled
-      let paymentDateValue = null;
-      if (payment.paymentDate) {
-        paymentDateValue = new Date(payment.paymentDate);
-        if (isNaN(paymentDateValue.getTime())) {
-          throw new Error("Invalid payment date");
-        }
-      }
-
       const [newPayment] = await db.insert(payments).values({
-        ...payment,
-        amount: String(payment.amount),
-        paymentDate: paymentDateValue,
+        userId: payment.userId,
+        chitFundId: payment.chitFundId,
+        amount: payment.amount,
+        paymentMethod: payment.paymentMethod,
+        paymentType: payment.paymentType,
+        recordedBy: payment.recordedBy,
+        notes: payment.notes,
+        paymentDate: payment.paymentDate,
+        createdAt: new Date()
       }).returning();
 
       return newPayment;

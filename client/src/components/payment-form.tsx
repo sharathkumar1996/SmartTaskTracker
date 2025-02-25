@@ -65,7 +65,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       const paymentData = {
         userId,
         chitFundId,
-        amount: String(values.amount),
+        amount: values.amount.toString(),
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         recordedBy: user?.id,
@@ -215,8 +215,8 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             />
           )}
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full"
             disabled={isSubmitting}
           >
