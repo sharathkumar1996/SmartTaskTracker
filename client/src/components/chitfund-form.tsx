@@ -60,6 +60,7 @@ export function ChitFundForm() {
 
       const fundData = {
         ...values,
+        amount: values.amount.toString(), // Convert amount to string before sending
         status: "active" as const,
       };
 
@@ -124,6 +125,7 @@ export function ChitFundForm() {
                   <Input
                     type="number"
                     {...field}
+                    min={1}
                     placeholder="Enter amount"
                     onChange={(e) => {
                       const value = parseInt(e.target.value.replace(/^0+/, '') || '0');

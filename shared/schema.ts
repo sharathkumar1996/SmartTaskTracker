@@ -56,7 +56,8 @@ export const insertUserSchema = createInsertSchema(users);
 
 export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
   startDate: z.coerce.date(),
-  endDate: z.coerce.date()
+  endDate: z.coerce.date(),
+  amount: z.string().or(z.number()).transform(String)
 });
 
 export const insertPaymentSchema = createInsertSchema(payments).extend({
