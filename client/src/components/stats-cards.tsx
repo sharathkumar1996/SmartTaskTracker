@@ -16,27 +16,24 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Calculate active members safely
   const activeMembers = users?.filter(u => u.role === "member" && u.status === "active").length ?? 0;
 
-  // Calculate total payments (sum of all payments ever made) with proper type handling
+  // Calculate total payments (sum of all payments ever made)
   const totalPayments = payments?.reduce((sum, payment) => {
-    if (!payment.amount) return sum;
-    // Convert string amount to number safely
     const amount = typeof payment.amount === 'string' 
-      ? parseFloat(payment.amount.replace(/[^0-9.-]+/g, ''))
+      ? parseFloat(payment.amount) 
       : Number(payment.amount);
-    return isNaN(amount) ? sum : sum + amount;
+    return !isNaN(amount) ? sum + amount : sum;
   }, 0) ?? 0;
 
-  // Calculate average payment (total amount / number of transactions)
-  const validTransactions = payments?.filter(p => {
-    if (!p.amount) return false;
-    const amount = typeof p.amount === 'string'
-      ? parseFloat(p.amount.replace(/[^0-9.-]+/g, ''))
-      : Number(p.amount);
-    return !isNaN(amount);
+  // Calculate average payment excluding invalid amounts
+  const validPayments = payments?.filter(payment => {
+    const amount = typeof payment.amount === 'string'
+      ? parseFloat(payment.amount)
+      : Number(payment.amount);
+    return !isNaN(amount) && amount > 0;
   }) ?? [];
 
-  const averagePayment = validTransactions.length > 0 
-    ? totalPayments / validTransactions.length 
+  const averagePayment = validPayments.length > 0
+    ? totalPayments / validPayments.length
     : 0;
 
   const formatCurrency = (amount: number) => {
