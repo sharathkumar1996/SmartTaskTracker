@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
-import { addMonths, format } from "date-fns";
+import { addMonths, format, parse } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -240,10 +240,13 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     <Form {...paymentForm}>
       <form onSubmit={paymentForm.handleSubmit(async (values) => {
         try {
+          // Create a new date object from the payment date
+          const parsedDate = parse(values.paymentDate, 'yyyy-MM-dd', new Date());
+
           const paymentData = {
             ...values,
             amount: String(values.amount),
-            paymentDate: values.paymentDate, // Send the date as is, let the server handle conversion
+            paymentDate: format(parsedDate, 'yyyy-MM-dd'), // Format date as YYYY-MM-DD
             recordedBy: user?.id,
           };
 
