@@ -115,6 +115,7 @@ export class DatabaseStorage implements IStorage {
       const [newPayment] = await db.insert(payments).values({
         ...payment,
         amount: String(payment.amount),
+        paymentDate: new Date(payment.paymentDate),
       }).returning();
       return newPayment;
     } catch (error) {
@@ -284,7 +285,7 @@ export class DatabaseStorage implements IStorage {
         const memberPayments = await db
           .select({
             amount: payments.amount,
-            paymentDate: payments.createdAt,
+            paymentDate: payments.paymentDate,
           })
           .from(payments)
           .where(

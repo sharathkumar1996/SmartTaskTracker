@@ -18,7 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface PaymentFormProps {
   type: "payment";
@@ -31,6 +35,9 @@ const paymentFormSchema = z.object({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
   notes: z.string().optional(),
+  paymentDate: z.date({
+    required_error: "Payment date is required",
+  }),
 });
 
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
@@ -45,6 +52,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       amount: 0,
       paymentMethod: "cash",
       notes: "",
+      paymentDate: new Date(),
     },
   });
 
@@ -59,9 +67,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             chitFundId: chitFundId,
             amount: String(values.amount),
             paymentMethod: values.paymentMethod,
-            paymentType: "monthly", // Always set as monthly since UI doesn't need this option
+            paymentType: "monthly",
             recordedBy: user?.id,
             notes: values.notes || null,
+            paymentDate: values.paymentDate.toISOString(),
           };
 
           console.log('Submitting payment:', paymentData);
@@ -73,6 +82,8 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           }
 
           await queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+          await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
+
           toast({
             title: "Success",
             description: "Payment recorded successfully",
@@ -81,6 +92,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             amount: 0,
             paymentMethod: "cash",
             notes: "",
+            paymentDate: new Date(),
           });
         } catch (error) {
           console.error("Payment error:", error);
@@ -94,6 +106,48 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
         }
       })} className={className}>
         <div className="space-y-4">
+          <FormField
+            control={paymentForm.control}
+            name="paymentDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Payment Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={paymentForm.control}
             name="amount"
