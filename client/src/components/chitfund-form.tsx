@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const chitFundFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -96,14 +97,7 @@ export function ChitFundForm() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Create Chit Fund</h2>
-        <p className="text-sm text-muted-foreground">
-          Set up a new chit fund with the required details
-        </p>
-      </div>
-
+    <ScrollArea className="h-[500px] pr-4">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -113,7 +107,7 @@ export function ChitFundForm() {
               <FormItem>
                 <FormLabel>Fund Name</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} placeholder="Enter fund name" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -130,6 +124,7 @@ export function ChitFundForm() {
                   <Input
                     type="number"
                     {...field}
+                    placeholder="Enter amount"
                     onChange={(e) => {
                       const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                       field.onChange(value);
@@ -153,6 +148,7 @@ export function ChitFundForm() {
                     {...field}
                     min={1}
                     max={60}
+                    placeholder="Enter duration in months"
                     onChange={(e) => {
                       const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                       field.onChange(value);
@@ -256,6 +252,7 @@ export function ChitFundForm() {
                     type="number"
                     {...field}
                     min={1}
+                    placeholder="Enter number of members"
                     onChange={(e) => {
                       const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                       field.onChange(value);
@@ -283,6 +280,6 @@ export function ChitFundForm() {
           </Button>
         </form>
       </Form>
-    </div>
+    </ScrollArea>
   );
 }

@@ -98,14 +98,16 @@ export default function Dashboard() {
                     <SheetTrigger asChild>
                       <Button>Create New Fund</Button>
                     </SheetTrigger>
-                    <SheetContent>
+                    <SheetContent side="right" className="sm:max-w-xl">
                       <SheetHeader>
                         <SheetTitle>Create Chit Fund</SheetTitle>
                         <SheetDescription>
                           Set up a new chit fund with the required details
                         </SheetDescription>
                       </SheetHeader>
-                      <ChitFundForm />
+                      <div className="mt-4">
+                        <ChitFundForm />
+                      </div>
                     </SheetContent>
                   </Sheet>
                 )}
