@@ -17,6 +17,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 import { addMonths } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PaymentFormProps {
   type: "fund" | "payment";
@@ -31,14 +34,14 @@ const fundFormSchema = insertChitFundSchema
     duration: z.coerce.number().min(20).max(20),
     memberCount: z.coerce.number().min(1, "Member count must be at least 1").max(20, "Maximum 20 members allowed"),
     startDate: z.string().refine((str) => {
-        return !isNaN(new Date(str).getTime());
+      return !isNaN(new Date(str).getTime());
     }, {
-        message: "Invalid start date"
+      message: "Invalid start date"
     }),
     endDate: z.string().refine((str) => {
-        return !isNaN(new Date(str).getTime());
+      return !isNaN(new Date(str).getTime());
     }, {
-        message: "Invalid end date"
+      message: "Invalid end date"
     }),
   })
   .transform((data) => ({
@@ -49,11 +52,14 @@ const fundFormSchema = insertChitFundSchema
 
 const paymentFormSchema = insertPaymentSchema.extend({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
+  paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
+  notes: z.string().optional(),
 });
 
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const fundForm = useForm({
     resolver: zodResolver(fundFormSchema),
@@ -64,7 +70,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       memberCount: 1,
       status: "active" as const,
       startDate: new Date().toISOString().split('T')[0],
-      endDate: addMonths(new Date(), 20).toISOString().split('T')[0], // Default end date is 20 months from start date
+      endDate: addMonths(new Date(), 20).toISOString().split('T')[0],
     },
   });
 
@@ -76,6 +82,9 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       amount: 0,
       paymentDate: new Date().toISOString(),
       paymentType: "monthly" as const,
+      paymentMethod: "cash" as const,
+      recordedBy: user?.id || 0,
+      notes: "",
     },
   });
 
@@ -234,10 +243,18 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     <Form {...paymentForm}>
       <form onSubmit={paymentForm.handleSubmit(async (values) => {
         try {
-          await apiRequest("POST", endpoint, {
+          const paymentData = {
             ...values,
-            amount: String(values.amount), // Convert to string as per schema
-          });
+            amount: String(values.amount),
+            recordedBy: user?.id,
+          };
+
+          const response = await apiRequest("POST", endpoint, paymentData);
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || "Failed to record payment");
+          }
+
           await queryClient.invalidateQueries({ queryKey: [endpoint] });
           toast({
             title: "Success",
@@ -274,8 +291,52 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               </FormItem>
             )}
           />
+          <FormField
+            control={paymentForm.control}
+            name="paymentMethod"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Payment Method</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="google_pay">Google Pay</SelectItem>
+                    <SelectItem value="phone_pay">Phone Pay</SelectItem>
+                    <SelectItem value="online_portal">Online Portal</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {(user?.role === "admin" || user?.role === "agent") && (
+            <FormField
+              control={paymentForm.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Add any additional notes about the payment"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
           <Button type="submit" className="w-full">
-            Make Payment
+            Record Payment
           </Button>
         </div>
       </form>

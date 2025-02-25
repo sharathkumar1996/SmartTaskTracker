@@ -38,6 +38,9 @@ export const payments = pgTable("payments", {
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   paymentDate: timestamp("payment_date").notNull(),
   paymentType: text("payment_type", { enum: ["monthly", "bonus"] }).notNull(),
+  paymentMethod: text("payment_method", { enum: ["cash", "google_pay", "phone_pay", "online_portal"] }).notNull(),
+  recordedBy: integer("recorded_by").notNull(), // ID of admin/agent who recorded the payment
+  notes: text("notes"),
 });
 
 export const fundMembers = pgTable("fund_members", {
@@ -55,7 +58,11 @@ export const insertChitFundSchema = baseChitFundSchema.extend({
 });
 
 export const insertUserSchema = createInsertSchema(users);
-export const insertPaymentSchema = createInsertSchema(payments);
+// Update the payment schema
+const basePaymentSchema = createInsertSchema(payments);
+export const insertPaymentSchema = basePaymentSchema.extend({
+  paymentDate: z.string(),
+});
 export const insertFundMemberSchema = createInsertSchema(fundMembers);
 
 export type User = typeof users.$inferSelect;
