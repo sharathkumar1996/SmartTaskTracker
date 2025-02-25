@@ -101,8 +101,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
-    const [newPayment] = await db.insert(payments).values(payment).returning();
-    return newPayment;
+    try {
+      const [newPayment] = await db.insert(payments).values({
+        ...payment,
+        amount: String(payment.amount),
+      }).returning();
+      return newPayment;
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      throw error;
+    }
   }
 
   async getUserPayments(userId: number): Promise<Payment[]> {

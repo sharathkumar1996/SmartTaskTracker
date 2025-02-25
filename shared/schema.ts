@@ -15,8 +15,8 @@ export const users = pgTable("users", {
   state: text("state"),
   pincode: text("pincode"),
   fundPreferences: text("fund_preferences"),
-  agentId: integer("agent_id"), // For members assigned to an agent
-  agentCommission: decimal("agent_commission", { precision: 10, scale: 2 }), // For agents
+  agentId: integer("agent_id"),
+  agentCommission: decimal("agent_commission", { precision: 10, scale: 2 }),
   status: text("status", { enum: ["active", "inactive"] }).default("active").notNull(),
 });
 
@@ -24,7 +24,7 @@ export const chitFunds = pgTable("chit_funds", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  duration: integer("duration").notNull(), // in months
+  duration: integer("duration").notNull(),
   memberCount: integer("member_count").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
@@ -36,10 +36,9 @@ export const payments = pgTable("payments", {
   userId: integer("user_id").notNull(),
   chitFundId: integer("chit_fund_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paymentDate: timestamp("payment_date").notNull(),
   paymentType: text("payment_type", { enum: ["monthly", "bonus"] }).notNull(),
   paymentMethod: text("payment_method", { enum: ["cash", "google_pay", "phone_pay", "online_portal"] }).notNull(),
-  recordedBy: integer("recorded_by").notNull(), // ID of admin/agent who recorded the payment
+  recordedBy: integer("recorded_by").notNull(),
   notes: text("notes"),
 });
 
@@ -50,19 +49,9 @@ export const fundMembers = pgTable("fund_members", {
   pk: primaryKey({ columns: [table.fundId, table.userId] }),
 }));
 
-// Modified schema to handle string dates
-const baseChitFundSchema = createInsertSchema(chitFunds);
-export const insertChitFundSchema = baseChitFundSchema.extend({
-  startDate: z.string(),
-  endDate: z.string(),
-});
-
 export const insertUserSchema = createInsertSchema(users);
-// Update the payment schema
-const basePaymentSchema = createInsertSchema(payments);
-export const insertPaymentSchema = basePaymentSchema.extend({
-  paymentDate: z.string(),
-});
+export const insertChitFundSchema = createInsertSchema(chitFunds);
+export const insertPaymentSchema = createInsertSchema(payments);
 export const insertFundMemberSchema = createInsertSchema(fundMembers);
 
 export type User = typeof users.$inferSelect;
