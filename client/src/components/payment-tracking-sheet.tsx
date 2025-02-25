@@ -12,13 +12,29 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, Loader2 } from "lucide-react";
 
+interface FundMemberPayment {
+  month: number;
+  amount: string;
+  paymentDate: Date;
+}
+
+interface FundMember {
+  id: number;
+  fullName: string;
+  payments: FundMemberPayment[];
+}
+
+interface PaymentData {
+  members: FundMember[];
+}
+
 interface PaymentTrackingSheetProps {
   fundId: number;
   fundName: string;
 }
 
 export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetProps) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<PaymentData>({
     queryKey: ["/api/chitfunds", fundId, "payments"],
     queryFn: async () => {
       const res = await fetch(`/api/chitfunds/${fundId}/payments`);
@@ -37,7 +53,7 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     }
 
     // Create rows for each member
-    const rows = data.members.map(member => {
+    const rows = data.members.map((member: FundMember) => {
       const row = [member.fullName];
       for (let month = 1; month <= 20; month++) {
         const monthPayments = member.payments.filter(p => p.month === month);
@@ -55,7 +71,7 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       headers,
       ...rows
     ]
-      .map(row => row.map(cell => `"${cell}"`).join(","))
+      .map(row => row.map(String).join(","))
       .join("\n");
 
     // Create and trigger download
@@ -86,6 +102,10 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     );
   }
 
+  if (!data || !data.members) {
+    return <div>No payment data available</div>;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -111,7 +131,7 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.members.map((member) => (
+                {data.members.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell className="sticky left-0 z-10 bg-background font-medium">
                       {member.fullName}
