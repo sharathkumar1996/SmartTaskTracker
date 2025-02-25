@@ -10,25 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { PaymentForm } from "./payment-form";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -36,6 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -63,6 +52,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
   const { toast } = useToast();
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [selectedFund, setSelectedFund] = useState<ChitFund | null>(null);
+
+  console.log("Selected Fund:", selectedFund); // Debug log
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -156,7 +147,10 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
               <TableRow 
                 key={fund.id}
                 className={selectedFund?.id === fund.id ? "bg-muted/50" : ""}
-                onClick={() => setSelectedFund(fund)}
+                onClick={() => {
+                  console.log("Row clicked, setting selected fund:", fund); // Debug log
+                  setSelectedFund(fund);
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 <TableCell className="font-medium">{fund.name}</TableCell>
