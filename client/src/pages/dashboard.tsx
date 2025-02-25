@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, LogOut } from "lucide-react";
 import { ChitFundTable } from "@/components/chitfund-table";
-import { PaymentForm } from "@/components/payment-form";
+import { ChitFundForm } from "@/components/chitfund-form";
 import { StatsCards } from "@/components/stats-cards";
 import { MemberManagement } from "@/components/member-management";
 import { Button } from "@/components/ui/button";
@@ -105,7 +105,7 @@ export default function Dashboard() {
                           Set up a new chit fund with the required details
                         </SheetDescription>
                       </SheetHeader>
-                      <PaymentForm type="fund" className="mt-4" />
+                      <ChitFundForm />
                     </SheetContent>
                   </Sheet>
                 )}
