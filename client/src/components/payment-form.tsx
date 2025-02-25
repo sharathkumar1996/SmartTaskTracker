@@ -70,8 +70,8 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       duration: 20,
       memberCount: 1,
       status: "active" as const,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: addMonths(new Date(), 20).toISOString().split('T')[0],
+      startDate: format(new Date(), "yyyy-MM-dd"),
+      endDate: format(addMonths(new Date(), 20), "yyyy-MM-dd"),
     },
   });
 
