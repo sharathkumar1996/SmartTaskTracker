@@ -21,18 +21,14 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
   const { data, isLoading } = useQuery({
     queryKey: ["/api/chitfunds", fundId, "payments"],
     queryFn: async () => {
-      console.log("Fetching payments for fund:", fundId);
       const res = await fetch(`/api/chitfunds/${fundId}/payments`);
       if (!res.ok) throw new Error("Failed to fetch payments");
-      const data = await res.json();
-      console.log("Received payment data:", data);
-      return data;
+      return res.json();
     },
   });
 
   const downloadSheet = () => {
     if (!data) return;
-    console.log("Preparing download for fund:", fundName);
 
     // Create header row with months
     const headers = ["Member Name"];
@@ -62,8 +58,6 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       .map(row => row.map(cell => `"${cell}"`).join(","))
       .join("\n");
 
-    console.log("Generated CSV content:", csvContent.substring(0, 200) + "...");
-
     // Create and trigger download
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
@@ -74,7 +68,6 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    console.log("Download triggered for:", fundName);
   };
 
   const formatCurrency = (amount: number) => {
@@ -96,7 +89,7 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Monthly Payment Details</h2>
+        <h2 className="text-lg font-semibold">Payment Records</h2>
         <Button onClick={downloadSheet} className="gap-2" variant="outline">
           <Download className="h-4 w-4" />
           Download Sheet
@@ -106,54 +99,52 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       <Card>
         <CardContent className="p-0">
           <ScrollArea className="h-[600px] rounded-md border">
-            <div className="relative">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky left-0 z-20 bg-background">Member</TableHead>
-                    {Array.from({ length: 20 }, (_, i) => (
-                      <TableHead key={i} className="min-w-[100px] text-right">
-                        Month {i + 1}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data?.members.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="sticky left-0 z-10 bg-background font-medium">
-                        {member.fullName}
-                      </TableCell>
-                      {Array.from({ length: 20 }, (_, month) => {
-                        const monthPayments = member.payments.filter(
-                          (p) => p.month === month + 1
-                        );
-                        const totalAmount = monthPayments.reduce(
-                          (sum, p) => sum + Number(p.amount),
-                          0
-                        );
-                        return (
-                          <TableCell key={month} className="text-right">
-                            {totalAmount ? (
-                              <div>
-                                {formatCurrency(totalAmount)}
-                                {monthPayments.length > 1 && (
-                                  <span className="text-xs text-muted-foreground ml-1">
-                                    ({monthPayments.length} payments)
-                                  </span>
-                                )}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 z-20 bg-background">Member</TableHead>
+                  {Array.from({ length: 20 }, (_, i) => (
+                    <TableHead key={i} className="text-right">
+                      Month {i + 1}
+                    </TableHead>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data?.members.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="sticky left-0 z-10 bg-background font-medium">
+                      {member.fullName}
+                    </TableCell>
+                    {Array.from({ length: 20 }, (_, month) => {
+                      const monthPayments = member.payments.filter(
+                        (p) => p.month === month + 1
+                      );
+                      const totalAmount = monthPayments.reduce(
+                        (sum, p) => sum + Number(p.amount),
+                        0
+                      );
+                      return (
+                        <TableCell key={month} className="text-right">
+                          {totalAmount ? (
+                            <div>
+                              {formatCurrency(totalAmount)}
+                              {monthPayments.length > 1 && (
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  ({monthPayments.length} payments)
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </ScrollArea>
         </CardContent>
       </Card>

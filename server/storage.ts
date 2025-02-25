@@ -269,7 +269,6 @@ export class DatabaseStorage implements IStorage {
     }[];
   }> {
     const members = await this.getFundMembers(fundId);
-    console.log("Found members for fund:", members);
 
     const [fund] = await db
       .select()
@@ -279,6 +278,8 @@ export class DatabaseStorage implements IStorage {
     if (!fund) {
       throw new Error("Fund not found");
     }
+
+    const fundStartDate = new Date(fund.startDate);
 
     const membersWithPayments = await Promise.all(
       members.map(async (member) => {
@@ -296,33 +297,22 @@ export class DatabaseStorage implements IStorage {
             )
           );
 
-        console.log(`Found payments for member ${member.fullName}:`, memberPayments);
-
         const paymentsWithMonth = memberPayments
-          .filter(payment => payment.paymentDate) 
+          .filter(payment => payment.paymentDate)
           .map(payment => {
-            const startDate = new Date(fund.startDate);
             const paymentDate = new Date(payment.paymentDate!);
 
-            const yearDiff = paymentDate.getFullYear() - startDate.getFullYear();
-            const monthDiff = paymentDate.getMonth() - startDate.getMonth();
-            const totalMonths = (yearDiff * 12) + monthDiff + 1;
-
-            console.log(`Payment calculation for ${member.fullName}:`, {
-              startDate: startDate.toISOString(),
-              paymentDate: paymentDate.toISOString(),
-              totalMonths,
-              amount: payment.amount
-            });
+            // Calculate months since fund start
+            const yearDiff = paymentDate.getFullYear() - fundStartDate.getFullYear();
+            const monthDiff = paymentDate.getMonth() - fundStartDate.getMonth();
+            const month = yearDiff * 12 + monthDiff + 1;
 
             return {
-              month: totalMonths,
+              month,
               amount: payment.amount,
-              paymentDate: paymentDate
+              paymentDate
             };
           });
-
-        console.log(`Processed payments for ${member.fullName}:`, paymentsWithMonth);
 
         return {
           id: member.id,
