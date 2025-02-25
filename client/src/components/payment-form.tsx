@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
-import { addMonths, format, parse } from "date-fns";
+import { addMonths, format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +54,6 @@ const paymentFormSchema = insertPaymentSchema.extend({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
   notes: z.string().optional(),
-  paymentDate: z.string(),
 });
 
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
@@ -81,7 +80,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       userId: userId || 0,
       chitFundId: chitFundId || 0,
       amount: 0,
-      paymentDate: format(new Date(), "yyyy-MM-dd"),
       paymentType: "monthly" as const,
       paymentMethod: "cash" as const,
       recordedBy: user?.id || 0,
@@ -243,6 +241,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           const paymentData = {
             ...values,
             amount: String(values.amount),
+            paymentDate: new Date().toISOString(), 
             recordedBy: user?.id,
           };
 
@@ -314,22 +313,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                     <SelectItem value="online_portal">Online Portal</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={paymentForm.control}
-            name="paymentDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Payment Date</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    {...field}
-                  />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
