@@ -304,6 +304,13 @@ export class DatabaseStorage implements IStorage {
             (paymentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
           ) + 1;
 
+          console.log(`Processing payment for ${member.fullName}:`, {
+            startDate,
+            paymentDate,
+            monthDiff,
+            amount: payment.amount
+          });
+
           return {
             month: monthDiff,
             amount: payment.amount,
