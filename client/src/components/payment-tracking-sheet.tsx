@@ -22,14 +22,18 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
   const { data, isLoading } = useQuery({
     queryKey: ["/api/chitfunds", fundId, "payments"],
     queryFn: async () => {
+      console.log("Fetching payments for fund:", fundId);
       const res = await fetch(`/api/chitfunds/${fundId}/payments`);
       if (!res.ok) throw new Error("Failed to fetch payments");
-      return res.json();
+      const data = await res.json();
+      console.log("Received payment data:", data);
+      return data;
     },
   });
 
   const downloadSheet = () => {
     if (!data) return;
+    console.log("Preparing download for fund:", fundName);
 
     // Create header row with months
     const headers = ["Member Name"];
@@ -48,7 +52,7 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       return row;
     });
 
-    // Combine all rows
+    // Combine all rows with organization header
     const csvContent = [
       ["Sri Vasavi Financial Services"],
       [`Payment Record - ${fundName}`],
@@ -58,6 +62,8 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     ]
       .map(row => row.map(cell => `"${cell}"`).join(","))
       .join("\n");
+
+    console.log("Generated CSV content:", csvContent.substring(0, 200) + "...");
 
     // Create and trigger download
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -69,6 +75,7 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    console.log("Download triggered for:", fundName);
   };
 
   const formatCurrency = (amount: number) => {
