@@ -20,6 +20,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface PaymentFormProps {
   type: "fund" | "payment";
@@ -60,6 +62,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fundForm = useForm({
     resolver: zodResolver(fundFormSchema),
@@ -238,10 +241,11 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     <Form {...paymentForm}>
       <form onSubmit={paymentForm.handleSubmit(async (values) => {
         try {
+          setIsSubmitting(true);
           const paymentData = {
             ...values,
             amount: String(values.amount),
-            paymentDate: new Date().toISOString(), 
+            paymentDate: new Date().toISOString(),
             recordedBy: user?.id,
           };
 
@@ -262,11 +266,14 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             notes: "",
           });
         } catch (error) {
+          console.error("Payment error:", error);
           toast({
             title: "Error",
             description: error instanceof Error ? error.message : "Failed to record payment",
             variant: "destructive",
           });
+        } finally {
+          setIsSubmitting(false);
         }
       })} className={className}>
         <div className="space-y-4">
@@ -335,8 +342,19 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               )}
             />
           )}
-          <Button type="submit" className="w-full">
-            Record Payment
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Recording Payment...
+              </>
+            ) : (
+              'Record Payment'
+            )}
           </Button>
         </div>
       </form>
