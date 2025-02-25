@@ -31,6 +31,7 @@ interface PaymentFormProps {
   userId: number;
 }
 
+// Updated schema to handle date properly
 const paymentFormSchema = z.object({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
@@ -63,15 +64,17 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       setIsSubmitting(true);
 
       const paymentData = {
-        userId: userId,
-        chitFundId: chitFundId,
+        userId,
+        chitFundId,
         amount: String(values.amount),
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         recordedBy: user?.id,
         notes: values.notes || null,
-        paymentDate: values.paymentDate.toISOString(),
+        paymentDate: values.paymentDate.toISOString(), // Convert to ISO string
       };
+
+      console.log('Submitting payment data:', paymentData); // Debug log
 
       const response = await apiRequest("POST", "/api/payments", paymentData);
       if (!response.ok) {
