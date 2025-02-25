@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, insertUserSchema } from "@shared/schema";
+import { User, insertUserSchema, InsertUser } from "@shared/schema"; // Assuming InsertUser is defined here or needs importing
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
@@ -83,9 +83,17 @@ export function MemberManagement() {
   });
 
   const memberMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/users", data);
-      return res.json();
+    mutationFn: async (data: InsertUser) => {
+      // Ensure password is included in the data
+      if (!data.password) {
+        throw new Error("Password is required");
+      }
+      const response = await apiRequest("POST", "/api/users", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create user");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });

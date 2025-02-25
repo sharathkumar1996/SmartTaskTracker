@@ -1,12 +1,9 @@
 import { users, chitFunds, payments, fundMembers, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
 
-const scryptAsync = promisify(scrypt);
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
@@ -21,6 +18,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
+  getUserCount(): Promise<number>; // Added getUserCount method
   createChitFund(fund: InsertChitFund): Promise<ChitFund>;
   getChitFunds(): Promise<ChitFund[]>;
   deleteChitFund(id: number): Promise<boolean>;
@@ -233,12 +231,13 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return !!deleted;
   }
+
+  async getUserCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users);
+    return Number(result[0]?.count) || 0;
+  }
 }
 
 export const storage = new DatabaseStorage();
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}

@@ -19,18 +19,32 @@ const scryptAsync = promisify(scrypt);
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
+  const hashedPassword = `${buf.toString("hex")}.${salt}`;
+  console.log("Generated hash:", { hashedPassword, salt });
+  return hashedPassword;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
   if (!stored || !stored.includes('.')) {
-    console.error("Invalid stored password format");
+    console.error("Invalid stored password format:", { stored });
     return false;
   }
+
   const [hashed, salt] = stored.split(".");
-  const hashedBuf = Buffer.from(hashed, "hex");
-  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-  return timingSafeEqual(hashedBuf, suppliedBuf);
+  console.log("Comparing passwords:", { 
+    suppliedLength: supplied.length,
+    storedHashLength: hashed.length,
+    saltLength: salt.length 
+  });
+
+  try {
+    const hashedBuf = Buffer.from(hashed, "hex");
+    const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+    return timingSafeEqual(hashedBuf, suppliedBuf);
+  } catch (error) {
+    console.error("Password comparison error:", error);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
@@ -61,16 +75,23 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username: string, password: string, done: any) => {
       try {
+        console.log("Login attempt for username:", username);
         const user = await storage.getUserByUsername(username);
+
         if (!user) {
           console.log("User not found:", username);
           return done(null, false, { message: 'Invalid username or password' });
         }
+
+        console.log("Found user:", { username, hashedPassword: user.password });
         const isValid = await comparePasswords(password, user.password);
+
         if (!isValid) {
           console.log("Invalid password for user:", username);
           return done(null, false, { message: 'Invalid username or password' });
         }
+
+        console.log("Login successful for user:", username);
         return done(null, user);
       } catch (error) {
         console.error("Auth error:", error);
@@ -97,8 +118,11 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      // Check if attempting to create an agent account without admin privileges
-      if (req.body.role === "agent" && (!req.user || req.user.role !== "admin")) {
+      // Allow first user to be admin
+      const userCount = await storage.getUserCount();
+      if (userCount === 0) {
+        req.body.role = "admin";
+      } else if (req.body.role === "agent" && (!req.user || req.user.role !== "admin")) {
         return res.status(403).json({ message: "Only admins can create agent accounts" });
       }
 
@@ -108,6 +132,8 @@ export function setupAuth(app: Express) {
       }
 
       const hashedPassword = await hashPassword(req.body.password);
+      console.log("Creating user with hashed password:", { username: req.body.username, hashedPassword });
+
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
@@ -137,6 +163,11 @@ export function setupAuth(app: Express) {
       }
 
       const hashedPassword = await hashPassword(req.body.password);
+      console.log("Creating user via /api/users with hashed password:", { 
+        username: req.body.username, 
+        hashedPassword 
+      });
+
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
