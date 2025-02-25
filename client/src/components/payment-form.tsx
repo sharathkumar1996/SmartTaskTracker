@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
-import { addMonths } from "date-fns";
+import { addMonths, format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,14 +46,15 @@ const fundFormSchema = insertChitFundSchema
   })
   .transform((data) => ({
     ...data,
-    duration: 20, // Always set to 20 months
-    amount: String(data.amount), // Convert to string for schema compatibility
+    duration: 20,
+    amount: String(data.amount),
   }));
 
 const paymentFormSchema = insertPaymentSchema.extend({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
   notes: z.string().optional(),
+  paymentDate: z.string(),
 });
 
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
@@ -80,7 +81,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
       userId: userId || 0,
       chitFundId: chitFundId || 0,
       amount: 0,
-      paymentDate: new Date().toISOString(),
+      paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
       paymentType: "monthly" as const,
       paymentMethod: "cash" as const,
       recordedBy: user?.id || 0,
@@ -246,6 +247,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           const paymentData = {
             ...values,
             amount: String(values.amount),
+            paymentDate: new Date().toISOString(),
             recordedBy: user?.id,
           };
 
@@ -260,7 +262,11 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             title: "Success",
             description: "Payment recorded successfully",
           });
-          paymentForm.reset();
+          paymentForm.reset({
+            ...paymentForm.getValues(),
+            amount: 0,
+            notes: "",
+          });
         } catch (error) {
           toast({
             title: "Error",
