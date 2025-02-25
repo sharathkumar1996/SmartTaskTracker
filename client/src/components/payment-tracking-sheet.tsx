@@ -111,13 +111,11 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 z-20 bg-background">Member</TableHead>
-                    <div className="flex-1 overflow-x-auto">
-                      {Array.from({ length: 20 }, (_, i) => (
-                        <TableHead key={i} className="min-w-[100px] text-right">
-                          Month {i + 1}
-                        </TableHead>
-                      ))}
-                    </div>
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <TableHead key={i} className="min-w-[100px] text-right">
+                        Month {i + 1}
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -126,33 +124,31 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                       <TableCell className="sticky left-0 z-10 bg-background font-medium">
                         {member.fullName}
                       </TableCell>
-                      <div className="flex-1 overflow-x-auto">
-                        {Array.from({ length: 20 }, (_, month) => {
-                          const monthPayments = member.payments.filter(
-                            (p) => p.month === month + 1
-                          );
-                          const totalAmount = monthPayments.reduce(
-                            (sum, p) => sum + Number(p.amount),
-                            0
-                          );
-                          return (
-                            <TableCell key={month} className="text-right">
-                              {totalAmount ? (
-                                <div>
-                                  {formatCurrency(totalAmount)}
-                                  {monthPayments.length > 1 && (
-                                    <span className="text-xs text-muted-foreground ml-1">
-                                      ({monthPayments.length} payments)
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                "-"
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </div>
+                      {Array.from({ length: 20 }, (_, month) => {
+                        const monthPayments = member.payments.filter(
+                          (p) => p.month === month + 1
+                        );
+                        const totalAmount = monthPayments.reduce(
+                          (sum, p) => sum + Number(p.amount),
+                          0
+                        );
+                        return (
+                          <TableCell key={month} className="text-right">
+                            {totalAmount ? (
+                              <div>
+                                {formatCurrency(totalAmount)}
+                                {monthPayments.length > 1 && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({monthPayments.length} payments)
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>

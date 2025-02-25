@@ -268,6 +268,7 @@ export class DatabaseStorage implements IStorage {
     }[];
   }> {
     const members = await this.getFundMembers(fundId);
+    console.log("Found members for fund:", members);
 
     const [fund] = await db
       .select()
@@ -293,18 +294,23 @@ export class DatabaseStorage implements IStorage {
             )
           );
 
+        console.log(`Payments for member ${member.fullName}:`, memberPayments);
+
         const paymentsWithMonth = memberPayments.map(payment => {
           const startDate = new Date(fund.startDate);
           const paymentDate = new Date(payment.paymentDate);
-          const monthDiff = (paymentDate.getFullYear() - startDate.getFullYear()) * 12 
-            + paymentDate.getMonth() - startDate.getMonth();
+          const monthDiff = Math.floor(
+            (paymentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+          ) + 1;
 
           return {
-            month: monthDiff + 1,
+            month: monthDiff,
             amount: payment.amount,
             paymentDate: payment.paymentDate
           };
         });
+
+        console.log(`Processed payments for ${member.fullName}:`, paymentsWithMonth);
 
         return {
           id: member.id,
