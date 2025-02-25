@@ -286,6 +286,7 @@ export class DatabaseStorage implements IStorage {
           .select({
             amount: payments.amount,
             paymentDate: payments.paymentDate,
+            chitFundId: payments.chitFundId,
           })
           .from(payments)
           .where(
@@ -295,28 +296,31 @@ export class DatabaseStorage implements IStorage {
             )
           );
 
-        console.log(`Payments for member ${member.fullName}:`, memberPayments);
+        console.log(`Found payments for member ${member.fullName}:`, memberPayments);
 
-        const paymentsWithMonth = memberPayments.map(payment => {
-          const startDate = new Date(fund.startDate);
-          const paymentDate = new Date(payment.paymentDate);
-          const monthDiff = Math.floor(
-            (paymentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
-          ) + 1;
+        const paymentsWithMonth = memberPayments
+          .filter(payment => payment.paymentDate) 
+          .map(payment => {
+            const startDate = new Date(fund.startDate);
+            const paymentDate = new Date(payment.paymentDate!);
 
-          console.log(`Processing payment for ${member.fullName}:`, {
-            startDate,
-            paymentDate,
-            monthDiff,
-            amount: payment.amount
+            const yearDiff = paymentDate.getFullYear() - startDate.getFullYear();
+            const monthDiff = paymentDate.getMonth() - startDate.getMonth();
+            const totalMonths = (yearDiff * 12) + monthDiff + 1;
+
+            console.log(`Payment calculation for ${member.fullName}:`, {
+              startDate: startDate.toISOString(),
+              paymentDate: paymentDate.toISOString(),
+              totalMonths,
+              amount: payment.amount
+            });
+
+            return {
+              month: totalMonths,
+              amount: payment.amount,
+              paymentDate: paymentDate
+            };
           });
-
-          return {
-            month: monthDiff,
-            amount: payment.amount,
-            paymentDate: payment.paymentDate
-          };
-        });
 
         console.log(`Processed payments for ${member.fullName}:`, paymentsWithMonth);
 
