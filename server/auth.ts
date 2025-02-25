@@ -24,6 +24,7 @@ export async function hashPassword(password: string) {
 
 async function comparePasswords(supplied: string, stored: string) {
   if (!stored || !stored.includes('.')) {
+    console.error("Invalid stored password format");
     return false;
   }
   const [hashed, salt] = stored.split(".");
@@ -62,10 +63,12 @@ export function setupAuth(app: Express) {
       try {
         const user = await storage.getUserByUsername(username);
         if (!user) {
+          console.log("User not found:", username);
           return done(null, false, { message: 'Invalid username or password' });
         }
         const isValid = await comparePasswords(password, user.password);
         if (!isValid) {
+          console.log("Invalid password for user:", username);
           return done(null, false, { message: 'Invalid username or password' });
         }
         return done(null, user);
@@ -118,6 +121,32 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       console.error("Registration error:", error);
+      next(error);
+    }
+  });
+
+  app.post("/api/users", async (req, res, next) => {
+    try {
+      if (!req.user || (req.user.role !== "admin" && req.body.role === "agent")) {
+        return res.status(403).json({ message: "Only admins can create agent accounts" });
+      }
+
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+
+      const hashedPassword = await hashPassword(req.body.password);
+      const user = await storage.createUser({
+        ...req.body,
+        password: hashedPassword,
+        status: 'active'
+      });
+
+      const { password, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("User creation error:", error);
       next(error);
     }
   });
