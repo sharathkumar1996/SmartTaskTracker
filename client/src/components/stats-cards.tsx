@@ -19,13 +19,14 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
 
   // Calculate total payments (sum of all payments ever made)
   const totalPayments = payments.reduce((sum, payment) => {
-    const amount = payment.amount ? Number(payment.amount) : 0;
+    if (!payment.amount) return sum;
+    const amount = parseFloat(payment.amount);
     return sum + (isNaN(amount) ? 0 : amount);
   }, 0);
 
   // Calculate average payment (total amount / number of transactions)
-  const numberOfTransactions = payments.filter(p => p.amount && !isNaN(Number(p.amount))).length;
-  const averagePayment = numberOfTransactions > 0 ? totalPayments / numberOfTransactions : 0;
+  const validPayments = payments.filter(p => p.amount && !isNaN(parseFloat(p.amount)));
+  const averagePayment = validPayments.length > 0 ? totalPayments / validPayments.length : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {

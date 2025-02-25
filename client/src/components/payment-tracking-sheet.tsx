@@ -59,8 +59,8 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
         // Get all payments for this month
         const monthPayments = member.payments.filter(p => p.month === month);
         // Sum up all payments for this month
-        const totalAmount = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0);
-        row.push(totalAmount ? totalAmount.toString() : "");
+        const totalAmount = monthPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+        row.push(totalAmount > 0 ? totalAmount.toString() : "");
       }
       return row;
     });
@@ -143,12 +143,12 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                         (p) => p.month === month + 1
                       );
                       const totalAmount = monthPayments.reduce(
-                        (sum, p) => sum + Number(p.amount),
+                        (sum, p) => sum + parseFloat(p.amount),
                         0
                       );
                       return (
                         <TableCell key={month} className="text-right">
-                          {totalAmount ? (
+                          {totalAmount > 0 ? (
                             <div>
                               {formatCurrency(totalAmount)}
                               {monthPayments.length > 1 && (
