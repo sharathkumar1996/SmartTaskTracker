@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
 
 interface ChitFundTableProps {
   chitFunds: ChitFund[];
@@ -59,12 +60,14 @@ interface ChitFundTableProps {
 
 export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProps) {
   const { toast } = useToast();
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [selectedFund, setSelectedFund] = useState<number | null>(null);
+
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    enabled: userRole === "admin",
+    enabled: userRole === "admin" || userRole === "agent",
   });
 
-  const [selectedFund, setSelectedFund] = useState<number | null>(null);
   const { data: fundMembers = [] } = useQuery<User[]>({
     queryKey: ["/api/chitfunds", selectedFund, "members"],
     queryFn: async () => {
@@ -164,6 +167,56 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                 </Badge>
               </TableCell>
               <TableCell className="space-x-2">
+                {(userRole === "admin" || userRole === "agent") && fund.status === "active" && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedFund(fund.id)}
+                      >
+                        Record Payment
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Record Member Payment</DialogTitle>
+                        <DialogDescription>
+                          Select a member and record their payment for {fund.name}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Select
+                            onValueChange={(value) => setSelectedMemberId(parseInt(value))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a member" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {fundMembers.map((member) => (
+                                <SelectItem 
+                                  key={member.id} 
+                                  value={member.id.toString()}
+                                >
+                                  {member.fullName}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {selectedMemberId && (
+                          <PaymentForm
+                            type="payment"
+                            chitFundId={fund.id}
+                            userId={selectedMemberId}
+                          />
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
                 {userRole === "member" && fund.status === "active" && (
                   <Sheet>
                     <SheetTrigger asChild>
@@ -187,6 +240,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                     </SheetContent>
                   </Sheet>
                 )}
+
                 {userRole === "admin" && (
                   <>
                     {fund.status === "active" && (
@@ -265,6 +319,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                             </div>
                           </DialogContent>
                         </Dialog>
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="destructive" size="sm">
