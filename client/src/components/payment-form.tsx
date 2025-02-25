@@ -243,7 +243,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           const paymentData = {
             ...values,
             amount: String(values.amount),
-            paymentDate: new Date(values.paymentDate).toISOString(), // Convert to ISO string
+            paymentDate: values.paymentDate, // Send the date as is, let the server handle conversion
             recordedBy: user?.id,
           };
 
