@@ -30,7 +30,6 @@ interface PaymentFormProps {
 const paymentFormSchema = z.object({
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
-  paymentType: z.enum(["monthly", "bonus"]),
   notes: z.string().optional(),
 });
 
@@ -44,7 +43,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       amount: 0,
-      paymentType: "monthly",
       paymentMethod: "cash",
       notes: "",
     },
@@ -60,7 +58,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             userId: userId,
             chitFundId: chitFundId,
             amount: String(values.amount),
-            paymentType: values.paymentType,
             paymentMethod: values.paymentMethod,
             recordedBy: user?.id,
             notes: values.notes || null,
@@ -81,7 +78,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           });
           paymentForm.reset({
             amount: 0,
-            paymentType: "monthly",
             paymentMethod: "cash",
             notes: "",
           });
@@ -138,30 +134,6 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                     <SelectItem value="google_pay">Google Pay</SelectItem>
                     <SelectItem value="phone_pay">Phone Pay</SelectItem>
                     <SelectItem value="online_portal">Online Portal</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={paymentForm.control}
-            name="paymentType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Payment Type</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="bonus">Bonus</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
