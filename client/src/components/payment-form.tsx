@@ -240,13 +240,9 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     <Form {...paymentForm}>
       <form onSubmit={paymentForm.handleSubmit(async (values) => {
         try {
-          // Create a new date object from the payment date
-          const parsedDate = parse(values.paymentDate, 'yyyy-MM-dd', new Date());
-
           const paymentData = {
             ...values,
             amount: String(values.amount),
-            paymentDate: format(parsedDate, 'yyyy-MM-dd'), // Format date as YYYY-MM-DD
             recordedBy: user?.id,
           };
 
