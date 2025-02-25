@@ -270,9 +270,7 @@ export class DatabaseStorage implements IStorage {
     const members = await this.getFundMembers(fundId);
 
     const [fund] = await db
-      .select({
-        startDate: chitFunds.startDate
-      })
+      .select()
       .from(chitFunds)
       .where(eq(chitFunds.id, fundId));
 
@@ -285,7 +283,8 @@ export class DatabaseStorage implements IStorage {
         const memberPayments = await db
           .select({
             amount: payments.amount,
-            createdAt: payments.createdAt,
+            // Use created_at instead of createdAt to match the database column name
+            paymentDate: sql<Date>`created_at`,
           })
           .from(payments)
           .where(
@@ -297,14 +296,14 @@ export class DatabaseStorage implements IStorage {
 
         const paymentsWithMonth = memberPayments.map(payment => {
           const startDate = new Date(fund.startDate);
-          const paymentDate = new Date(payment.createdAt);
+          const paymentDate = new Date(payment.paymentDate);
           const monthDiff = (paymentDate.getFullYear() - startDate.getFullYear()) * 12 
             + paymentDate.getMonth() - startDate.getMonth();
 
           return {
             month: monthDiff + 1,
             amount: payment.amount,
-            paymentDate: payment.createdAt
+            paymentDate: payment.paymentDate
           };
         });
 
