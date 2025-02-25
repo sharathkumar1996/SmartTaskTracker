@@ -136,40 +136,40 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Start Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Members</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {chitFunds.map((fund) => (
-              <TableRow key={fund.id}>
-                <TableCell className="font-medium">{fund.name}</TableCell>
-                <TableCell>{formatCurrency(Number(fund.amount))}</TableCell>
-                <TableCell>{fund.duration} months</TableCell>
-                <TableCell>{format(new Date(fund.startDate), 'dd MMM yyyy')}</TableCell>
-                <TableCell>{format(new Date(fund.endDate), 'dd MMM yyyy')}</TableCell>
-                <TableCell>{fund.memberCount}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={fund.status === "active" ? "default" : "secondary"}
-                    className="capitalize"
-                  >
-                    {fund.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="space-x-2">
-                  {(userRole === "admin" || userRole === "agent") && fund.status === "active" && (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Duration</TableHead>
+            <TableHead>Start Date</TableHead>
+            <TableHead>End Date</TableHead>
+            <TableHead>Members</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {chitFunds.map((fund) => (
+            <TableRow key={fund.id}>
+              <TableCell className="font-medium">{fund.name}</TableCell>
+              <TableCell>{formatCurrency(Number(fund.amount))}</TableCell>
+              <TableCell>{fund.duration} months</TableCell>
+              <TableCell>{format(new Date(fund.startDate), 'dd MMM yyyy')}</TableCell>
+              <TableCell>{format(new Date(fund.endDate), 'dd MMM yyyy')}</TableCell>
+              <TableCell>{fund.memberCount}</TableCell>
+              <TableCell>
+                <Badge
+                  variant={fund.status === "active" ? "default" : "secondary"}
+                  className="capitalize"
+                >
+                  {fund.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="space-x-2">
+                {(userRole === "admin" || userRole === "agent") && (
+                  <>
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button
@@ -177,210 +177,228 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                           size="sm"
                           onClick={() => setSelectedFund(fund.id)}
                         >
-                          Record Payment
+                          View Payment Sheet
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-md">
+                      <DialogContent className="max-w-[90vw] max-h-[90vh]">
                         <DialogHeader>
-                          <DialogTitle>Record Member Payment</DialogTitle>
+                          <DialogTitle>Payment Tracking Sheet - {fund.name}</DialogTitle>
                           <DialogDescription>
-                            Select a member and record their payment for {fund.name}
+                            View and download payment records for all members
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Select
-                              onValueChange={(value) => setSelectedMemberId(parseInt(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a member" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {fundMembers.map((member) => (
-                                  <SelectItem
-                                    key={member.id}
-                                    value={member.id.toString()}
-                                  >
-                                    {member.fullName}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {selectedMemberId && (
-                            <PaymentForm
-                              type="payment"
-                              chitFundId={fund.id}
-                              userId={selectedMemberId}
-                            />
-                          )}
-                        </div>
+                        <PaymentTrackingSheet
+                          fundId={fund.id}
+                          fundName={fund.name}
+                        />
                       </DialogContent>
                     </Dialog>
-                  )}
 
-                  {userRole === "member" && fund.status === "active" && (
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          Make Payment
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent>
-                        <SheetHeader>
-                          <SheetTitle>Make Payment</SheetTitle>
-                          <SheetDescription>
-                            Make a payment for {fund.name}
-                          </SheetDescription>
-                        </SheetHeader>
-                        <PaymentForm
-                          type="payment"
-                          className="mt-4"
-                          chitFundId={fund.id}
-                          userId={userId}
-                        />
-                      </SheetContent>
-                    </Sheet>
-                  )}
-
-                  {userRole === "admin" && (
-                    <>
-                      {fund.status === "active" && (
-                        <>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedFund(fund.id)}
+                    {fund.status === "active" && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedFund(fund.id)}
+                          >
+                            Record Payment
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Record Member Payment</DialogTitle>
+                            <DialogDescription>
+                              Select a member and record their payment for {fund.name}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Select
+                                onValueChange={(value) => setSelectedMemberId(parseInt(value))}
                               >
-                                Manage Members
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-md">
-                              <DialogHeader>
-                                <DialogTitle>Manage Fund Members</DialogTitle>
-                                <DialogDescription>
-                                  Add or remove members from this fund
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <h4 className="mb-2 text-sm font-medium">Add Member</h4>
-                                  <Select
-                                    onValueChange={(value) => {
-                                      addMemberMutation.mutate({
-                                        fundId: fund.id,
-                                        userId: parseInt(value),
-                                      });
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select a member" />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-[200px]">
-                                      <ScrollArea className="h-full">
-                                        {users
-                                          .filter((u) => u.role === "member")
-                                          .map((user) => (
-                                            <SelectItem key={user.id} value={user.id.toString()}>
-                                              {user.fullName}
-                                            </SelectItem>
-                                          ))}
-                                      </ScrollArea>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <h4 className="mb-2 text-sm font-medium">Current Members</h4>
-                                  <ScrollArea className="h-[200px]">
-                                    <div className="space-y-2 pr-4">
-                                      {fundMembers.map((member) => (
-                                        <div
-                                          key={member.id}
-                                          className="flex items-center justify-between p-2 rounded-md border"
-                                        >
-                                          <span>{member.fullName}</span>
-                                          <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                              removeMemberMutation.mutate({
-                                                fundId: fund.id,
-                                                userId: member.id,
-                                              })
-                                            }
-                                          >
-                                            Remove
-                                          </Button>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </ScrollArea>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a member" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {fundMembers.map((member) => (
+                                    <SelectItem
+                                      key={member.id}
+                                      value={member.id.toString()}
+                                    >
+                                      {member.fullName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {selectedMemberId && (
+                              <PaymentForm
+                                type="payment"
+                                chitFundId={fund.id}
+                                userId={selectedMemberId}
+                              />
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </>
+                )}
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                Close Fund
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Close Chit Fund</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to close this chit fund? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={async () => {
-                                    try {
-                                      await apiRequest("PATCH", `/api/chitfunds/${fund.id}`, {
-                                        status: "closed"
-                                      });
-                                      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
-                                      toast({
-                                        title: "Success",
-                                        description: "Chit fund closed successfully",
-                                      });
-                                    } catch (error) {
-                                      toast({
-                                        title: "Error",
-                                        description: (error as Error).message,
-                                        variant: "destructive",
-                                      });
-                                    }
+                {userRole === "member" && fund.status === "active" && (
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        Make Payment
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Make Payment</SheetTitle>
+                        <SheetDescription>
+                          Make a payment for {fund.name}
+                        </SheetDescription>
+                      </SheetHeader>
+                      <PaymentForm
+                        type="payment"
+                        className="mt-4"
+                        chitFundId={fund.id}
+                        userId={userId}
+                      />
+                    </SheetContent>
+                  </Sheet>
+                )}
+
+                {userRole === "admin" && (
+                  <>
+                    {fund.status === "active" && (
+                      <>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedFund(fund.id)}
+                            >
+                              Manage Members
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Manage Fund Members</DialogTitle>
+                              <DialogDescription>
+                                Add or remove members from this fund
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="mb-2 text-sm font-medium">Add Member</h4>
+                                <Select
+                                  onValueChange={(value) => {
+                                    addMemberMutation.mutate({
+                                      fundId: fund.id,
+                                      userId: parseInt(value),
+                                    });
                                   }}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  Close Fund
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
-                      )}
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a member" />
+                                  </SelectTrigger>
+                                  <SelectContent className="max-h-[200px]">
+                                    <ScrollArea className="h-full">
+                                      {users
+                                        .filter((u) => u.role === "member")
+                                        .map((user) => (
+                                          <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.fullName}
+                                          </SelectItem>
+                                        ))}
+                                    </ScrollArea>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <h4 className="mb-2 text-sm font-medium">Current Members</h4>
+                                <ScrollArea className="h-[200px]">
+                                  <div className="space-y-2 pr-4">
+                                    {fundMembers.map((member) => (
+                                      <div
+                                        key={member.id}
+                                        className="flex items-center justify-between p-2 rounded-md border"
+                                      >
+                                        <span>{member.fullName}</span>
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          onClick={() =>
+                                            removeMemberMutation.mutate({
+                                              fundId: fund.id,
+                                              userId: member.id,
+                                            })
+                                          }
+                                        >
+                                          Remove
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </ScrollArea>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
 
-      {(userRole === "admin" || userRole === "agent") && chitFunds.map(fund => (
-        <PaymentTrackingSheet
-          key={`payment-sheet-${fund.id}`}
-          fundId={fund.id}
-          fundName={fund.name}
-        />
-      ))}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              Close Fund
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Close Chit Fund</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to close this chit fund? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={async () => {
+                                  try {
+                                    await apiRequest("PATCH", `/api/chitfunds/${fund.id}`, {
+                                      status: "closed"
+                                    });
+                                    queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
+                                    toast({
+                                      title: "Success",
+                                      description: "Chit fund closed successfully",
+                                    });
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: (error as Error).message,
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Close Fund
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
