@@ -18,7 +18,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
-  getUserCount(): Promise<number>; // Added getUserCount method
+  getUserCount(): Promise<number>;
   createChitFund(fund: InsertChitFund): Promise<ChitFund>;
   getChitFunds(): Promise<ChitFund[]>;
   deleteChitFund(id: number): Promise<boolean>;
@@ -31,6 +31,17 @@ export interface IStorage {
   getUsersByRole(role: string): Promise<Omit<User, "password">[]>;
   updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined>;
   deleteUser(id: number): Promise<boolean>;
+  getFundPayments(fundId: number): Promise<{
+    members: {
+      id: number;
+      fullName: string;
+      payments: {
+        month: number;
+        amount: string;
+        paymentDate: Date;
+      }[];
+    }[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -77,7 +88,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
-    // Convert string dates to Date objects for PostgreSQL
     const fundData = {
       ...fund,
       startDate: new Date(fund.startDate),
@@ -122,7 +132,6 @@ export class DatabaseStorage implements IStorage {
 
   async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
     try {
-      // First check if the member is already in the fund
       const existingMember = await db
         .select()
         .from(fundMembers)
@@ -142,7 +151,7 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error('Error adding member to fund:', error);
-      throw error; // Propagate the error to be handled by the route handler
+      throw error;
     }
   }
 
@@ -245,6 +254,69 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)::int` })
       .from(users);
     return Number(result[0]?.count) || 0;
+  }
+
+  async getFundPayments(fundId: number): Promise<{
+    members: {
+      id: number;
+      fullName: string;
+      payments: {
+        month: number;
+        amount: string;
+        paymentDate: Date;
+      }[];
+    }[];
+  }> {
+    const members = await this.getFundMembers(fundId);
+
+    const [fund] = await db
+      .select({
+        startDate: chitFunds.startDate
+      })
+      .from(chitFunds)
+      .where(eq(chitFunds.id, fundId));
+
+    if (!fund) {
+      throw new Error("Fund not found");
+    }
+
+    const membersWithPayments = await Promise.all(
+      members.map(async (member) => {
+        const memberPayments = await db
+          .select({
+            amount: payments.amount,
+            createdAt: payments.createdAt,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.userId, member.id),
+              eq(payments.chitFundId, fundId)
+            )
+          );
+
+        const paymentsWithMonth = memberPayments.map(payment => {
+          const startDate = new Date(fund.startDate);
+          const paymentDate = new Date(payment.createdAt);
+          const monthDiff = (paymentDate.getFullYear() - startDate.getFullYear()) * 12 
+            + paymentDate.getMonth() - startDate.getMonth();
+
+          return {
+            month: monthDiff + 1,
+            amount: payment.amount,
+            paymentDate: payment.createdAt
+          };
+        });
+
+        return {
+          id: member.id,
+          fullName: member.fullName,
+          payments: paymentsWithMonth
+        };
+      })
+    );
+
+    return { members: membersWithPayments };
   }
 }
 

@@ -137,6 +137,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payments);
   });
 
+  // Add new route for getting fund payments
+  app.get("/api/chitfunds/:fundId/payments", async (req, res) => {
+    if (req.user?.role !== "admin" && req.user?.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const fundPayments = await storage.getFundPayments(parseInt(req.params.fundId));
+      res.json(fundPayments);
+    } catch (error) {
+      console.error("Error fetching fund payments:", error);
+      res.status(500).json({ message: "Failed to fetch fund payments" });
+    }
+  });
+
+
   // Fund Membership Routes
   app.post("/api/chitfunds/:fundId/members/:userId", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
