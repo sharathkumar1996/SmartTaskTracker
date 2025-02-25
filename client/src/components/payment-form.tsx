@@ -40,13 +40,15 @@ const paymentFormSchema = z.object({
   }),
 });
 
+type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+
 export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const paymentForm = useForm({
+  const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       amount: 0,
@@ -56,58 +58,59 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
     },
   });
 
+  async function onSubmit(values: PaymentFormValues) {
+    try {
+      setIsSubmitting(true);
+
+      const paymentData = {
+        userId: userId,
+        chitFundId: chitFundId,
+        amount: String(values.amount),
+        paymentMethod: values.paymentMethod,
+        paymentType: "monthly",
+        recordedBy: user?.id,
+        notes: values.notes || null,
+        paymentDate: values.paymentDate.toISOString(),
+      };
+
+      const response = await apiRequest("POST", "/api/payments", paymentData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to record payment");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
+
+      toast({
+        title: "Success",
+        description: "Payment recorded successfully",
+      });
+
+      form.reset({
+        amount: 0,
+        paymentMethod: "cash",
+        notes: "",
+        paymentDate: new Date(),
+      });
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to record payment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <Form {...paymentForm}>
-      <form onSubmit={paymentForm.handleSubmit(async (values) => {
-        try {
-          setIsSubmitting(true);
-
-          const paymentData = {
-            userId: userId,
-            chitFundId: chitFundId,
-            amount: String(values.amount),
-            paymentMethod: values.paymentMethod,
-            paymentType: "monthly",
-            recordedBy: user?.id,
-            notes: values.notes || null,
-            paymentDate: values.paymentDate.toISOString(),
-          };
-
-          console.log('Submitting payment data:', paymentData); // Debug log
-
-          const response = await apiRequest("POST", "/api/payments", paymentData);
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Failed to record payment");
-          }
-
-          await queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
-          await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
-
-          toast({
-            title: "Success",
-            description: "Payment recorded successfully",
-          });
-          paymentForm.reset({
-            amount: 0,
-            paymentMethod: "cash",
-            notes: "",
-            paymentDate: new Date(),
-          });
-        } catch (error) {
-          console.error("Payment error:", error);
-          toast({
-            title: "Error",
-            description: error instanceof Error ? error.message : "Failed to record payment",
-            variant: "destructive",
-          });
-        } finally {
-          setIsSubmitting(false);
-        }
-      })} className={className}>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
         <div className="space-y-4">
           <FormField
-            control={paymentForm.control}
+            control={form.control}
             name="paymentDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
@@ -149,7 +152,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
           />
 
           <FormField
-            control={paymentForm.control}
+            control={form.control}
             name="amount"
             render={({ field }) => (
               <FormItem>
@@ -162,23 +165,20 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
                       const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                       field.onChange(value);
                     }}
-                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
-            control={paymentForm.control}
+            control={form.control}
             name="paymentMethod"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Payment Method</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select payment method" />
@@ -195,9 +195,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               </FormItem>
             )}
           />
+
           {(user?.role === "admin" || user?.role === "agent") && (
             <FormField
-              control={paymentForm.control}
+              control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
@@ -213,6 +214,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
               )}
             />
           )}
+
           <Button 
             type="submit" 
             className="w-full"
