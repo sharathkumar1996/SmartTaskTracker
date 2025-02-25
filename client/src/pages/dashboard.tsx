@@ -16,15 +16,17 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ChitFund, Payment, User } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format } from "date-fns";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
+
+  // Fetch all users if admin/agent
   const { data: users = [] } = useQuery<User[]>({ 
     queryKey: ["/api/users"],
     enabled: user?.role === "admin" || user?.role === "agent"
   });
 
+  // Fetch all chit funds
   const { data: allChitFunds = [], isLoading: isLoadingChitFunds } = useQuery<ChitFund[]>({ 
     queryKey: ["/api/chitfunds"] 
   });
@@ -32,8 +34,22 @@ export default function Dashboard() {
   const activeChitFunds = allChitFunds.filter(fund => fund.status === "active");
   const closedChitFunds = allChitFunds.filter(fund => fund.status === "closed" || fund.status === "completed");
 
+  // Fetch all payments based on user role
   const { data: payments = [], isLoading: isLoadingPayments } = useQuery<Payment[]>({ 
     queryKey: ["/api/payments", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      // For admin/agent, fetch all payments
+      if (user.role === "admin" || user.role === "agent") {
+        const res = await fetch("/api/payments");
+        if (!res.ok) throw new Error("Failed to fetch payments");
+        return res.json();
+      }
+      // For members, fetch only their payments
+      const res = await fetch(`/api/payments/${user.id}`);
+      if (!res.ok) throw new Error("Failed to fetch payments");
+      return res.json();
+    },
     enabled: !!user
   });
 
