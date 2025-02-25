@@ -16,11 +16,33 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Calculate active members safely
   const activeMembers = users?.filter(u => u.role === "member" && u.status === "active").length ?? 0;
 
-  // Calculate total collections (sum of all payments)
-  const totalPayments = payments?.reduce((sum, payment) => sum + Number(payment.amount), 0) ?? 0;
+  // Calculate total collections with safe type handling
+  const totalPayments = payments?.reduce((sum, payment) => {
+    try {
+      // Handle both string and number types for amount
+      const numAmount = typeof payment.amount === 'string' 
+        ? parseFloat(payment.amount) 
+        : Number(payment.amount);
+      return sum + (isNaN(numAmount) ? 0 : numAmount);
+    } catch (e) {
+      console.error('Error processing payment amount:', e);
+      return sum;
+    }
+  }, 0) ?? 0;
 
-  // Calculate average payment
-  const averagePayment = payments?.length ? totalPayments / payments.length : 0;
+  // Calculate average payment with validation
+  const validPaymentsCount = payments?.filter(payment => {
+    try {
+      const numAmount = typeof payment.amount === 'string'
+        ? parseFloat(payment.amount)
+        : Number(payment.amount);
+      return !isNaN(numAmount) && numAmount > 0;
+    } catch {
+      return false;
+    }
+  }).length ?? 0;
+
+  const averagePayment = validPaymentsCount > 0 ? totalPayments / validPaymentsCount : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
