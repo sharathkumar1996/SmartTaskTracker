@@ -48,7 +48,7 @@ export function ChitFundForm() {
       amount: 0,
       duration: 12,
       startDate: new Date(),
-      endDate: new Date(),
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + 12)),
       memberCount: 10,
     },
   });
@@ -57,17 +57,18 @@ export function ChitFundForm() {
     try {
       setIsSubmitting(true);
 
-      const response = await apiRequest("POST", "/api/chitfunds", {
+      const fundData = {
         ...values,
-        status: "active",
-      });
+        status: "active" as const,
+      };
 
+      const response = await apiRequest("POST", "/api/chitfunds", fundData);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to create chit fund");
       }
 
-      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
 
       toast({
         title: "Success",
@@ -79,7 +80,7 @@ export function ChitFundForm() {
         amount: 0,
         duration: 12,
         startDate: new Date(),
-        endDate: new Date(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 12)),
         memberCount: 10,
       });
     } catch (error) {
@@ -142,6 +143,8 @@ export function ChitFundForm() {
                 <Input
                   type="number"
                   {...field}
+                  min={1}
+                  max={60}
                   onChange={(e) => {
                     const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                     field.onChange(value);
@@ -247,6 +250,7 @@ export function ChitFundForm() {
                 <Input
                   type="number"
                   {...field}
+                  min={1}
                   onChange={(e) => {
                     const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                     field.onChange(value);
