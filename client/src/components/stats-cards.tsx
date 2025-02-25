@@ -1,7 +1,6 @@
 import { ChitFund, Payment, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Wallet, CreditCard, TrendingUp } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 
 interface StatsCardsProps {
   chitFunds: ChitFund[];
@@ -19,14 +18,14 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
 
   // Calculate total payments (sum of all payments ever made)
   const totalPayments = payments.reduce((sum, payment) => {
-    if (!payment.amount) return sum;
-    const amount = parseFloat(payment.amount);
-    return sum + (isNaN(amount) ? 0 : amount);
+    // Make sure we handle string amounts properly
+    const amount = payment.amount ? parseFloat(payment.amount) : 0;
+    return isNaN(amount) ? sum : sum + amount;
   }, 0);
 
   // Calculate average payment (total amount / number of transactions)
-  const validPayments = payments.filter(p => p.amount && !isNaN(parseFloat(p.amount)));
-  const averagePayment = validPayments.length > 0 ? totalPayments / validPayments.length : 0;
+  const validTransactions = payments.filter(p => p.amount && !isNaN(parseFloat(p.amount)));
+  const averagePayment = validTransactions.length > 0 ? totalPayments / validTransactions.length : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
