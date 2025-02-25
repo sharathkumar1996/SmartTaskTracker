@@ -33,6 +33,9 @@ const chitFundFormSchema = z.object({
     required_error: "End date is required",
   }),
   memberCount: z.coerce.number().min(1, "Member count must be at least 1"),
+}).refine((data) => data.endDate > data.startDate, {
+  message: "End date must be after start date",
+  path: ["endDate"],
 });
 
 type ChitFundFormValues = z.infer<typeof chitFundFormSchema>;
@@ -60,7 +63,7 @@ export function ChitFundForm() {
 
       const fundData = {
         ...values,
-        amount: values.amount.toString(), // Convert amount to string before sending
+        amount: values.amount.toString(), 
         status: "active" as const,
       };
 
@@ -77,14 +80,7 @@ export function ChitFundForm() {
         description: "Chit fund created successfully",
       });
 
-      form.reset({
-        name: "",
-        amount: 0,
-        duration: 12,
-        startDate: new Date(),
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + 12)),
-        memberCount: 10,
-      });
+      form.reset();
     } catch (error) {
       console.error("Chit fund creation error:", error);
       toast({
@@ -120,7 +116,7 @@ export function ChitFundForm() {
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Amount per Member</FormLabel>
+                <FormLabel>Amount per Member (₹)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -154,6 +150,15 @@ export function ChitFundForm() {
                     onChange={(e) => {
                       const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
                       field.onChange(value);
+                      if (value > 0) {
+                        // Update end date when duration changes
+                        const startDate = form.getValues("startDate");
+                        if (startDate) {
+                          const endDate = new Date(startDate);
+                          endDate.setMonth(endDate.getMonth() + value);
+                          form.setValue("endDate", endDate);
+                        }
+                      }
                     }}
                   />
                 </FormControl>
@@ -191,7 +196,17 @@ export function ChitFundForm() {
                     <CalendarComponent
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => {
+                        field.onChange(date);
+                        if (date) {
+                          // Update end date when start date changes
+                          const duration = form.getValues("duration");
+                          const endDate = new Date(date);
+                          endDate.setMonth(endDate.getMonth() + duration);
+                          form.setValue("endDate", endDate);
+                        }
+                      }}
+                      disabled={(date) => date < new Date()}
                       initialFocus
                     />
                   </PopoverContent>
@@ -270,6 +285,7 @@ export function ChitFundForm() {
             type="submit"
             className="w-full"
             disabled={isSubmitting}
+            size="lg"
           >
             {isSubmitting ? (
               <>

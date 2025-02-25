@@ -10,22 +10,34 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps) {
-  // Calculate total active funds
-  const totalFunds = chitFunds.filter(fund => fund.status === "active").length;
+  // Calculate total active funds safely
+  const totalFunds = chitFunds?.filter(fund => fund.status === "active").length ?? 0;
 
-  // Calculate active members
-  const activeMembers = users.filter(u => u.role === "member" && u.status === "active").length;
+  // Calculate active members safely
+  const activeMembers = users?.filter(u => u.role === "member" && u.status === "active").length ?? 0;
 
-  // Calculate total payments (sum of all payments ever made)
-  const totalPayments = payments.reduce((sum, payment) => {
-    // Make sure we handle string amounts properly
-    const amount = payment.amount ? parseFloat(payment.amount) : 0;
+  // Calculate total payments (sum of all payments ever made) with proper type handling
+  const totalPayments = payments?.reduce((sum, payment) => {
+    if (!payment.amount) return sum;
+    // Convert string amount to number safely
+    const amount = typeof payment.amount === 'string' 
+      ? parseFloat(payment.amount.replace(/[^0-9.-]+/g, ''))
+      : Number(payment.amount);
     return isNaN(amount) ? sum : sum + amount;
-  }, 0);
+  }, 0) ?? 0;
 
   // Calculate average payment (total amount / number of transactions)
-  const validTransactions = payments.filter(p => p.amount && !isNaN(parseFloat(p.amount)));
-  const averagePayment = validTransactions.length > 0 ? totalPayments / validTransactions.length : 0;
+  const validTransactions = payments?.filter(p => {
+    if (!p.amount) return false;
+    const amount = typeof p.amount === 'string'
+      ? parseFloat(p.amount.replace(/[^0-9.-]+/g, ''))
+      : Number(p.amount);
+    return !isNaN(amount);
+  }) ?? [];
+
+  const averagePayment = validTransactions.length > 0 
+    ? totalPayments / validTransactions.length 
+    : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
