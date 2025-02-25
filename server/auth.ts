@@ -92,6 +92,11 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Check if attempting to create an agent account without admin privileges
+      if (req.body.role === "agent" && (!req.user || req.user.role !== "admin")) {
+        return res.status(403).json({ message: "Only admins can create agent accounts" });
+      }
+
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });

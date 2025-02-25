@@ -21,7 +21,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+//import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; //Removed as per edit
+
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -39,11 +40,10 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
-      role: "member" as const,
+      role: "member" as const, // Default and only option for public registration
       fullName: "",
       email: "",
       phone: "",
-      // Set empty defaults for optional fields
       address: "",
       city: "",
       state: "",
@@ -153,30 +153,9 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={registerForm.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Role</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select role" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="agent">Agent</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Removed role selection for public registration */}
+                    <input type="hidden" {...registerForm.register("role")} value="member" />
+
                     <FormField
                       control={registerForm.control}
                       name="fullName"
