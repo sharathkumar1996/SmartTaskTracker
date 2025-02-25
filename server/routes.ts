@@ -124,11 +124,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/payments", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
-    const payment = await storage.createPayment({
-      ...req.body,
-      userId: req.user.id,
-    });
-    res.json(payment);
+
+    try {
+      const parseResult = insertPaymentSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json(parseResult.error);
+      }
+
+      const payment = await storage.createPayment({
+        ...parseResult.data,
+        userId: parseResult.data.userId,
+        chitFundId: parseResult.data.chitFundId,
+        recordedBy: req.user.id,
+      });
+
+      res.json(payment);
+    } catch (error) {
+      console.error("Payment creation error:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to create payment",
+      });
+    }
   });
 
   app.get("/api/payments/:userId", async (req, res) => {

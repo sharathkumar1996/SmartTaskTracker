@@ -27,8 +27,8 @@ import { cn } from "@/lib/utils";
 interface PaymentFormProps {
   type: "payment";
   className?: string;
-  chitFundId?: number;
-  userId?: number;
+  chitFundId: number;
+  userId: number;
 }
 
 const paymentFormSchema = z.object({
@@ -73,7 +73,7 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             paymentDate: values.paymentDate.toISOString(),
           };
 
-          console.log('Submitting payment:', paymentData);
+          console.log('Submitting payment data:', paymentData); // Debug log
 
           const response = await apiRequest("POST", "/api/payments", paymentData);
           if (!response.ok) {
