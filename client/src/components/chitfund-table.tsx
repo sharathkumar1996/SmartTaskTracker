@@ -18,6 +18,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -144,7 +155,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
           </TableHeader>
           <TableBody>
             {chitFunds.map((fund) => (
-              <TableRow 
+              <TableRow
                 key={fund.id}
                 className={selectedFund?.id === fund.id ? "bg-muted/50" : ""}
                 onClick={() => {
@@ -200,10 +211,7 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                                 </SelectTrigger>
                                 <SelectContent>
                                   {fundMembers.map((member) => (
-                                    <SelectItem
-                                      key={member.id}
-                                      value={member.id.toString()}
-                                    >
+                                    <SelectItem key={member.id} value={member.id.toString()}>
                                       {member.fullName}
                                     </SelectItem>
                                   ))}
@@ -225,8 +233,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                     {userRole === "member" && fund.status === "active" && (
                       <Sheet>
                         <SheetTrigger asChild>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -332,8 +340,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
                               onClick={(e) => e.stopPropagation()}
                             >
@@ -392,8 +400,8 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
               <h2 className="text-2xl font-semibold">{selectedFund.name}</h2>
               <p className="text-muted-foreground">Payment Tracking Sheet</p>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setSelectedFund(null)}
             >
