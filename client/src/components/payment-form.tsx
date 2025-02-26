@@ -25,74 +25,103 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
 interface PaymentFormProps {
-  type: "payment";
+  type: "receivable" | "payable";
   className?: string;
   chitFundId: number;
   userId: number;
+  onSuccess?: () => void;
 }
 
-const paymentFormSchema = z.object({
+const baseFormSchema = {
   amount: z.coerce.number().min(1, "Amount must be greater than 0"),
-  paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
   notes: z.string().optional(),
   paymentDate: z.date({
     required_error: "Payment date is required",
   }),
+};
+
+const receivableFormSchema = z.object({
+  ...baseFormSchema,
+  paymentType: z.enum(["monthly", "deposit"]),
+  paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
+  monthNumber: z.number().min(1).max(20, "Month number must be between 1 and 20"),
 });
 
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+const payableFormSchema = z.object({
+  ...baseFormSchema,
+  paymentType: z.enum(["bonus", "withdrawal", "commission"]),
+});
 
-export function PaymentForm({ type, className, chitFundId, userId }: PaymentFormProps) {
+type ReceivableFormValues = z.infer<typeof receivableFormSchema>;
+type PayableFormValues = z.infer<typeof payableFormSchema>;
+
+export function PaymentForm({ type, className, chitFundId, userId, onSuccess }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<PaymentFormValues>({
-    resolver: zodResolver(paymentFormSchema),
+  const isReceivable = type === "receivable";
+  const formSchema = isReceivable ? receivableFormSchema : payableFormSchema;
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
-      paymentMethod: "cash",
       notes: "",
       paymentDate: new Date(),
+      ...(isReceivable ? {
+        paymentType: "monthly",
+        paymentMethod: "cash",
+        monthNumber: 1,
+      } : {
+        paymentType: "bonus",
+      }),
     },
   });
 
-  async function onSubmit(values: PaymentFormValues) {
+  async function onSubmit(values: ReceivableFormValues | PayableFormValues) {
     try {
       setIsSubmitting(true);
 
       const paymentData = {
         userId,
         chitFundId,
+        ...values,
         amount: values.amount.toString(),
-        paymentMethod: values.paymentMethod,
-        paymentType: "monthly",
         recordedBy: user?.id,
-        notes: values.notes || null,
-        paymentDate: values.paymentDate,
       };
 
-      const response = await apiRequest("POST", "/api/payments", paymentData);
+      const endpoint = isReceivable ? "/api/receivables" : "/api/payables";
+      const response = await apiRequest("POST", endpoint, paymentData);
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to record payment");
+        throw new Error(error.message || `Failed to record ${isReceivable ? 'payment' : 'payout'}`);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/${isReceivable ? 'receivables' : 'payables'}`] });
       await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
 
       toast({
         title: "Success",
-        description: "Payment recorded successfully",
+        description: `${isReceivable ? 'Payment' : 'Payout'} recorded successfully`,
       });
 
       form.reset({
         amount: 0,
-        paymentMethod: "cash",
         notes: "",
         paymentDate: new Date(),
+        ...(isReceivable ? {
+          paymentType: "monthly",
+          paymentMethod: "cash",
+          monthNumber: 1,
+        } : {
+          paymentType: "bonus",
+        }),
       });
+
+      onSuccess?.();
     } catch (error) {
       console.error("Payment error:", error);
       toast({
@@ -151,12 +180,34 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             )}
           />
 
+          {isReceivable && (
+            <FormField
+              control={form.control}
+              name="monthNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Month Number</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={20}
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           <FormField
             control={form.control}
             name="amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Payment Amount</FormLabel>
+                <FormLabel>Amount</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -174,21 +225,29 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
 
           <FormField
             control={form.control}
-            name="paymentMethod"
+            name="paymentType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Payment Method</FormLabel>
+                <FormLabel>Payment Type</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
+                      <SelectValue placeholder="Select payment type" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="google_pay">Google Pay</SelectItem>
-                    <SelectItem value="phone_pay">Phone Pay</SelectItem>
-                    <SelectItem value="online_portal">Online Portal</SelectItem>
+                    {isReceivable ? (
+                      <>
+                        <SelectItem value="monthly">Monthly Payment</SelectItem>
+                        <SelectItem value="deposit">Deposit</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="bonus">Monthly Bonus</SelectItem>
+                        <SelectItem value="withdrawal">Early Withdrawal</SelectItem>
+                        <SelectItem value="commission">Agent Commission</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -196,24 +255,48 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             )}
           />
 
-          {(user?.role === "admin" || user?.role === "agent") && (
+          {isReceivable && (
             <FormField
               control={form.control}
-              name="notes"
+              name="paymentMethod"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Add any additional notes about the payment"
-                    />
-                  </FormControl>
+                  <FormLabel>Payment Method</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="google_pay">Google Pay</SelectItem>
+                      <SelectItem value="phone_pay">Phone Pay</SelectItem>
+                      <SelectItem value="online_portal">Online Portal</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
           )}
+
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Add any additional notes about the payment"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <Button
             type="submit"
@@ -223,10 +306,10 @@ export function PaymentForm({ type, className, chitFundId, userId }: PaymentForm
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Recording Payment...
+                {`Recording ${isReceivable ? 'Payment' : 'Payout'}...`}
               </>
             ) : (
-              'Record Payment'
+              `Record ${isReceivable ? 'Payment' : 'Payout'}`
             )}
           </Button>
         </div>
