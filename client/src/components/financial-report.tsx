@@ -48,23 +48,21 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
 
     const headers = [
       "Date",
-      "Member Name",
-      "Fund Name",
+      "Member",
+      "Fund",
       "Amount",
       "Payment Type",
       "Payment Method",
-      "Recorded By",
       "Notes"
     ];
 
     const rows = payments.map(payment => [
       new Date(payment.paymentDate).toLocaleDateString(),
-      payment.user?.fullName || "",
-      payment.chitFund?.name || "",
+      payment.userId.toString(),
+      payment.chitFundId.toString(),
       payment.amount,
       payment.paymentType,
       payment.paymentMethod,
-      payment.recorder?.fullName || "",
       payment.notes || ""
     ]);
 
@@ -145,11 +143,10 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Member</TableHead>
-                    <TableHead>Fund</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Amount</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Method</TableHead>
+                    <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -158,8 +155,6 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
                       <TableCell>
                         {new Date(payment.paymentDate).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{payment.user?.fullName}</TableCell>
-                      <TableCell>{payment.chitFund?.name}</TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(payment.amount)}
                       </TableCell>
@@ -169,6 +164,7 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
                       <TableCell className="capitalize">
                         {payment.paymentMethod.replace("_", " ")}
                       </TableCell>
+                      <TableCell>{payment.notes || "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

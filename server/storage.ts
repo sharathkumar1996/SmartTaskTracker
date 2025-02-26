@@ -238,21 +238,21 @@ export class DatabaseStorage implements IStorage {
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
     const results = await db
-      .select()
+      .select({
+        id: chitFunds.id,
+        name: chitFunds.name,
+        amount: chitFunds.amount,
+        duration: chitFunds.duration,
+        memberCount: chitFunds.memberCount,
+        startDate: chitFunds.startDate,
+        endDate: chitFunds.endDate,
+        status: chitFunds.status,
+      })
       .from(chitFunds)
       .innerJoin(fundMembers, eq(fundMembers.fundId, chitFunds.id))
       .where(eq(fundMembers.userId, userId));
 
-    return results.map(result => ({
-      id: result.chit_funds.id,
-      name: result.chit_funds.name,
-      amount: result.chit_funds.amount,
-      duration: result.chit_funds.duration,
-      memberCount: result.chit_funds.memberCount,
-      startDate: result.chit_funds.startDate,
-      endDate: result.chit_funds.endDate,
-      status: result.chit_funds.status,
-    }));
+    return results;
   }
 
   // Notification-related methods
