@@ -203,6 +203,7 @@ export const accountsPayable = pgTable("accounts_payable", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   paid_date: timestamp("paid_date", { mode: 'date' }),
   recorder_id: integer("recorder_id").references(() => users.id),
+  commission: decimal("commission", { precision: 10, scale: 2 }),
 });
 
 // Update the relations to use the new structure
@@ -246,6 +247,7 @@ export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).e
   paidDate: z.coerce.date(),
   dueDate: z.coerce.date(), // Add the due date field to match the database column
   amount: z.string().or(z.number()).transform(String),
+  commission: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
   // Fields for app logic (not stored in DB directly)
   withdrawalMonth: z.number().optional(),
   recordedBy: z.number(), // mapper for recorder_id
