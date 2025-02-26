@@ -555,7 +555,7 @@ export class DatabaseStorage implements IStorage {
         chitFundId: payable.chitFundId,
         paymentType: payable.paymentType,
         amount: payable.amount,
-        recordedBy: payable.recordedBy,
+        recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
         commission: payable.commission,
@@ -631,7 +631,7 @@ export class DatabaseStorage implements IStorage {
           paymentType: accountsPayable.paymentType,
           amount: accountsPayable.amount,
           paidDate: accountsPayable.paid_date, // Map paid_date to paidDate in result
-          recordedBy: accountsPayable.recordedBy,
+          recordedBy: accountsPayable.recorder_id, // Map recorder_id to recordedBy
           notes: accountsPayable.notes,
           commission: accountsPayable.commission,
           createdAt: accountsPayable.createdAt,

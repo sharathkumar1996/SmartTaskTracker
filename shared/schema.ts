@@ -193,8 +193,8 @@ export const accountsPayable = pgTable("accounts_payable", {
   chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   paymentType: text("payment_type").$type<"bonus" | "withdrawal" | "commission">().notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paidDate: timestamp("paid_date").notNull(),
-  recordedBy: integer("recorded_by").notNull().references(() => users.id),
+  paid_date: timestamp("paid_date").notNull(),
+  recorder_id: integer("recorder_id").references(() => users.id),
   notes: text("notes"),
   commission: decimal("commission", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -222,7 +222,7 @@ export const accountsPayableRelations = relations(accountsPayable, ({ one }) => 
     references: [chitFunds.id],
   }),
   recorder: one(users, {
-    fields: [accountsPayable.recordedBy],
+    fields: [accountsPayable.recorder_id],
     references: [users.id],
   }),
 }));
