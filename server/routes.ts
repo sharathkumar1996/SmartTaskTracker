@@ -237,5 +237,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(funds);
   });
 
+
+  // Add new routes for accounts receivable and payable
+  app.get("/api/receivables/user/:userId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.id !== parseInt(req.params.userId)) {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const receivables = await storage.getReceivablesByUser(parseInt(req.params.userId));
+      res.json(receivables);
+    } catch (error) {
+      console.error("Error fetching receivables:", error);
+      res.status(500).json({ message: "Failed to fetch receivables" });
+    }
+  });
+
+  app.get("/api/receivables/fund/:fundId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const receivables = await storage.getReceivablesByFund(parseInt(req.params.fundId));
+      res.json(receivables);
+    } catch (error) {
+      console.error("Error fetching fund receivables:", error);
+      res.status(500).json({ message: "Failed to fetch fund receivables" });
+    }
+  });
+
+  app.get("/api/receivables/overdue", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const overdueReceivables = await storage.getOverdueReceivables();
+      res.json(overdueReceivables);
+    } catch (error) {
+      console.error("Error fetching overdue receivables:", error);
+      res.status(500).json({ message: "Failed to fetch overdue receivables" });
+    }
+  });
+
+  app.post("/api/receivables/:id/payment", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const updated = await storage.updateReceivable(parseInt(req.params.id), req.body.amount);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating receivable:", error);
+      res.status(500).json({ message: "Failed to update receivable" });
+    }
+  });
+
+  app.get("/api/payables/user/:userId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.id !== parseInt(req.params.userId)) {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const payables = await storage.getPayablesByUser(parseInt(req.params.userId));
+      res.json(payables);
+    } catch (error) {
+      console.error("Error fetching payables:", error);
+      res.status(500).json({ message: "Failed to fetch payables" });
+    }
+  });
+
+  app.get("/api/payables/fund/:fundId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const payables = await storage.getPayablesByFund(parseInt(req.params.fundId));
+      res.json(payables);
+    } catch (error) {
+      console.error("Error fetching fund payables:", error);
+      res.status(500).json({ message: "Failed to fetch fund payables" });
+    }
+  });
+
+  app.get("/api/payables/upcoming", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const upcomingPayables = await storage.getUpcomingPayables();
+      res.json(upcomingPayables);
+    } catch (error) {
+      console.error("Error fetching upcoming payables:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming payables" });
+    }
+  });
+
+  app.post("/api/payables/:id/payment", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const updated = await storage.updatePayable(parseInt(req.params.id), req.body.amount);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating payable:", error);
+      res.status(500).json({ message: "Failed to update payable" });
+    }
+  });
+
   return httpServer;
 }

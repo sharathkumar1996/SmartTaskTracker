@@ -1,8 +1,9 @@
-import { users, chitFunds, payments, fundMembers, notifications, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification } from "@shared/schema";
+import { users, chitFunds, payments, fundMembers, notifications, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, ne, sql } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import Decimal from 'decimal.js';
 
 const MemoryStore = createMemoryStore(session);
 
@@ -31,6 +32,20 @@ export interface IStorage {
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<Omit<User, "password">[]>;
   getMemberFunds(userId: number): Promise<ChitFund[]>;
+
+  // Accounts Receivable methods
+  createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable>;
+  updateReceivable(id: number, amount: string): Promise<AccountsReceivable>;
+  getReceivablesByUser(userId: number): Promise<AccountsReceivable[]>;
+  getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]>;
+  getOverdueReceivables(): Promise<AccountsReceivable[]>;
+
+  // Accounts Payable methods
+  createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable>;
+  updatePayable(id: number, amount: string): Promise<AccountsPayable>;
+  getPayablesByUser(userId: number): Promise<AccountsPayable[]>;
+  getPayablesByFund(fundId: number): Promise<AccountsPayable[]>;
+  getUpcomingPayables(): Promise<AccountsPayable[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -159,12 +174,12 @@ export class DatabaseStorage implements IStorage {
   async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
     const [result] = await db
       .insert(fundMembers)
-      .values({ 
-        fundId, 
+      .values({
+        fundId,
         userId,
         totalBonusReceived: "0",
         totalCommissionPaid: "0",
-        isWithdrawn: false
+        isWithdrawn: false,
       })
       .returning();
     return !!result;
@@ -207,6 +222,136 @@ export class DatabaseStorage implements IStorage {
       .from(chitFunds)
       .innerJoin(fundMembers, eq(fundMembers.fundId, chitFunds.id))
       .where(eq(fundMembers.userId, userId));
+  }
+
+  async createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable> {
+    const [newReceivable] = await db
+      .insert(accountsReceivable)
+      .values(receivable)
+      .returning();
+    return newReceivable;
+  }
+
+  async updateReceivable(id: number, amount: string): Promise<AccountsReceivable> {
+    const [receivable] = await db
+      .select()
+      .from(accountsReceivable)
+      .where(eq(accountsReceivable.id, id));
+
+    if (!receivable) {
+      throw new Error("Receivable not found");
+    }
+
+    const paidAmount = new Decimal(receivable.paidAmount).plus(amount);
+    const expectedAmount = new Decimal(receivable.expectedAmount);
+    const status = paidAmount.equals(expectedAmount) ? "paid" :
+      paidAmount.greaterThan(0) ? "partial" : "pending";
+
+    const [updated] = await db
+      .update(accountsReceivable)
+      .set({
+        paidAmount: paidAmount.toString(),
+        status: status as "pending" | "partial" | "paid",
+        updatedAt: new Date(),
+      })
+      .where(eq(accountsReceivable.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  async getReceivablesByUser(userId: number): Promise<AccountsReceivable[]> {
+    return db
+      .select()
+      .from(accountsReceivable)
+      .where(eq(accountsReceivable.userId, userId))
+      .orderBy(accountsReceivable.dueDate);
+  }
+
+  async getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]> {
+    return db
+      .select()
+      .from(accountsReceivable)
+      .where(eq(accountsReceivable.chitFundId, fundId))
+      .orderBy(accountsReceivable.dueDate);
+  }
+
+  async getOverdueReceivables(): Promise<AccountsReceivable[]> {
+    return db
+      .select()
+      .from(accountsReceivable)
+      .where(
+        and(
+          sql`${accountsReceivable.dueDate} < NOW()`,
+          ne(accountsReceivable.status, "paid")
+        )
+      )
+      .orderBy(accountsReceivable.dueDate);
+  }
+
+  async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
+    const [newPayable] = await db
+      .insert(accountsPayable)
+      .values(payable)
+      .returning();
+    return newPayable;
+  }
+
+  async updatePayable(id: number, amount: string): Promise<AccountsPayable> {
+    const [payable] = await db
+      .select()
+      .from(accountsPayable)
+      .where(eq(accountsPayable.id, id));
+
+    if (!payable) {
+      throw new Error("Payable not found");
+    }
+
+    const paidAmount = new Decimal(payable.paidAmount).plus(amount);
+    const totalAmount = new Decimal(payable.amount);
+    const status = paidAmount.equals(totalAmount) ? "paid" :
+      paidAmount.greaterThan(0) ? "partial" : "pending";
+
+    const [updated] = await db
+      .update(accountsPayable)
+      .set({
+        paidAmount: paidAmount.toString(),
+        status: status as "pending" | "partial" | "paid",
+        updatedAt: new Date(),
+      })
+      .where(eq(accountsPayable.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  async getPayablesByUser(userId: number): Promise<AccountsPayable[]> {
+    return db
+      .select()
+      .from(accountsPayable)
+      .where(eq(accountsPayable.userId, userId))
+      .orderBy(accountsPayable.dueDate);
+  }
+
+  async getPayablesByFund(fundId: number): Promise<AccountsPayable[]> {
+    return db
+      .select()
+      .from(accountsPayable)
+      .where(eq(accountsPayable.chitFundId, fundId))
+      .orderBy(accountsPayable.dueDate);
+  }
+
+  async getUpcomingPayables(): Promise<AccountsPayable[]> {
+    return db
+      .select()
+      .from(accountsPayable)
+      .where(
+        and(
+          sql`${accountsPayable.dueDate} >= NOW()`,
+          ne(accountsPayable.status, "paid")
+        )
+      )
+      .orderBy(accountsPayable.dueDate);
   }
 }
 

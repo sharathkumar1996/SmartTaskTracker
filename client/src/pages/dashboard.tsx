@@ -4,6 +4,7 @@ import { ChitFundTable } from "@/components/chitfund-table";
 import { ChitFundForm } from "@/components/chitfund-form";
 import { StatsCards } from "@/components/stats-cards";
 import { MemberManagement } from "@/components/member-management";
+import { AccountsManagement } from "@/components/accounts-management";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -21,21 +22,21 @@ export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
 
   // Fetch all users if admin/agent
-  const { data: users = [] } = useQuery<User[]>({ 
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    enabled: user?.role === "admin" || user?.role === "agent"
+    enabled: user?.role === "admin" || user?.role === "agent",
   });
 
   // Fetch all chit funds
-  const { data: allChitFunds = [], isLoading: isLoadingChitFunds } = useQuery<ChitFund[]>({ 
-    queryKey: ["/api/chitfunds"] 
+  const { data: allChitFunds = [], isLoading: isLoadingChitFunds } = useQuery<ChitFund[]>({
+    queryKey: ["/api/chitfunds"],
   });
 
   const activeChitFunds = allChitFunds.filter(fund => fund.status === "active");
   const closedChitFunds = allChitFunds.filter(fund => fund.status === "closed" || fund.status === "completed");
 
   // Fetch all payments based on user role
-  const { data: payments = [], isLoading: isLoadingPayments } = useQuery<Payment[]>({ 
+  const { data: payments = [], isLoading: isLoadingPayments } = useQuery<Payment[]>({
     queryKey: ["/api/payments", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -50,7 +51,7 @@ export default function Dashboard() {
       if (!res.ok) throw new Error("Failed to fetch payments");
       return res.json();
     },
-    enabled: !!user
+    enabled: !!user,
   });
 
   if (!user) return null;
@@ -71,9 +72,9 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <StatsCards 
-          chitFunds={activeChitFunds} 
-          payments={payments} 
+        <StatsCards
+          chitFunds={activeChitFunds}
+          payments={payments}
           role={user.role}
           users={users}
         />
@@ -82,6 +83,7 @@ export default function Dashboard() {
           <Tabs defaultValue="active" className="space-y-8">
             <TabsList>
               <TabsTrigger value="active">Active Funds</TabsTrigger>
+              <TabsTrigger value="accounts">Accounts</TabsTrigger>
               {user.role === "admin" && (
                 <>
                   <TabsTrigger value="closed">Closed Funds</TabsTrigger>
@@ -119,13 +121,17 @@ export default function Dashboard() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <ChitFundTable 
-                    chitFunds={activeChitFunds} 
-                    userRole={user.role} 
+                  <ChitFundTable
+                    chitFunds={activeChitFunds}
+                    userRole={user.role}
                     userId={user.id}
                   />
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="accounts">
+              <AccountsManagement />
             </TabsContent>
 
             {user.role === "admin" && (
@@ -139,9 +145,9 @@ export default function Dashboard() {
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                   ) : (
-                    <ChitFundTable 
-                      chitFunds={closedChitFunds} 
-                      userRole={user.role} 
+                    <ChitFundTable
+                      chitFunds={closedChitFunds}
+                      userRole={user.role}
                       userId={user.id}
                     />
                   )}

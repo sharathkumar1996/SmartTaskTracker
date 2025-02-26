@@ -166,3 +166,73 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 export const insertNotificationSchema = createInsertSchema(notifications);
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Add receivables and payables tables to existing schema
+export const accountsReceivable = pgTable("accounts_receivable", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
+  monthNumber: integer("month_number").notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  expectedAmount: decimal("expected_amount", { precision: 10, scale: 2 }).notNull(),
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0'),
+  status: text("status").$type<"pending" | "partial" | "paid">().default("pending").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const accountsPayable = pgTable("accounts_payable", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
+  paymentType: text("payment_type").$type<"bonus" | "withdrawal" | "commission">().notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0'),
+  status: text("status").$type<"pending" | "partial" | "paid">().default("pending").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Add relations for the new tables
+export const accountsReceivableRelations = relations(accountsReceivable, ({ one }) => ({
+  user: one(users, {
+    fields: [accountsReceivable.userId],
+    references: [users.id],
+  }),
+  chitFund: one(chitFunds, {
+    fields: [accountsReceivable.chitFundId],
+    references: [chitFunds.id],
+  }),
+}));
+
+export const accountsPayableRelations = relations(accountsPayable, ({ one }) => ({
+  user: one(users, {
+    fields: [accountsPayable.userId],
+    references: [users.id],
+  }),
+  chitFund: one(chitFunds, {
+    fields: [accountsPayable.chitFundId],
+    references: [chitFunds.id],
+  }),
+}));
+
+// Add insert schemas for the new tables
+export const insertAccountsReceivableSchema = createInsertSchema(accountsReceivable).extend({
+  dueDate: z.coerce.date(),
+  expectedAmount: z.string().or(z.number()).transform(String),
+  paidAmount: z.string().or(z.number()).optional().transform(String),
+});
+
+export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
+  dueDate: z.coerce.date(),
+  amount: z.string().or(z.number()).transform(String),
+  paidAmount: z.string().or(z.number()).optional().transform(String),
+});
+
+// Export types for the new tables
+export type AccountsReceivable = typeof accountsReceivable.$inferSelect;
+export type InsertAccountsReceivable = z.infer<typeof insertAccountsReceivableSchema>;
+export type AccountsPayable = typeof accountsPayable.$inferSelect;
+export type InsertAccountsPayable = z.infer<typeof insertAccountsPayableSchema>;
