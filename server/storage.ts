@@ -194,21 +194,28 @@ export class DatabaseStorage implements IStorage {
         paymentDate: payments.paymentDate,
         createdAt: payments.createdAt
       })
-      .from(payments);
+      .from(payments)
+      .orderBy(payments.paymentDate);
+
+    const conditions = [];
 
     if (fundId) {
-      query = query.where(eq(payments.chitFundId, fundId));
+      conditions.push(eq(payments.chitFundId, fundId));
     }
 
     if (fromDate) {
-      query = query.where(sql`${payments.paymentDate} >= ${fromDate}`);
+      conditions.push(sql`${payments.paymentDate} >= ${fromDate}`);
     }
 
     if (toDate) {
-      query = query.where(sql`${payments.paymentDate} <= ${toDate}`);
+      conditions.push(sql`${payments.paymentDate} <= ${toDate}`);
     }
 
-    return query.orderBy(payments.paymentDate);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    return query;
   }
 
   // Member-related methods

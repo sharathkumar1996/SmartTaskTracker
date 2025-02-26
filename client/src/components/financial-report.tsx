@@ -22,20 +22,24 @@ interface FinancialReportProps {
 export function FinancialReport({ chitFundId }: FinancialReportProps) {
   const [dateRange, setDateRange] = useState<DateRange>();
 
-  // Fetch payments for the given date range
   const { data: payments = [], isLoading } = useQuery<Payment[]>({
     queryKey: ["/api/payments/report", chitFundId, dateRange],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (chitFundId) params.append("fundId", chitFundId.toString());
       if (dateRange?.from) params.append("from", dateRange.from.toISOString());
-      if (dateRange?.to) params.append("to", dateRange.to.toISOString());
+      if (dateRange?.to) {
+        // Set the end time to the end of the day
+        const endDate = new Date(dateRange.to);
+        endDate.setHours(23, 59, 59, 999);
+        params.append("to", endDate.toISOString());
+      }
 
       const res = await fetch(`/api/payments/report?${params}`);
       if (!res.ok) throw new Error("Failed to fetch payment report");
       return res.json();
     },
-    enabled: !!dateRange?.from && !!dateRange?.to,
+    enabled: !!dateRange?.from,
   });
 
   const downloadReport = () => {
@@ -92,6 +96,11 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
     }).format(value);
   };
 
+  const totalAmount = payments.reduce((sum, payment) => {
+    const amount = typeof payment.amount === "string" ? parseFloat(payment.amount) : payment.amount;
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -99,11 +108,6 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
       </div>
     );
   }
-
-  const totalAmount = payments.reduce((sum, payment) => {
-    const amount = typeof payment.amount === "string" ? parseFloat(payment.amount) : payment.amount;
-    return sum + (isNaN(amount) ? 0 : amount);
-  }, 0);
 
   return (
     <div className="space-y-4">
@@ -127,7 +131,7 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {payments.length > 0 ? (
+          {dateRange?.from ? (
             <>
               <div className="mb-4">
                 <p className="text-lg font-semibold">
