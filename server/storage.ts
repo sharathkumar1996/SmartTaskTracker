@@ -558,7 +558,7 @@ export class DatabaseStorage implements IStorage {
         recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
-        // commission field removed as it doesn't exist in the database
+        // commission is handled in app logic, not stored in DB directly
       };
 
       console.log("Creating payable with data:", payableData);
@@ -568,6 +568,25 @@ export class DatabaseStorage implements IStorage {
         .insert(accountsPayable)
         .values(payableData as any)
         .returning();
+
+      // If this includes commission info and is a withdrawal, update fund_members table
+      if (payable.paymentType === 'withdrawal' && payable.withdrawalMonth) {
+        try {
+          // Update the fund member record with withdrawal info - even though we don't store commission directly
+          await this.updateMemberWithdrawalStatus(
+            payable.chitFundId, 
+            payable.userId, 
+            {
+              isWithdrawn: true,
+              earlyWithdrawalMonth: payable.withdrawalMonth
+            }
+          );
+          console.log(`Updated withdrawal status for user ${payable.userId} in fund ${payable.chitFundId}`);
+        } catch (withdrawalError) {
+          console.error("Error updating withdrawal status:", withdrawalError);
+          // Continue anyway - we don't want to roll back the payment record
+        }
+      }
 
       return result[0] as AccountsPayable;
     } catch (error) {

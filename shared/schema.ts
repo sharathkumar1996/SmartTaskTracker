@@ -240,7 +240,9 @@ export const insertAccountsReceivableSchema = createInsertSchema(accountsReceiva
 export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
   paidDate: z.coerce.date(),
   amount: z.string().or(z.number()).transform(String),
-  // Removed commission field as it's not in the database table
+  // Fields for app logic (not stored in DB directly)
+  withdrawalMonth: z.number().optional(),
+  recordedBy: z.number(), // mapper for recorder_id
 });
 
 // Export types for the new tables

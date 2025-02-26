@@ -783,8 +783,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: member.id,
             fullName: member.fullName,
             payments: userPayments.map(payment => ({
-              month: payment.monthNumber || 1,
-              amount: payment.amount.toString(),
+              month: payment.monthNumber || 1, // Fallback to month 1 if not specified
+              amount: typeof payment.amount === 'string' ? payment.amount : payment.amount?.toString() || '0',
               paymentDate: payment.paymentDate
             }))
           };
