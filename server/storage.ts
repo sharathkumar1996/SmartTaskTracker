@@ -28,7 +28,8 @@ export interface IStorage {
 
   createPayment(payment: InsertPayment): Promise<Payment>;
   getUserPayments(userId: number): Promise<Payment[]>;
-  getUserFundPayments(userId: number, fundId: number): Promise<Payment[]>;  // New method to get payments for a specific user and fund
+  getUserFundPayments(userId: number, fundId: number): Promise<Payment[]>;  // Get payments for a specific user and fund
+  getPaymentsByFund(fundId: number): Promise<Payment[]>;  // Get all payments for a fund
 
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
@@ -295,6 +296,22 @@ export class DatabaseStorage implements IStorage {
         .orderBy(payments.paymentDate)) as Payment[];
     } catch (error) {
       console.error("Error in getUserFundPayments:", error);
+      return [];
+    }
+  }
+
+  async getPaymentsByFund(fundId: number): Promise<Payment[]> {
+    try {
+      if (!fundId || isNaN(fundId)) {
+        throw new Error("Invalid fund ID");
+      }
+      return (await db
+        .select()
+        .from(payments)
+        .where(eq(payments.chitFundId, fundId))
+        .orderBy(payments.paymentDate)) as Payment[];
+    } catch (error) {
+      console.error("Error in getPaymentsByFund:", error);
       return [];
     }
   }

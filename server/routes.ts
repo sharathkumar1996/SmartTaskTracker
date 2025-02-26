@@ -814,19 +814,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const fundId = parseInt(req.params.id);
       
-      // 1. Get all members of the fund
+      // 1. Get all members of the fund (both current and withdrawn)
       const members = await storage.getFundMembers(fundId);
       
-      // 2. For each member, get their payments for this fund
+      // 2. Get all payments for this fund to find withdrawn members too
+      const allFundPayments = await storage.getPaymentsByFund(fundId);
+      
+      // 3. Create a set of all user IDs who have ever made payments to this fund
+      const allPaymentUserIds = new Set(allFundPayments.map((payment: Payment) => payment.userId));
+      
+      // 4. Get any members who have made withdrawals but may no longer be in the fund
+      const payables = await storage.getPayablesByFund(fundId);
+      const withdrawalUserIds = new Set(
+        payables
+          .filter(p => p.paymentType === 'withdrawal')
+          .map(p => p.userId)
+      );
+      
+      // 5. Combine all unique user IDs
+      const allUserIds = new Set([
+        ...Array.from(allPaymentUserIds),
+        ...Array.from(withdrawalUserIds)
+      ]);
+      
+      // 6. Get details for all users who aren't current members
+      const currentMemberIds = new Set(members.map(m => m.id));
+      const additionalMemberIds = Array.from(allUserIds).filter((id: number) => !currentMemberIds.has(id));
+      
+      let additionalMembers: any[] = [];
+      if (additionalMemberIds.length > 0) {
+        // Get details for each additional member
+        additionalMembers = await Promise.all(
+          additionalMemberIds.map(async (userId) => {
+            try {
+              const user = await storage.getUser(userId);
+              return user ? {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                username: user.username,
+                role: user.role,
+                status: user.status,
+              } : null;
+            } catch (error) {
+              console.error(`Error fetching user ${userId}:`, error);
+              return null;
+            }
+          })
+        ).then(results => results.filter(Boolean));
+      }
+      
+      // 7. Combine current and past members
+      const allMembers = [...members, ...additionalMembers];
+      
+      // 8. For each member, get their payments for this fund
       const membersWithPayments = await Promise.all(
-        members.map(async (member) => {
+        allMembers.map(async (member) => {
+          if (!member) return null;
+          
           const userPayments = await storage.getUserFundPayments(member.id, fundId);
+          
+          // Check if there are withdrawal payables
+          const userWithdrawals = payables.filter(
+            p => p.userId === member.id && p.paymentType === 'withdrawal'
+          );
+          
+          // Add withdrawal payments to the regular payments
+          const withdrawalPayments = userWithdrawals.map(withdrawal => ({
+            id: -withdrawal.id, // Negative ID to avoid conflicts
+            userId: withdrawal.userId,
+            chitFundId: withdrawal.chitFundId,
+            amount: withdrawal.amount,
+            paymentType: 'withdrawal',
+            paymentMethod: 'bank',
+            recordedBy: withdrawal.recorderId,
+            notes: withdrawal.notes || 'Withdrawal payment',
+            paymentDate: withdrawal.paidDate,
+            monthNumber: parseInt(withdrawal.notes?.match(/month (\d+)/i)?.[1] || '1'),
+            createdAt: withdrawal.createdAt
+          }));
+          
+          const allUserPayments = [...userPayments, ...withdrawalPayments];
           
           // Format payments as needed by the client
           return {
             id: member.id,
             fullName: member.fullName,
-            payments: userPayments.map(payment => ({
+            payments: allUserPayments.map(payment => ({
               month: payment.monthNumber || 1, // Fallback to month 1 if not specified
               amount: (typeof payment.amount === 'string' 
                 ? payment.amount 
@@ -835,7 +909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }))
           };
         })
-      );
+      ).then(results => results.filter(Boolean));
       
       res.json({ members: membersWithPayments });
     } catch (error) {
