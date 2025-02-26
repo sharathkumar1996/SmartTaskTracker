@@ -3,6 +3,9 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Type declaration to avoid circular reference
+type UserTable = typeof users;
+
 // User table with fixed TypeScript issues and proper constraints
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -22,8 +25,13 @@ export const users = pgTable("users", {
   status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
 
-// Define user relations
-export const usersRelations = relations(users, ({ many, one }) => ({
+// Define user relations with proper return types
+export const usersRelations = relations(users, ({ many, one }): { 
+  managedFunds: ReturnType<typeof many<typeof chitFunds>>;
+  payments: ReturnType<typeof many<typeof payments>>;
+  fundMemberships: ReturnType<typeof many<typeof fundMembers>>;
+  agent: ReturnType<typeof one<typeof users>>;
+} => ({
   managedFunds: many(chitFunds),
   payments: many(payments),
   fundMemberships: many(fundMembers),
