@@ -61,110 +61,180 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id));
+      return result.length > 0 ? result[0] as User : undefined;
+    } catch (error) {
+      console.error("Error in getUser:", error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    try {
+      const result = await db.select().from(users).where(eq(users.username, username));
+      return result.length > 0 ? result[0] as User : undefined;
+    } catch (error) {
+      console.error("Error in getUserByUsername:", error);
+      return undefined;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    try {
+      const result = await db.select().from(users).where(eq(users.email, email));
+      return result.length > 0 ? result[0] as User : undefined;
+    } catch (error) {
+      console.error("Error in getUserByEmail:", error);
+      return undefined;
+    }
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
-    return newUser;
+    try {
+      const result = await db.insert(users).values(user).returning();
+      return result[0] as User;
+    } catch (error) {
+      console.error("Error in createUser:", error);
+      throw error;
+    }
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
-    return updatedUser;
+    try {
+      const result = await db
+        .update(users)
+        .set(updates)
+        .where(eq(users.id, id))
+        .returning();
+      return result.length > 0 ? result[0] as User : undefined;
+    } catch (error) {
+      console.error("Error in updateUser:", error);
+      return undefined;
+    }
   }
 
   async getUsers(): Promise<User[]> {
-    return db.select().from(users);
+    try {
+      return (await db.select().from(users)) as User[];
+    } catch (error) {
+      console.error("Error in getUsers:", error);
+      return [];
+    }
   }
 
   async getUserCount(): Promise<number> {
-    const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(users);
-    return result?.count || 0;
+    try {
+      const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(users);
+      return result?.count || 0;
+    } catch (error) {
+      console.error("Error in getUserCount:", error);
+      return 0;
+    }
   }
 
   async getUsersByRole(role: string): Promise<Omit<User, "password">[]> {
-    return db
-      .select({
-        id: users.id,
-        username: users.username,
-        role: users.role,
-        fullName: users.fullName,
-        email: users.email,
-        phone: users.phone,
-        address: users.address,
-        city: users.city,
-        state: users.state,
-        pincode: users.pincode,
-        status: users.status,
-        fundPreferences: users.fundPreferences,
-        agentId: users.agentId,
-        agentCommission: users.agentCommission,
-      })
-      .from(users)
-      .where(eq(users.role, role));
+    try {
+      return db
+        .select({
+          id: users.id,
+          username: users.username,
+          role: users.role,
+          fullName: users.fullName,
+          email: users.email,
+          phone: users.phone,
+          address: users.address,
+          city: users.city,
+          state: users.state,
+          pincode: users.pincode,
+          status: users.status,
+          fundPreferences: users.fundPreferences,
+          agentId: users.agentId,
+          agentCommission: users.agentCommission,
+        })
+        .from(users)
+        .where(eq(users.role, role));
+    } catch (error) {
+      console.error("Error in getUsersByRole:", error);
+      return [];
+    }
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const [deleted] = await db.delete(users).where(eq(users.id, id)).returning();
-    return !!deleted;
+    try {
+      const result = await db.delete(users).where(eq(users.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in deleteUser:", error);
+      return false;
+    }
   }
 
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
-    const [chitFund] = await db
-      .insert(chitFunds)
-      .values({
-        name: fund.name,
-        amount: fund.amount,
-        duration: fund.duration,
-        memberCount: fund.memberCount,
-        monthlyContribution: fund.monthlyContribution || "5000",
-        monthlyBonus: fund.monthlyBonus || "1000",
-        baseCommission: fund.baseCommission || "5000",
-        startDate: new Date(fund.startDate),
-        endDate: new Date(fund.endDate),
-        status: fund.status
-      })
-      .returning();
-    return chitFund;
+    try {
+      const result = await db
+        .insert(chitFunds)
+        .values({
+          name: fund.name,
+          amount: fund.amount,
+          duration: fund.duration,
+          memberCount: fund.memberCount,
+          monthlyContribution: fund.monthlyContribution || "5000",
+          monthlyBonus: fund.monthlyBonus || "1000",
+          baseCommission: fund.baseCommission || "5000",
+          startDate: new Date(fund.startDate),
+          endDate: new Date(fund.endDate),
+          status: fund.status
+        } as any)
+        .returning();
+      return result[0] as ChitFund;
+    } catch (error) {
+      console.error("Error in createChitFund:", error);
+      throw error;
+    }
   }
 
   async getChitFund(id: number): Promise<ChitFund | undefined> {
-    const [fund] = await db.select().from(chitFunds).where(eq(chitFunds.id, id));
-    return fund;
+    try {
+      const result = await db.select().from(chitFunds).where(eq(chitFunds.id, id));
+      return result.length > 0 ? result[0] as ChitFund : undefined;
+    } catch (error) {
+      console.error("Error in getChitFund:", error);
+      return undefined;
+    }
   }
 
   async getChitFunds(): Promise<ChitFund[]> {
-    return db.select().from(chitFunds);
+    try {
+      return (await db.select().from(chitFunds)) as ChitFund[];
+    } catch (error) {
+      console.error("Error in getChitFunds:", error);
+      return [];
+    }
   }
 
   async updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined> {
-    const [updated] = await db
-      .update(chitFunds)
-      .set(updates)
-      .where(eq(chitFunds.id, id))
-      .returning();
-    return updated;
+    try {
+      const result = await db
+        .update(chitFunds)
+        .set(updates)
+        .where(eq(chitFunds.id, id))
+        .returning();
+      return result.length > 0 ? result[0] as ChitFund : undefined;
+    } catch (error) {
+      console.error("Error in updateChitFund:", error);
+      return undefined;
+    }
   }
 
   async deleteChitFund(id: number): Promise<boolean> {
-    const [deleted] = await db.delete(chitFunds).where(eq(chitFunds.id, id)).returning();
-    return !!deleted;
+    try {
+      const result = await db.delete(chitFunds).where(eq(chitFunds.id, id)).returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in deleteChitFund:", error);
+      return false;
+    }
   }
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
@@ -183,12 +253,12 @@ export class DatabaseStorage implements IStorage {
 
       console.log("Creating payment with data:", paymentData);
 
-      const [newPayment] = await db
+      const result = await db
         .insert(payments)
         .values(paymentData)
         .returning();
 
-      return newPayment;
+      return result[0] as Payment;
     } catch (error) {
       console.error("Error in createPayment:", error);
       throw error;
@@ -196,213 +266,285 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserPayments(userId: number): Promise<Payment[]> {
-    if (!userId || isNaN(userId)) {
-      throw new Error("Invalid user ID");
+    try {
+      if (!userId || isNaN(userId)) {
+        throw new Error("Invalid user ID");
+      }
+      return (await db.select().from(payments).where(eq(payments.userId, userId))) as Payment[];
+    } catch (error) {
+      console.error("Error in getUserPayments:", error);
+      return [];
     }
-    return db.select().from(payments).where(eq(payments.userId, userId));
   }
 
   async getUserFundPayments(userId: number, fundId: number): Promise<Payment[]> {
-    if (!userId || isNaN(userId) || !fundId || isNaN(fundId)) {
-      throw new Error("Invalid user ID or fund ID");
-    }
-    return db
-      .select()
-      .from(payments)
-      .where(
-        and(
-          eq(payments.userId, userId),
-          eq(payments.chitFundId, fundId)
+    try {
+      if (!userId || isNaN(userId) || !fundId || isNaN(fundId)) {
+        throw new Error("Invalid user ID or fund ID");
+      }
+      return (await db
+        .select()
+        .from(payments)
+        .where(
+          and(
+            eq(payments.userId, userId),
+            eq(payments.chitFundId, fundId)
+          )
         )
-      )
-      .orderBy(payments.paymentDate);
+        .orderBy(payments.paymentDate)) as Payment[];
+    } catch (error) {
+      console.error("Error in getUserFundPayments:", error);
+      return [];
+    }
   }
 
   async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
-    const [result] = await db
-      .insert(fundMembers)
-      .values({
-        fundId,
-        userId,
-        totalBonusReceived: "0",
-        totalCommissionPaid: "0",
-        isWithdrawn: false,
-      })
-      .returning();
-    return !!result;
+    try {
+      const result = await db
+        .insert(fundMembers)
+        .values({
+          fundId,
+          userId,
+          totalBonusReceived: "0",
+          totalCommissionPaid: "0",
+          isWithdrawn: false,
+        })
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in addMemberToFund:", error);
+      return false;
+    }
   }
 
   async removeMemberFromFund(fundId: number, userId: number): Promise<boolean> {
-    const [deleted] = await db
-      .delete(fundMembers)
-      .where(and(eq(fundMembers.fundId, fundId), eq(fundMembers.userId, userId)))
-      .returning();
-    return !!deleted;
+    try {
+      const result = await db
+        .delete(fundMembers)
+        .where(and(eq(fundMembers.fundId, fundId), eq(fundMembers.userId, userId)))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in removeMemberFromFund:", error);
+      return false;
+    }
   }
 
   async getFundMembers(fundId: number): Promise<Omit<User, "password">[]> {
-    return db
-      .select({
-        id: users.id,
-        username: users.username,
-        role: users.role,
-        fullName: users.fullName,
-        email: users.email,
-        phone: users.phone,
-        address: users.address,
-        city: users.city,
-        state: users.state,
-        pincode: users.pincode,
-        status: users.status,
-        fundPreferences: users.fundPreferences,
-        agentId: users.agentId,
-        agentCommission: users.agentCommission,
-      })
-      .from(fundMembers)
-      .innerJoin(users, eq(fundMembers.userId, users.id))
-      .where(eq(fundMembers.fundId, fundId));
+    try {
+      return db
+        .select({
+          id: users.id,
+          username: users.username,
+          role: users.role,
+          fullName: users.fullName,
+          email: users.email,
+          phone: users.phone,
+          address: users.address,
+          city: users.city,
+          state: users.state,
+          pincode: users.pincode,
+          status: users.status,
+          fundPreferences: users.fundPreferences,
+          agentId: users.agentId,
+          agentCommission: users.agentCommission,
+        })
+        .from(fundMembers)
+        .innerJoin(users, eq(fundMembers.userId, users.id))
+        .where(eq(fundMembers.fundId, fundId));
+    } catch (error) {
+      console.error("Error in getFundMembers:", error);
+      return [];
+    }
   }
 
   async getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined> {
-    const [member] = await db
-      .select()
-      .from(fundMembers)
-      .where(
-        and(
-          eq(fundMembers.fundId, fundId),
-          eq(fundMembers.userId, userId)
-        )
-      );
-    return member;
+    try {
+      const result = await db
+        .select()
+        .from(fundMembers)
+        .where(
+          and(
+            eq(fundMembers.fundId, fundId),
+            eq(fundMembers.userId, userId)
+          )
+        );
+      return result.length > 0 ? result[0] as FundMember : undefined;
+    } catch (error) {
+      console.error("Error in getFundMemberDetails:", error);
+      return undefined;
+    }
   }
 
   async updateMemberWithdrawalStatus(fundId: number, userId: number, updates: Partial<FundMember>): Promise<boolean> {
-    const [updated] = await db
-      .update(fundMembers)
-      .set(updates)
-      .where(
-        and(
-          eq(fundMembers.fundId, fundId),
-          eq(fundMembers.userId, userId)
+    try {
+      const result = await db
+        .update(fundMembers)
+        .set(updates)
+        .where(
+          and(
+            eq(fundMembers.fundId, fundId),
+            eq(fundMembers.userId, userId)
+          )
         )
-      )
-      .returning();
-    return !!updated;
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in updateMemberWithdrawalStatus:", error);
+      return false;
+    }
   }
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
-    const results = await db
-      .select({
-        id: chitFunds.id,
-        name: chitFunds.name,
-        amount: chitFunds.amount,
-        duration: chitFunds.duration,
-        memberCount: chitFunds.memberCount,
-        monthlyContribution: chitFunds.monthlyContribution,
-        monthlyBonus: chitFunds.monthlyBonus,
-        startDate: chitFunds.startDate,
-        endDate: chitFunds.endDate,
-        baseCommission: chitFunds.baseCommission,
-        status: chitFunds.status
-      })
-      .from(chitFunds)
-      .innerJoin(fundMembers, eq(fundMembers.fundId, chitFunds.id))
-      .where(eq(fundMembers.userId, userId));
+    try {
+      const results = await db
+        .select({
+          id: chitFunds.id,
+          name: chitFunds.name,
+          amount: chitFunds.amount,
+          duration: chitFunds.duration,
+          memberCount: chitFunds.memberCount,
+          monthlyContribution: chitFunds.monthlyContribution,
+          monthlyBonus: chitFunds.monthlyBonus,
+          startDate: chitFunds.startDate,
+          endDate: chitFunds.endDate,
+          baseCommission: chitFunds.baseCommission,
+          status: chitFunds.status
+        })
+        .from(chitFunds)
+        .innerJoin(fundMembers, eq(fundMembers.fundId, chitFunds.id))
+        .where(eq(fundMembers.userId, userId));
 
-    return results;
+      return results as ChitFund[];
+    } catch (error) {
+      console.error("Error in getMemberFunds:", error);
+      return [];
+    }
   }
 
   async createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable> {
-    const receivableData = {
-      userId: receivable.userId,
-      chitFundId: receivable.chitFundId,
-      monthNumber: receivable.monthNumber,
-      paidAmount: receivable.paidAmount,
-      expectedAmount: receivable.expectedAmount,
-      status: receivable.status || "paid",
-      dueDate: receivable.dueDate,
-      updatedAt: receivable.updatedAt || new Date(),
-    };
+    try {
+      const receivableData = {
+        userId: receivable.userId,
+        chitFundId: receivable.chitFundId,
+        monthNumber: receivable.monthNumber,
+        paidAmount: receivable.paidAmount,
+        expectedAmount: receivable.expectedAmount,
+        status: receivable.status || "paid",
+        dueDate: receivable.dueDate,
+        updatedAt: receivable.updatedAt || new Date(),
+      };
 
-    console.log("Creating receivable with data:", receivableData);
+      console.log("Creating receivable with data:", receivableData);
 
-    const [newReceivable] = await db
-      .insert(accountsReceivable)
-      .values(receivableData)
-      .returning();
+      const result = await db
+        .insert(accountsReceivable)
+        .values(receivableData)
+        .returning();
 
-    return newReceivable;
+      return result[0] as AccountsReceivable;
+    } catch (error) {
+      console.error("Error in createReceivable:", error);
+      throw error;
+    }
   }
 
   async updateReceivable(id: number, updates: Partial<AccountsReceivable>): Promise<boolean> {
     try {
-      const [updated] = await db
+      const updatedData = {
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      // Convert null to proper string value for status if needed
+      if (updatedData.status === null) {
+        updatedData.status = "partial";
+      }
+
+      const result = await db
         .update(accountsReceivable)
-        .set({
-          ...updates,
-          updatedAt: new Date(), 
-        })
+        .set(updatedData)
         .where(eq(accountsReceivable.id, id))
         .returning();
 
-      return !!updated;
+      return result.length > 0;
     } catch (error) {
-      console.error("Error updating receivable:", error);
+      console.error("Error in updateReceivable:", error);
       return false;
     }
   }
 
   async getReceivablesByUser(userId: number): Promise<AccountsReceivable[]> {
-    return db
-      .select()
-      .from(accountsReceivable)
-      .where(eq(accountsReceivable.userId, userId))
-      .orderBy(desc(accountsReceivable.updatedAt));
+    try {
+      return (await db
+        .select()
+        .from(accountsReceivable)
+        .where(eq(accountsReceivable.userId, userId))
+        .orderBy(desc(accountsReceivable.updatedAt))) as AccountsReceivable[];
+    } catch (error) {
+      console.error("Error in getReceivablesByUser:", error);
+      return [];
+    }
   }
 
   async getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]> {
-    return db
-      .select()
-      .from(accountsReceivable)
-      .where(eq(accountsReceivable.chitFundId, fundId))
-      .orderBy(desc(accountsReceivable.updatedAt));
+    try {
+      return (await db
+        .select()
+        .from(accountsReceivable)
+        .where(eq(accountsReceivable.chitFundId, fundId))
+        .orderBy(desc(accountsReceivable.updatedAt))) as AccountsReceivable[];
+    } catch (error) {
+      console.error("Error in getReceivablesByFund:", error);
+      return [];
+    }
   }
 
   async getReceivablesByMonth(fundId: number, monthNumber: number): Promise<AccountsReceivable[]> {
-    return db
-      .select()
-      .from(accountsReceivable)
-      .where(
-        and(
-          eq(accountsReceivable.chitFundId, fundId),
-          eq(accountsReceivable.monthNumber, monthNumber)
+    try {
+      return (await db
+        .select()
+        .from(accountsReceivable)
+        .where(
+          and(
+            eq(accountsReceivable.chitFundId, fundId),
+            eq(accountsReceivable.monthNumber, monthNumber)
+          )
         )
-      )
-      .orderBy(desc(accountsReceivable.updatedAt));
+        .orderBy(desc(accountsReceivable.updatedAt))) as AccountsReceivable[];
+    } catch (error) {
+      console.error("Error in getReceivablesByMonth:", error);
+      return [];
+    }
   }
 
   async getAllReceivables(): Promise<AccountsReceivable[]> {
-    const results = await db
-      .select({
-        id: accountsReceivable.id,
-        userId: accountsReceivable.userId,
-        chitFundId: accountsReceivable.chitFundId,
-        monthNumber: accountsReceivable.monthNumber,
-        dueDate: accountsReceivable.dueDate,
-        expectedAmount: accountsReceivable.expectedAmount,
-        paidAmount: accountsReceivable.paidAmount,
-        status: accountsReceivable.status,
-        createdAt: accountsReceivable.createdAt,
-        updatedAt: accountsReceivable.updatedAt,
-        userName: users.fullName,
-        fundName: chitFunds.name
-      })
-      .from(accountsReceivable)
-      .leftJoin(users, eq(accountsReceivable.userId, users.id))
-      .leftJoin(chitFunds, eq(accountsReceivable.chitFundId, chitFunds.id))
-      .orderBy(desc(accountsReceivable.updatedAt));
+    try {
+      const results = await db
+        .select({
+          id: accountsReceivable.id,
+          userId: accountsReceivable.userId,
+          chitFundId: accountsReceivable.chitFundId,
+          monthNumber: accountsReceivable.monthNumber,
+          dueDate: accountsReceivable.dueDate,
+          expectedAmount: accountsReceivable.expectedAmount,
+          paidAmount: accountsReceivable.paidAmount,
+          status: accountsReceivable.status,
+          createdAt: accountsReceivable.createdAt,
+          updatedAt: accountsReceivable.updatedAt,
+          userName: users.fullName,
+          fundName: chitFunds.name
+        })
+        .from(accountsReceivable)
+        .leftJoin(users, eq(accountsReceivable.userId, users.id))
+        .leftJoin(chitFunds, eq(accountsReceivable.chitFundId, chitFunds.id))
+        .orderBy(desc(accountsReceivable.updatedAt));
 
-    return results;
+      return results as unknown as AccountsReceivable[];
+    } catch (error) {
+      console.error("Error in getAllReceivables:", error);
+      return [];
+    }
   }
 
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
@@ -422,12 +564,12 @@ export class DatabaseStorage implements IStorage {
       console.log("Creating payable with data:", payableData);
 
       // Insert into database with explicit column mapping
-      const [newPayable] = await db
+      const result = await db
         .insert(accountsPayable)
-        .values(payableData)
+        .values(payableData as any)
         .returning();
 
-      return newPayable;
+      return result[0] as AccountsPayable;
     } catch (error) {
       console.error("Error creating payable:", error);
       throw error;
@@ -435,32 +577,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPayablesByUser(userId: number): Promise<AccountsPayable[]> {
-    return db
-      .select()
-      .from(accountsPayable)
-      .where(eq(accountsPayable.userId, userId))
-      .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
+    try {
+      return (await db
+        .select()
+        .from(accountsPayable)
+        .where(eq(accountsPayable.userId, userId))
+        .orderBy(desc(accountsPayable.createdAt))) as AccountsPayable[]; // Use createdAt as fallback
+    } catch (error) {
+      console.error("Error in getPayablesByUser:", error);
+      return [];
+    }
   }
 
   async getPayablesByFund(fundId: number): Promise<AccountsPayable[]> {
-    return db
-      .select()
-      .from(accountsPayable)
-      .where(eq(accountsPayable.chitFundId, fundId))
-      .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
+    try {
+      return (await db
+        .select()
+        .from(accountsPayable)
+        .where(eq(accountsPayable.chitFundId, fundId))
+        .orderBy(desc(accountsPayable.createdAt))) as AccountsPayable[]; // Use createdAt as fallback
+    } catch (error) {
+      console.error("Error in getPayablesByFund:", error);
+      return [];
+    }
   }
 
   async getPayablesByType(fundId: number, type: string): Promise<AccountsPayable[]> {
-    return db
-      .select()
-      .from(accountsPayable)
-      .where(
-        and(
-          eq(accountsPayable.chitFundId, fundId),
-          eq(accountsPayable.paymentType, type as any)
+    try {
+      return (await db
+        .select()
+        .from(accountsPayable)
+        .where(
+          and(
+            eq(accountsPayable.chitFundId, fundId),
+            eq(accountsPayable.paymentType, type as any)
+          )
         )
-      )
-      .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
+        .orderBy(desc(accountsPayable.createdAt))) as AccountsPayable[]; // Use createdAt as fallback
+    } catch (error) {
+      console.error("Error in getPayablesByType:", error);
+      return [];
+    }
   }
 
   async getAllPayables(): Promise<AccountsPayable[]> {
@@ -486,7 +643,7 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(chitFunds, eq(accountsPayable.chitFundId, chitFunds.id))
         .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
 
-      return results;
+      return results as unknown as AccountsPayable[];
     } catch (error) {
       console.error("Error in getAllPayables:", error);
       throw error;

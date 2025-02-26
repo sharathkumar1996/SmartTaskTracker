@@ -49,6 +49,18 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   const [bonusAmount, setBonusAmount] = useState<string>("0");
   const [remainingAmount, setRemainingAmount] = useState<string>("0");
   const [penaltyAmount, setPenaltyAmount] = useState<string>("0");
+  const [withdrawalMonthValue, setWithdrawalMonthValue] = useState<number>(1);
+
+  // Initialize form first to avoid reference errors
+  const form = useForm<PayoutFormValues>({
+    resolver: zodResolver(payoutFormSchema),
+    defaultValues: {
+      commission: "5000",
+      notes: "",
+      paymentDate: new Date(),
+      withdrawalMonth: 1,
+    },
+  });
 
   // Fetch the fund details to calculate payout amount
   const { data: fundData } = useQuery<ChitFund>({
@@ -113,7 +125,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       const uniqueMonths = new Set();
       let totalPaid = 0;
 
-      memberPayments.forEach(payment => {
+      memberPayments.forEach((payment: any) => {
         if (payment.paymentType === 'monthly') {
           uniqueMonths.add(payment.monthNumber);
           totalPaid += parseFloat(payment.amount);
@@ -154,14 +166,22 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     }
   }, [fundAmount, paidAmount]);
 
-  // Calculate total payout amount using the correct formula
+  // Watch for withdrawal month changes
   useEffect(() => {
-    const withdrawalMonthVal = form.watch("withdrawalMonth") || 1;
+    const subscription = form.watch((value) => {
+      if (value.withdrawalMonth) {
+        setWithdrawalMonthValue(Number(value.withdrawalMonth));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
+  // Calculate penalty and total payout amount using the correct formula
+  useEffect(() => {
     // Calculate penalty if withdrawing later than expected
     // Penalty = max(0, (withdrawalMonth - (monthsPaid + 1))) × 1000
     try {
-      const penalty = Math.max(0, withdrawalMonthVal - (monthsPaid + 1)) * 1000;
+      const penalty = Math.max(0, withdrawalMonthValue - (monthsPaid + 1)) * 1000;
       setPenaltyAmount(penalty.toString());
     } catch (error) {
       console.error("Error calculating penalty:", error);
@@ -185,17 +205,19 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         setPayoutAmount(null);
       }
     }
-  }, [paidAmount, bonusAmount, remainingAmount, commissionAmount, penaltyAmount, form.watch("withdrawalMonth"), monthsPaid]);
+  }, [paidAmount, bonusAmount, remainingAmount, commissionAmount, penaltyAmount, withdrawalMonthValue, monthsPaid]);
 
-  const form = useForm<PayoutFormValues>({
-    resolver: zodResolver(payoutFormSchema),
-    defaultValues: {
-      commission: fundData?.baseCommission || "5000",
-      notes: "",
-      paymentDate: new Date(),
-      withdrawalMonth: memberDetails?.earlyWithdrawalMonth || 1,
-    },
-  });
+  // Update default values when data is loaded
+  useEffect(() => {
+    if (fundData?.baseCommission) {
+      form.setValue('commission', fundData.baseCommission);
+      setCommissionAmount(fundData.baseCommission);
+    }
+    if (memberDetails?.earlyWithdrawalMonth) {
+      form.setValue('withdrawalMonth', memberDetails.earlyWithdrawalMonth);
+      setWithdrawalMonthValue(memberDetails.earlyWithdrawalMonth);
+    }
+  }, [fundData, memberDetails, form]);
 
   // Update the commission amount when the form value changes
   useEffect(() => {
@@ -206,17 +228,6 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     });
     return () => subscription.unsubscribe();
   }, [form.watch]);
-
-  // Update default values when data is loaded
-  useEffect(() => {
-    if (fundData?.baseCommission) {
-      form.setValue('commission', fundData.baseCommission);
-      setCommissionAmount(fundData.baseCommission);
-    }
-    if (memberDetails?.earlyWithdrawalMonth) {
-      form.setValue('withdrawalMonth', memberDetails.earlyWithdrawalMonth);
-    }
-  }, [fundData, memberDetails, form]);
 
   async function onSubmit(values: PayoutFormValues) {
     if (memberDetails?.isWithdrawn) {

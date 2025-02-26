@@ -222,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check if a receivable already exists for this month
         const existingReceivables = await storage.getReceivablesByMonth(
-          payment.chitFundId, 
+          payment.chitFundId,
           payment.monthNumber || 1
         );
 
@@ -352,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(memberDetails);
     } catch (error) {
       console.error("Error fetching member details:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to fetch member details",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -380,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Member withdrawal status updated" });
     } catch (error) {
       console.error("Error updating member withdrawal status:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to update withdrawal status",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -483,7 +483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(userReceivable);
     } catch (error) {
       console.error("Error fetching user receivable:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to fetch user receivable",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -539,8 +539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send notification to the member
       const notification = {
         userId: parseInt(userId),
-        title: paymentType === "withdrawal" ? "Chit Fund Withdrawal" : "Payment Made", 
-        message: paymentType === "withdrawal" 
+        title: paymentType === "withdrawal" ? "Chit Fund Withdrawal" : "Payment Made",
+        message: paymentType === "withdrawal"
           ? `You have withdrawn ₹${amount} from chit fund #${chitFundId}`
           : `A payment of ₹${amount} has been made to you`,
         type: "payment",
@@ -551,8 +551,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(newPayable);
     } catch (error) {
       console.error("Error creating payable:", error);
-      res.status(500).json({ 
-        message: "Failed to create payable", 
+      res.status(500).json({
+        message: "Failed to create payable",
         error: error instanceof Error ? error.message : String(error)
       });
     }
