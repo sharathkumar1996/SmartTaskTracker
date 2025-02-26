@@ -576,7 +576,7 @@ export class DatabaseStorage implements IStorage {
         recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
-        due_date: dueDate, // Always use a valid Date object
+        due_date: dueDate, // Always ensure we have a valid Date object for due_date
         status: "paid", // Default status for payables
         paid_amount: payable.amount, // Set paid amount same as amount for withdrawals
         commission: payable.commission, // Add the commission field
