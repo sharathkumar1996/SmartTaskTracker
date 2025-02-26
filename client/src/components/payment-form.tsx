@@ -32,7 +32,7 @@ interface PaymentFormProps {
 }
 
 const paymentFormSchema = z.object({
-  amount: z.coerce.number().min(1, "Amount must be greater than 0"),
+  amount: z.string().min(1, "Amount is required").transform((val) => val.replace(/[^0-9.]/g, '')),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
   monthNumber: z.number().min(1).max(20, "Month number must be between 1 and 20"),
   notes: z.string().optional(),
@@ -52,7 +52,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      amount: 0,
+      amount: '',
       paymentMethod: "cash",
       monthNumber: 1,
       notes: "",
@@ -64,12 +64,21 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
     try {
       setIsSubmitting(true);
 
+      // Ensure amount is a valid number string
+      const amount = values.amount.replace(/[^0-9.]/g, '');
+      if (!amount || isNaN(Number(amount))) {
+        throw new Error("Invalid amount");
+      }
+
       const paymentData = {
         userId,
         chitFundId,
-        ...values,
-        amount: values.amount.toString(),
+        amount: amount,
+        monthNumber: values.monthNumber,
+        paymentMethod: values.paymentMethod,
         paymentType: "monthly",
+        paymentDate: values.paymentDate,
+        notes: values.notes,
         recordedBy: user?.id,
       };
 
@@ -89,7 +98,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
       });
 
       form.reset({
-        amount: 0,
+        amount: '',
         paymentMethod: "cash",
         monthNumber: 1,
         notes: "",
@@ -183,10 +192,12 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
                 <FormLabel>Amount</FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     {...field}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
+                      const value = e.target.value.replace(/[^0-9]/g, '');
                       field.onChange(value);
                     }}
                   />
