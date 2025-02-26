@@ -240,11 +240,26 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                           paymentDate = date.toLocaleDateString("en-IN");
                         }
                         
+                        // Check if any payment is a withdrawal
+                        const hasWithdrawal = monthPayments.some(p => 
+                          p.amount.toString().includes('withdrawal') || // Check description
+                          monthPayments.some(payment => {
+                            const amt = payment.amount?.toString() || '';
+                            return amt.includes('withdrawal');
+                          })
+                        );
+                        
                         return (
-                          <TableCell key={month} className="text-right min-w-[100px]">
+                          <TableCell 
+                            key={month} 
+                            className={`text-right min-w-[100px] ${hasWithdrawal ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
+                          >
                             {totalAmount > 0 ? (
                               <div>
-                                <div className="font-medium">{formatCurrency(totalAmount)}</div>
+                                <div className={`font-medium ${hasWithdrawal ? 'text-blue-600 dark:text-blue-300' : ''}`}>
+                                  {formatCurrency(totalAmount)}
+                                  {hasWithdrawal && ' (Withdrawal)'}
+                                </div>
                                 {monthPayments.length > 0 && (
                                   <div className="text-xs text-muted-foreground">
                                     {paymentDate}

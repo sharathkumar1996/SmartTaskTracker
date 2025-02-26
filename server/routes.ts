@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema, insertAccountsPayableSchema } from "@shared/schema";
+import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema, insertAccountsPayableSchema, Payment } from "@shared/schema";
 import { db } from "./db"; // Assuming db is imported from elsewhere
 import { payments } from "@shared/schema"; // Import the payments table schema
 
@@ -922,20 +922,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
             p => p.userId === member.id && p.paymentType === 'withdrawal'
           );
           
-          // Add withdrawal payments to the regular payments
-          const withdrawalPayments = userWithdrawals.map(withdrawal => ({
-            id: -withdrawal.id, // Negative ID to avoid conflicts
-            userId: withdrawal.userId,
-            chitFundId: withdrawal.chitFundId,
-            amount: withdrawal.amount,
-            paymentType: 'withdrawal',
-            paymentMethod: 'bank',
-            recordedBy: withdrawal.recorderId,
-            notes: withdrawal.notes || 'Withdrawal payment',
-            paymentDate: withdrawal.paidDate,
-            monthNumber: parseInt(withdrawal.notes?.match(/month (\d+)/i)?.[1] || '1'),
-            createdAt: withdrawal.createdAt
-          }));
+          // Add withdrawal payments to the regular payments with improved month extraction
+          const withdrawalPayments = userWithdrawals.map(withdrawal => {
+            // Try to extract the month from the notes or use the withdrawalMonth field
+            let monthNum = 1; // Default to month 1
+            
+            // First, check if we have a withdrawalMonth field directly
+            if (withdrawal.withdrawalMonth) {
+              monthNum = parseInt(withdrawal.withdrawalMonth.toString());
+            } 
+            // Next, try to extract from notes using regex
+            else if (withdrawal.notes && withdrawal.notes.match(/month (\d+)/i)) {
+              monthNum = parseInt(withdrawal.notes.match(/month (\d+)/i)?.[1] || '1');
+            }
+            
+            return {
+              id: -withdrawal.id, // Negative ID to avoid conflicts
+              userId: withdrawal.userId,
+              chitFundId: withdrawal.chitFundId,
+              amount: withdrawal.amount,
+              paymentType: 'withdrawal',
+              paymentMethod: 'bank',
+              recordedBy: withdrawal.recorderId,
+              notes: withdrawal.notes || 'Withdrawal payment',
+              paymentDate: withdrawal.paidDate,
+              monthNumber: monthNum,
+              createdAt: withdrawal.createdAt
+            };
+          });
           
           const allUserPayments = [...userPayments, ...withdrawalPayments];
           

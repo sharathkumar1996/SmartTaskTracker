@@ -239,18 +239,30 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   }, [form.watch]);
 
   async function onSubmit(values: PayoutFormValues) {
-    // Allow re-processing payments for already withdrawn members if no payable exists
-    // This handles edge cases where the member was marked as withdrawn but the payout wasn't processed
-    const hasBeenPaidOut = memberDetails?.isWithdrawn && 
-      memberDetails?.hasPayable === true;
-    
-    if (hasBeenPaidOut) {
-      toast({
-        title: "Error",
-        description: "This member has already withdrawn and received payout from this fund",
-        variant: "destructive",
-      });
-      return;
+    // Double-check the current status to avoid race conditions
+    // Get fresh data for the member status
+    try {
+      const detailsResponse = await fetch(`/api/chitfunds/${chitFundId}/members/${userId}/details`);
+      if (detailsResponse.ok) {
+        const latestDetails = await detailsResponse.json();
+        
+        // Allow re-processing payments for already withdrawn members if no payable exists
+        // This handles edge cases where the member was marked as withdrawn but the payout wasn't processed
+        const hasBeenPaidOut = latestDetails?.isWithdrawn && 
+          latestDetails?.hasPayable === true;
+        
+        if (hasBeenPaidOut) {
+          toast({
+            title: "Error",
+            description: "This member has already withdrawn and received payout from this fund",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error checking latest member status:", error);
+      // Continue with what we know from the cached data
     }
 
     try {
