@@ -221,30 +221,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Create a receivable record for monthly payments
-        const receivableData = {
-          userId: payment.userId,
-          chitFundId: payment.chitFundId,
-          monthNumber: payment.monthNumber || 1, // Use payment month number or default to 1
-          paidAmount: payment.amount,
-          expectedAmount: expectedAmount, // Set dynamically based on fund and withdrawal status
-          status: "paid",
-          dueDate: payment.paymentDate, // Use payment date as due date
-          updatedAt: new Date(),
-        };
+        // Check if a receivable already exists for this month
+        const existingReceivables = await storage.getReceivablesByMonth(
+          payment.chitFundId, 
+          payment.monthNumber || 1
+        );
 
-        try {
-          const receivableParseResult = insertAccountsReceivableSchema.safeParse(receivableData);
-          if (receivableParseResult.success) {
-            await storage.createReceivable(receivableParseResult.data);
-            console.log("Created corresponding receivable record for payment:", payment.id);
-          } else {
-            console.error("Validation error for receivable:", receivableParseResult.error);
+        const userReceivable = existingReceivables.find(r => r.userId === payment.userId);
+
+        if (userReceivable) {
+          // Update existing receivable
+          const newPaidAmount = (parseFloat(userReceivable.paidAmount || "0") + parseFloat(payment.amount)).toString();
+
+          // Update the record with the new paid amount
+          await storage.updateReceivable(userReceivable.id, {
+            paidAmount: newPaidAmount,
+            status: parseFloat(newPaidAmount) >= parseFloat(userReceivable.expectedAmount) ? "paid" : "partial",
+            updatedAt: new Date()
+          });
+
+          console.log(`Updated existing receivable ID ${userReceivable.id} with new paid amount: ${newPaidAmount}`);
+        } else {
+          // Create a new receivable record for monthly payments
+          const receivableData = {
+            userId: payment.userId,
+            chitFundId: payment.chitFundId,
+            monthNumber: payment.monthNumber || 1, // Use payment month number or default to 1
+            paidAmount: payment.amount,
+            expectedAmount: expectedAmount, // Set dynamically based on fund and withdrawal status
+            status: parseFloat(payment.amount) >= parseFloat(expectedAmount) ? "paid" : "partial",
+            dueDate: payment.paymentDate, // Use payment date as due date
+            updatedAt: new Date(),
+          };
+
+          try {
+            const receivableParseResult = insertAccountsReceivableSchema.safeParse(receivableData);
+            if (receivableParseResult.success) {
+              await storage.createReceivable(receivableParseResult.data);
+              console.log("Created corresponding receivable record for payment:", payment.id);
+            } else {
+              console.error("Validation error for receivable:", receivableParseResult.error);
+            }
+          } catch (error) {
+            console.error("Error creating corresponding receivable record:", error);
+            // We don't want to fail the payment if the receivable fails
+            // Just log the error and continue
           }
-        } catch (error) {
-          console.error("Error creating corresponding receivable record:", error);
-          // We don't want to fail the payment if the receivable fails
-          // Just log the error and continue
         }
       }
 
@@ -437,6 +459,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching month receivables:", error);
       res.status(500).json({ message: "Failed to fetch month receivables" });
+    }
+  });
+
+  // Add endpoint to get receivables for a specific user and month
+  app.get("/api/receivables/fund/:fundId/month/:monthNumber/user/:userId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      const fundId = parseInt(req.params.fundId);
+      const monthNumber = parseInt(req.params.monthNumber);
+      const userId = parseInt(req.params.userId);
+
+      // First get all receivables for this fund and month
+      const monthlyReceivables = await storage.getReceivablesByMonth(fundId, monthNumber);
+
+      // Then filter to get only the one for this user
+      const userReceivable = monthlyReceivables.find(r => r.userId === userId);
+
+      if (!userReceivable) {
+        return res.status(404).json({ message: "No receivable found for this user and month" });
+      }
+
+      res.json(userReceivable);
+    } catch (error) {
+      console.error("Error fetching user receivable:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch user receivable",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

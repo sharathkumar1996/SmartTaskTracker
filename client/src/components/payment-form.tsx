@@ -52,6 +52,8 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expectedAmount, setExpectedAmount] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState<number>(1);
+  const [remainingAmount, setRemainingAmount] = useState<string | null>(null);
 
   // Fetch the fund details to calculate expected amount
   const { data: fundData } = useQuery<ChitFund>({
@@ -80,6 +82,24 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
     enabled: !!chitFundId && !!userId,
   });
 
+  // Fetch existing receivable for the selected month
+  const { data: existingReceivable } = useQuery({
+    queryKey: ["/api/receivables/fund", chitFundId, "month", currentMonth, userId],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/receivables/fund/${chitFundId}/month/${currentMonth}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        // Find the receivable that belongs to this user
+        return data.find((item: any) => item.userId === userId);
+      } catch (error) {
+        console.error("Error fetching receivables:", error);
+        return null;
+      }
+    },
+    enabled: !!chitFundId && !!userId && !!currentMonth,
+  });
+
   // Calculate expected payment amount based on fund amount and withdrawal status
   useEffect(() => {
     if (fundData && fundData.amount) {
@@ -100,6 +120,23 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
     }
   }, [fundData, memberDetails]);
 
+  // Calculate remaining amount based on expected amount and already paid amount
+  useEffect(() => {
+    if (expectedAmount && existingReceivable) {
+      try {
+        const expected = parseFloat(expectedAmount);
+        const paid = parseFloat(existingReceivable.paidAmount || "0");
+        const remaining = Math.max(0, expected - paid); // Ensure remaining is never negative
+        setRemainingAmount(remaining.toString());
+      } catch (error) {
+        console.error("Error calculating remaining amount:", error);
+        setRemainingAmount(expectedAmount); // Default to full expected amount if there's an error
+      }
+    } else {
+      setRemainingAmount(expectedAmount); // Default to full expected amount if no existing receivable
+    }
+  }, [expectedAmount, existingReceivable]);
+
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
@@ -110,6 +147,16 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
       monthNumber: 1,
     },
   });
+
+  // Update the current month when the form month number changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'monthNumber' && value.monthNumber) {
+        setCurrentMonth(Number(value.monthNumber));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   async function onSubmit(values: PaymentFormValues) {
     try {
@@ -144,6 +191,10 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
       await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
       // Also invalidate accounts receivable to reflect the new payment
       await queryClient.invalidateQueries({ queryKey: ["/api/accounts/receivables"] });
+      // Invalidate the current month receivable query
+      await queryClient.invalidateQueries({ 
+        queryKey: ["/api/receivables/fund", chitFundId, "month", values.monthNumber, userId] 
+      });
 
       toast({
         title: "Success",
@@ -185,6 +236,30 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
                     {memberDetails?.isWithdrawn && " (withdrawn)"}
                   </span>
                 </div>
+                {existingReceivable && parseFloat(existingReceivable.paidAmount || "0") > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <InfoIcon className="h-4 w-4 text-green-500" />
+                    <span>
+                      Already paid: {formatCurrency(existingReceivable.paidAmount || "0")}
+                    </span>
+                  </div>
+                )}
+                {remainingAmount && parseFloat(remainingAmount) > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                    <InfoIcon className="h-4 w-4 text-amber-500" />
+                    <span>
+                      Remaining to pay: {formatCurrency(remainingAmount)}
+                    </span>
+                  </div>
+                )}
+                {existingReceivable && parseFloat(existingReceivable.paidAmount || "0") >= parseFloat(expectedAmount) && (
+                  <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-green-600">
+                    <InfoIcon className="h-4 w-4 text-green-500" />
+                    <span>
+                      Fully paid for this month!
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -264,7 +339,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    placeholder={expectedAmount ? formatCurrency(expectedAmount) : "Enter amount"}
+                    placeholder={remainingAmount ? formatCurrency(remainingAmount) : "Enter amount"}
                     {...field}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9]/g, '');

@@ -21,7 +21,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
 
   createChitFund(fund: InsertChitFund): Promise<ChitFund>;
-  getChitFund(id: number): Promise<ChitFund | undefined>; // Add method to get a single fund
+  getChitFund(id: number): Promise<ChitFund | undefined>; 
   getChitFunds(): Promise<ChitFund[]>;
   updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined>;
   deleteChitFund(id: number): Promise<boolean>;
@@ -32,12 +32,13 @@ export interface IStorage {
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<Omit<User, "password">[]>;
-  getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined>; // Add method to get member details
-  updateMemberWithdrawalStatus(fundId: number, userId: number, updates: Partial<FundMember>): Promise<boolean>; // Add method to update withdrawal status
+  getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined>; 
+  updateMemberWithdrawalStatus(fundId: number, userId: number, updates: Partial<FundMember>): Promise<boolean>; 
   getMemberFunds(userId: number): Promise<ChitFund[]>;
 
   // Accounts Receivable methods
   createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable>;
+  updateReceivable(id: number, updates: Partial<AccountsReceivable>): Promise<boolean>; 
   getReceivablesByUser(userId: number): Promise<AccountsReceivable[]>;
   getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]>;
   getReceivablesByMonth(fundId: number, monthNumber: number): Promise<AccountsReceivable[]>;
@@ -55,7 +56,7 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new MemoryStore({ checkPeriod: 86400000 }); // 24 hours
+    this.sessionStore = new MemoryStore({ checkPeriod: 86400000 }); 
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -167,8 +168,6 @@ export class DatabaseStorage implements IStorage {
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
     try {
-      // Create a clean payment object with only the fields that are actually provided
-      // We don't set any defaults for monthNumber, bonusAmount, or commissionAmount
       const paymentData = {
         userId: payment.userId,
         chitFundId: payment.chitFundId,
@@ -178,8 +177,7 @@ export class DatabaseStorage implements IStorage {
         recordedBy: payment.recordedBy,
         notes: payment.notes,
         paymentDate: payment.paymentDate,
-        // The database requires a monthNumber, so we'll set it to 1
-        monthNumber: 1,
+        monthNumber: payment.monthNumber || 1,
       };
 
       console.log("Creating payment with data:", paymentData);
@@ -319,6 +317,24 @@ export class DatabaseStorage implements IStorage {
     return newReceivable;
   }
 
+  async updateReceivable(id: number, updates: Partial<AccountsReceivable>): Promise<boolean> {
+    try {
+      const [updated] = await db
+        .update(accountsReceivable)
+        .set({
+          ...updates,
+          updatedAt: new Date(), 
+        })
+        .where(eq(accountsReceivable.id, id))
+        .returning();
+
+      return !!updated;
+    } catch (error) {
+      console.error("Error updating receivable:", error);
+      return false;
+    }
+  }
+
   async getReceivablesByUser(userId: number): Promise<AccountsReceivable[]> {
     return db
       .select()
@@ -348,9 +364,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(accountsReceivable.updatedAt));
   }
 
-  // Implement the missing method to get all receivables
   async getAllReceivables(): Promise<AccountsReceivable[]> {
-    // Use a join query to get user names along with receivables
     const results = await db
       .select({
         id: accountsReceivable.id,
@@ -422,7 +436,6 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(accountsPayable.paidDate));
   }
 
-  // Implement the missing method to get all payables
   async getAllPayables(): Promise<AccountsPayable[]> {
     const results = await db
       .select({
