@@ -502,6 +502,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId, chitFundId, paymentType, amount, notes, paidDate, dueDate, withdrawalMonth } = req.body;
 
       console.log("Request body for payable:", req.body);
+      
+      // Explicitly ensure we have a due date - critical field
+      const payableDueDate = dueDate || paidDate || new Date().toISOString();
+      
+      console.log("Using due date:", payableDueDate);
 
       // Create the payable record
       const newPayable = await storage.createPayable({
@@ -512,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recordedBy: req.user.id,
         notes: notes || null,
         paidDate: new Date(paidDate),
-        dueDate: new Date(dueDate || paidDate), // Use dueDate from request or fallback to paidDate
+        dueDate: new Date(payableDueDate), // Ensure we always have a valid due date
         withdrawalMonth: withdrawalMonth ? parseInt(withdrawalMonth) : undefined,
       });
 
