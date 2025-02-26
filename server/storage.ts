@@ -45,6 +45,7 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   getNotifications(userId: number): Promise<Notification[]>;
   markNotificationAsRead(id: number): Promise<boolean>;
+  getPaymentReport({fundId, fromDate, toDate}: {fundId?: number; fromDate?: Date; toDate?: Date;}): Promise<Payment[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -357,6 +358,57 @@ export class DatabaseStorage implements IStorage {
       .where(eq(notifications.id, id))
       .returning();
     return !!updated;
+  }
+
+  async getPaymentReport({ 
+    fundId, 
+    fromDate, 
+    toDate 
+  }: { 
+    fundId?: number; 
+    fromDate?: Date; 
+    toDate?: Date;
+  }): Promise<Payment[]> {
+    let query = db
+      .select({
+        id: payments.id,
+        amount: payments.amount,
+        paymentType: payments.paymentType,
+        paymentMethod: payments.paymentMethod,
+        paymentDate: payments.paymentDate,
+        notes: payments.notes,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+        },
+        chitFund: {
+          id: chitFunds.id,
+          name: chitFunds.name,
+        },
+        recorder: {
+          id: users.id,
+          fullName: users.fullName,
+        },
+      })
+      .from(payments)
+      .innerJoin(users, eq(payments.userId, users.id))
+      .innerJoin(chitFunds, eq(payments.chitFundId, chitFunds.id))
+      .innerJoin(users, eq(payments.recordedBy, users.id), "recorder");
+
+    if (fundId) {
+      query = query.where(eq(payments.chitFundId, fundId));
+    }
+
+    if (fromDate) {
+      query = query.where(sql`${payments.paymentDate} >= ${fromDate}`);
+    }
+
+    if (toDate) {
+      query = query.where(sql`${payments.paymentDate} <= ${toDate}`);
+    }
+
+    const results = await query.orderBy(payments.paymentDate);
+    return results;
   }
 }
 

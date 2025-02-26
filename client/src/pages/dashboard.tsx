@@ -16,6 +16,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ChitFund, Payment, User } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FinancialReport } from "@/components/financial-report"; // Import the new component
+
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
@@ -91,39 +93,48 @@ export default function Dashboard() {
             </TabsList>
 
             <TabsContent value="active">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Active Chit Funds</h2>
-                {user.role === "admin" && (
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <Button>Create New Fund</Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="sm:max-w-xl">
-                      <SheetHeader>
-                        <SheetTitle>Create Chit Fund</SheetTitle>
-                        <SheetDescription>
-                          Set up a new chit fund with the required details
-                        </SheetDescription>
-                      </SheetHeader>
-                      <div className="mt-4">
-                        <ChitFundForm />
+              <div className="space-y-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Active Chit Funds</h2>
+                  {user.role === "admin" && (
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button>Create New Fund</Button>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="sm:max-w-xl">
+                        <SheetHeader>
+                          <SheetTitle>Create Chit Fund</SheetTitle>
+                          <SheetDescription>
+                            Set up a new chit fund with the required details
+                          </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-4">
+                          <ChitFundForm />
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  )}
+                </div>
+
+                {isLoadingChitFunds ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <>
+                    <ChitFundTable 
+                      chitFunds={activeChitFunds} 
+                      userRole={user.role} 
+                      userId={user.id}
+                    />
+                    {(user.role === "admin" || user.role === "agent") && (
+                      <div className="mt-8">
+                        <FinancialReport />
                       </div>
-                    </SheetContent>
-                  </Sheet>
+                    )}
+                  </>
                 )}
               </div>
-
-              {isLoadingChitFunds ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <ChitFundTable 
-                  chitFunds={activeChitFunds} 
-                  userRole={user.role} 
-                  userId={user.id}
-                />
-              )}
             </TabsContent>
 
             {user.role === "admin" && (

@@ -209,6 +209,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  // Add this route to the existing routes
+  app.get("/api/payments/report", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const fundId = req.query.fundId ? parseInt(req.query.fundId as string) : undefined;
+      const fromDate = req.query.from ? new Date(req.query.from as string) : undefined;
+      const toDate = req.query.to ? new Date(req.query.to as string) : undefined;
+
+      const payments = await storage.getPaymentReport({ fundId, fromDate, toDate });
+      res.json(payments);
+    } catch (error) {
+      console.error("Error generating payment report:", error);
+      res.status(500).json({ message: "Failed to generate payment report" });
+    }
+  });
+
   // Fund Membership Routes
   app.post("/api/chitfunds/:fundId/members/:userId", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
