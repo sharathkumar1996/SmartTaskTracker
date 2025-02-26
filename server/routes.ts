@@ -239,6 +239,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Add new routes for accounts receivable and payable
+  app.post("/api/receivables", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    if (req.user.role !== "admin" && req.user.role !== "agent") {
+      return res.sendStatus(403);
+    }
+
+    try {
+      const newReceivable = await storage.createReceivable({
+        ...req.body,
+        recordedBy: req.user.id,
+      });
+      res.json(newReceivable);
+    } catch (error) {
+      console.error("Error creating receivable:", error);
+      res.status(500).json({ message: "Failed to create receivable" });
+    }
+  });
+
   app.get("/api/receivables/user/:userId", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     if (req.user.role !== "admin" && req.user.id !== parseInt(req.params.userId)) {
@@ -269,33 +287,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/receivables/overdue", async (req, res) => {
+  app.get("/api/receivables/fund/:fundId/month/:monthNumber", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     if (req.user.role !== "admin" && req.user.role !== "agent") {
       return res.sendStatus(403);
     }
 
     try {
-      const overdueReceivables = await storage.getOverdueReceivables();
-      res.json(overdueReceivables);
+      const receivables = await storage.getReceivablesByMonth(
+        parseInt(req.params.fundId),
+        parseInt(req.params.monthNumber)
+      );
+      res.json(receivables);
     } catch (error) {
-      console.error("Error fetching overdue receivables:", error);
-      res.status(500).json({ message: "Failed to fetch overdue receivables" });
+      console.error("Error fetching month receivables:", error);
+      res.status(500).json({ message: "Failed to fetch month receivables" });
     }
   });
 
-  app.post("/api/receivables/:id/payment", async (req, res) => {
+  app.post("/api/payables", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
-    if (req.user.role !== "admin" && req.user.role !== "agent") {
+    if (req.user.role !== "admin") {
       return res.sendStatus(403);
     }
 
     try {
-      const updated = await storage.updateReceivable(parseInt(req.params.id), req.body.amount);
-      res.json(updated);
+      const newPayable = await storage.createPayable({
+        ...req.body,
+        recordedBy: req.user.id,
+      });
+      res.json(newPayable);
     } catch (error) {
-      console.error("Error updating receivable:", error);
-      res.status(500).json({ message: "Failed to update receivable" });
+      console.error("Error creating payable:", error);
+      res.status(500).json({ message: "Failed to create payable" });
     }
   });
 
@@ -329,33 +353,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/payables/upcoming", async (req, res) => {
+  app.get("/api/payables/fund/:fundId/type/:type", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     if (req.user.role !== "admin" && req.user.role !== "agent") {
       return res.sendStatus(403);
     }
 
     try {
-      const upcomingPayables = await storage.getUpcomingPayables();
-      res.json(upcomingPayables);
+      const payables = await storage.getPayablesByType(
+        parseInt(req.params.fundId),
+        req.params.type
+      );
+      res.json(payables);
     } catch (error) {
-      console.error("Error fetching upcoming payables:", error);
-      res.status(500).json({ message: "Failed to fetch upcoming payables" });
-    }
-  });
-
-  app.post("/api/payables/:id/payment", async (req, res) => {
-    if (!req.user) return res.sendStatus(401);
-    if (req.user.role !== "admin") {
-      return res.sendStatus(403);
-    }
-
-    try {
-      const updated = await storage.updatePayable(parseInt(req.params.id), req.body.amount);
-      res.json(updated);
-    } catch (error) {
-      console.error("Error updating payable:", error);
-      res.status(500).json({ message: "Failed to update payable" });
+      console.error("Error fetching typed payables:", error);
+      res.status(500).json({ message: "Failed to fetch typed payables" });
     }
   });
 

@@ -173,12 +173,13 @@ export const accountsReceivable = pgTable("accounts_receivable", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   monthNumber: integer("month_number").notNull(),
-  dueDate: timestamp("due_date").notNull(),
-  expectedAmount: decimal("expected_amount", { precision: 10, scale: 2 }).notNull(),
-  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0'),
-  status: text("status").$type<"pending" | "partial" | "paid">().default("pending").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentType: text("payment_type").$type<"monthly" | "deposit">().notNull(),
+  paymentMethod: text("payment_method").$type<"cash" | "google_pay" | "phone_pay" | "online_portal">().notNull(),
+  receivedDate: timestamp("received_date").notNull(),
+  recordedBy: integer("recorded_by").notNull().references(() => users.id),
+  notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const accountsPayable = pgTable("accounts_payable", {
@@ -186,13 +187,11 @@ export const accountsPayable = pgTable("accounts_payable", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   paymentType: text("payment_type").$type<"bonus" | "withdrawal" | "commission">().notNull(),
-  dueDate: timestamp("due_date").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0'),
-  status: text("status").$type<"pending" | "partial" | "paid">().default("pending").notNull(),
+  paidDate: timestamp("paid_date").notNull(),
+  recordedBy: integer("recorded_by").notNull().references(() => users.id),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Add relations for the new tables
@@ -205,6 +204,10 @@ export const accountsReceivableRelations = relations(accountsReceivable, ({ one 
     fields: [accountsReceivable.chitFundId],
     references: [chitFunds.id],
   }),
+  recorder: one(users, {
+    fields: [accountsReceivable.recordedBy],
+    references: [users.id],
+  }),
 }));
 
 export const accountsPayableRelations = relations(accountsPayable, ({ one }) => ({
@@ -216,19 +219,21 @@ export const accountsPayableRelations = relations(accountsPayable, ({ one }) => 
     fields: [accountsPayable.chitFundId],
     references: [chitFunds.id],
   }),
+  recorder: one(users, {
+    fields: [accountsPayable.recordedBy],
+    references: [users.id],
+  }),
 }));
 
 // Add insert schemas for the new tables
 export const insertAccountsReceivableSchema = createInsertSchema(accountsReceivable).extend({
-  dueDate: z.coerce.date(),
-  expectedAmount: z.string().or(z.number()).transform(String),
-  paidAmount: z.string().or(z.number()).optional().transform(String),
+  receivedDate: z.coerce.date(),
+  amount: z.string().or(z.number()).transform(String),
 });
 
 export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
-  dueDate: z.coerce.date(),
+  paidDate: z.coerce.date(),
   amount: z.string().or(z.number()).transform(String),
-  paidAmount: z.string().or(z.number()).optional().transform(String),
 });
 
 // Export types for the new tables
