@@ -579,6 +579,7 @@ export class DatabaseStorage implements IStorage {
         due_date: dueDate, // Always use a valid Date object
         status: "paid", // Default status for payables
         paid_amount: payable.amount, // Set paid amount same as amount for withdrawals
+        commission: payable.commission, // Add the commission field
       };
 
       console.log("Creating payable with data:", payableData);
@@ -691,7 +692,7 @@ export class DatabaseStorage implements IStorage {
           paidDate: accountsPayable.paid_date, // Map paid_date to paidDate in result
           recordedBy: accountsPayable.recorder_id, // Map recorder_id to recordedBy
           notes: accountsPayable.notes,
-          // commission removed as it doesn't exist in the database
+          commission: accountsPayable.commission, // Include the commission field
           createdAt: accountsPayable.createdAt,
           userName: users.fullName,
           fundName: chitFunds.name
