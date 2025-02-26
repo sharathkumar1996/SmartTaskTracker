@@ -284,6 +284,9 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       }
 
       // Then record the payout
+      // Ensure we have valid dates before sending to the server
+      const paymentDate = values.paymentDate instanceof Date ? values.paymentDate : new Date();
+      
       const payableData = {
         userId,
         chitFundId,
@@ -291,8 +294,8 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         amount: payoutAmountValue.toString(),
         recordedBy: user?.id,
         notes: values.notes,
-        paidDate: values.paymentDate,
-        dueDate: values.paymentDate || new Date(), // Always ensure we have a due date
+        paidDate: paymentDate,
+        dueDate: paymentDate, // Always use payment date as due date for consistency
         commission: numericCommission, 
         withdrawalMonth: values.withdrawalMonth,
         paidAmount: paidAmount,
