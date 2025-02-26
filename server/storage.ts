@@ -265,13 +265,14 @@ export class DatabaseStorage implements IStorage {
       userId: receivable.userId,
       chitFundId: receivable.chitFundId,
       monthNumber: receivable.monthNumber,
-      amount: receivable.amount,
-      paymentType: receivable.paymentType,
-      paymentMethod: receivable.paymentMethod,
-      recordedBy: receivable.recordedBy,
-      notes: receivable.notes,
-      receivedDate: receivable.receivedDate,
+      paidAmount: receivable.paidAmount,
+      expectedAmount: receivable.expectedAmount,
+      status: receivable.status || "paid",
+      dueDate: receivable.dueDate,
+      updatedAt: receivable.updatedAt || new Date(),
     };
+
+    console.log("Creating receivable with data:", receivableData);
 
     const [newReceivable] = await db
       .insert(accountsReceivable)

@@ -4,6 +4,8 @@ import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema } from "@shared/schema";
+import { db } from "./db"; // Assuming db is imported from elsewhere
+
 
 // Global map to store WebSocket connections by user ID
 const userSockets = new Map<number, WebSocket>();
@@ -160,8 +162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chitFundId: parseInt(req.body.chitFundId),
         recordedBy: req.user.id,
         // Convert date string to Date object if needed
-        paymentDate: req.body.paymentDate instanceof Date 
-          ? req.body.paymentDate 
+        paymentDate: req.body.paymentDate instanceof Date
+          ? req.body.paymentDate
           : new Date(req.body.paymentDate)
       };
 
@@ -186,12 +188,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: payment.userId,
           chitFundId: payment.chitFundId,
           monthNumber: payment.monthNumber || 1, // Use payment month number or default to 1
-          amount: payment.amount,
-          paymentType: "monthly",
-          paymentMethod: payment.paymentMethod,
-          receivedDate: payment.paymentDate,
-          recordedBy: req.user.id,
-          notes: payment.notes
+          paidAmount: payment.amount,
+          status: "paid",
+          dueDate: payment.paymentDate, // Use payment date as due date
+          updatedAt: new Date(),
         };
 
         try {
@@ -199,6 +199,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (receivableParseResult.success) {
             await storage.createReceivable(receivableParseResult.data);
             console.log("Created corresponding receivable record for payment:", payment.id);
+          } else {
+            console.error("Validation error for receivable:", receivableParseResult.error);
           }
         } catch (error) {
           console.error("Error creating corresponding receivable record:", error);
@@ -410,6 +412,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching typed payables:", error);
       res.status(500).json({ message: "Failed to fetch typed payables" });
+    }
+  });
+
+  // Add a new endpoint to sync payments to accounts_receivable
+  app.post("/api/sync-payments-to-receivables", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    try {
+      // Get all payments
+      const allPayments = await db.select().from("payments"); // Assuming 'payments' is the table name
+      console.log(`Found ${allPayments.length} payments to sync`);
+
+      let syncedCount = 0;
+      let errorCount = 0;
+
+      // For each payment, create a corresponding accounts_receivable entry if it doesn't exist
+      for (const payment of allPayments) {
+        // Only sync monthly payments
+        if (payment.paymentType === "monthly") {
+          try {
+            // Create receivable data from payment
+            const receivableData = {
+              userId: payment.userId,
+              chitFundId: payment.chitFundId,
+              monthNumber: payment.monthNumber || 1,
+              paidAmount: payment.amount,
+              status: "paid",
+              dueDate: payment.paymentDate,
+              updatedAt: new Date(),
+            };
+
+            // Validate receivable data
+            const receivableParseResult = insertAccountsReceivableSchema.safeParse(receivableData);
+            if (receivableParseResult.success) {
+              await storage.createReceivable(receivableParseResult.data);
+              syncedCount++;
+            } else {
+              console.error("Validation error for receivable:", receivableParseResult.error);
+              errorCount++;
+            }
+          } catch (error) {
+            console.error("Error syncing payment to receivable:", error, "Payment:", payment);
+            errorCount++;
+          }
+        }
+      }
+
+      return res.json({
+        message: `Synced ${syncedCount} payments to accounts_receivable, with ${errorCount} errors.`,
+        syncedCount,
+        errorCount,
+      });
+    } catch (error) {
+      console.error("Error syncing payments to receivables:", error);
+      return res.status(500).json({
+        message: "Error syncing payments to receivables",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 

@@ -172,18 +172,18 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 // Add receivables and payables tables to existing schema
+// Revise accounts_receivable schema to match the actual database structure
 export const accountsReceivable = pgTable("accounts_receivable", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   monthNumber: integer("month_number").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paymentType: text("payment_type").$type<"monthly" | "deposit">().notNull(),
-  paymentMethod: text("payment_method").$type<"cash" | "google_pay" | "phone_pay" | "online_portal">().notNull(),
-  receivedDate: timestamp("received_date").notNull(),
-  recordedBy: integer("recorded_by").notNull().references(() => users.id),
-  notes: text("notes"),
+  dueDate: timestamp("due_date"),
+  expectedAmount: decimal("expected_amount", { precision: 10, scale: 2 }),
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }),
+  status: text("status").$type<"pending" | "paid" | "overdue">().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
 });
 
 export const accountsPayable = pgTable("accounts_payable", {
@@ -198,7 +198,7 @@ export const accountsPayable = pgTable("accounts_payable", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Add relations for the new tables
+// Update the relations to use the new structure
 export const accountsReceivableRelations = relations(accountsReceivable, ({ one }) => ({
   user: one(users, {
     fields: [accountsReceivable.userId],
@@ -207,10 +207,6 @@ export const accountsReceivableRelations = relations(accountsReceivable, ({ one 
   chitFund: one(chitFunds, {
     fields: [accountsReceivable.chitFundId],
     references: [chitFunds.id],
-  }),
-  recorder: one(users, {
-    fields: [accountsReceivable.recordedBy],
-    references: [users.id],
   }),
 }));
 
@@ -230,9 +226,13 @@ export const accountsPayableRelations = relations(accountsPayable, ({ one }) => 
 }));
 
 // Add insert schemas for the new tables
+// Update the insert schema for the new structure
 export const insertAccountsReceivableSchema = createInsertSchema(accountsReceivable).extend({
-  receivedDate: z.coerce.date(),
-  amount: z.string().or(z.number()).transform(String),
+  dueDate: z.coerce.date().optional(),
+  expectedAmount: z.string().or(z.number()).transform(String).optional(),
+  paidAmount: z.string().or(z.number()).transform(String),
+  status: z.enum(["pending", "paid", "overdue"]).default("paid"),
+  updatedAt: z.coerce.date().optional(),
 });
 
 export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
