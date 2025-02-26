@@ -16,8 +16,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ChitFund, Payment, User } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FinancialReport } from "@/components/financial-report"; // Import the new component
-
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
@@ -121,18 +119,11 @@ export default function Dashboard() {
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <>
-                    <ChitFundTable 
-                      chitFunds={activeChitFunds} 
-                      userRole={user.role} 
-                      userId={user.id}
-                    />
-                    {(user.role === "admin" || user.role === "agent") && (
-                      <div className="mt-8">
-                        <FinancialReport />
-                      </div>
-                    )}
-                  </>
+                  <ChitFundTable 
+                    chitFunds={activeChitFunds} 
+                    userRole={user.role} 
+                    userId={user.id}
+                  />
                 )}
               </div>
             </TabsContent>

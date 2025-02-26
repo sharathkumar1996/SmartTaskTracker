@@ -37,11 +37,6 @@ export interface IStorage {
       }[];
     }[];
   }>;
-  getPaymentReport(params: {
-    fundId?: number;
-    fromDate?: Date;
-    toDate?: Date;
-  }): Promise<Payment[]>;
 
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
@@ -174,35 +169,6 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Invalid user ID");
     }
     return db.select().from(payments).where(eq(payments.userId, userId));
-  }
-
-  async getPaymentReport({ fundId, fromDate, toDate }: {
-    fundId?: number;
-    fromDate?: Date;
-    toDate?: Date;
-  }): Promise<Payment[]> {
-    let conditions = [];
-
-    if (fundId) {
-      conditions.push(eq(payments.chitFundId, fundId));
-    }
-    if (fromDate) {
-      conditions.push(sql`${payments.paymentDate} >= ${fromDate}`);
-    }
-    if (toDate) {
-      conditions.push(sql`${payments.paymentDate} <= ${toDate}`);
-    }
-
-    const query = db
-      .select()
-      .from(payments)
-      .orderBy(payments.paymentDate);
-
-    if (conditions.length > 0) {
-      return query.where(and(...conditions));
-    }
-
-    return query;
   }
 
   // Member-related methods

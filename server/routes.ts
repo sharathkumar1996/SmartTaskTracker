@@ -45,7 +45,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(users);
   });
 
-  // Add new routes for getting members and agents
   app.get("/api/users/members", async (req, res) => {
     if (req.user?.role !== "admin" && req.user?.role !== "agent") {
       return res.sendStatus(403);
@@ -124,7 +123,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(chitFunds);
   });
 
-  // Add delete endpoint for chit funds
   app.delete("/api/chitfunds/:id", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
 
@@ -135,7 +133,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
-  // Add patch endpoint for chit funds
   app.patch("/api/chitfunds/:id", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
 
@@ -193,42 +190,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(payments);
   });
 
-  // Add new route for getting fund payments
-  app.get("/api/chitfunds/:fundId/payments", async (req, res) => {
-    if (req.user?.role !== "admin" && req.user?.role !== "agent") {
-      return res.sendStatus(403);
-    }
-
-    try {
-      const fundPayments = await storage.getFundPayments(parseInt(req.params.fundId));
-      res.json(fundPayments);
-    } catch (error) {
-      console.error("Error fetching fund payments:", error);
-      res.status(500).json({ message: "Failed to fetch fund payments" });
-    }
-  });
-
-
-  // Add this route to the existing routes
-  app.get("/api/payments/report", async (req, res) => {
-    if (!req.user) return res.sendStatus(401);
-    if (req.user.role !== "admin" && req.user.role !== "agent") {
-      return res.sendStatus(403);
-    }
-
-    try {
-      const fundId = req.query.fundId ? parseInt(req.query.fundId as string) : undefined;
-      const fromDate = req.query.from ? new Date(req.query.from as string) : undefined;
-      const toDate = req.query.to ? new Date(req.query.to as string) : undefined;
-
-      const payments = await storage.getPaymentReport({ fundId, fromDate, toDate });
-      res.json(payments);
-    } catch (error) {
-      console.error("Error generating payment report:", error);
-      res.status(500).json({ message: "Failed to generate payment report" });
-    }
-  });
-
   // Fund Membership Routes
   app.post("/api/chitfunds/:fundId/members/:userId", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
@@ -274,36 +235,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
     const funds = await storage.getMemberFunds(parseInt(req.params.userId));
     res.json(funds);
-  });
-
-  // Add this route after the existing routes
-  app.post("/api/notifications/:id/read", async (req, res) => {
-    if (!req.user) return res.sendStatus(401);
-
-    try {
-      const success = await storage.markNotificationAsRead(parseInt(req.params.id));
-      if (success) {
-        res.sendStatus(200);
-      } else {
-        res.status(404).json({ message: "Notification not found" });
-      }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "Failed to mark notification as read" });
-    }
-  });
-
-  // Add route to get user notifications
-  app.get("/api/notifications", async (req, res) => {
-    if (!req.user) return res.sendStatus(401);
-
-    try {
-      const notifications = await storage.getNotifications(req.user.id);
-      res.json(notifications);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "Failed to fetch notifications" });
-    }
   });
 
   return httpServer;
