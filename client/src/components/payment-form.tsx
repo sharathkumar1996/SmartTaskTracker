@@ -29,7 +29,7 @@ interface PaymentFormProps {
   chitFundId: number;
   userId: number;
   onSuccess?: () => void;
-  monthNumber: number;
+  monthNumber?: number;
 }
 
 const paymentFormSchema = z.object({
@@ -72,13 +72,13 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess, monthNum
       const paymentData = {
         userId,
         chitFundId,
-        monthNumber, // Using the monthNumber from props
         amount: amount,
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
         notes: values.notes,
         recordedBy: user?.id,
+        monthNumber: monthNumber || 1, // Provide a default value if not passed
       };
 
       const response = await apiRequest("POST", "/api/payments", paymentData);
