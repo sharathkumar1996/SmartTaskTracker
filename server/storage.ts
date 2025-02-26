@@ -550,6 +550,9 @@ export class DatabaseStorage implements IStorage {
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
     try {
       // Map fields correctly for the database table including required due_date
+      // Ensure we always have a valid date for due_date 
+      const dueDate = payable.dueDate || payable.paidDate || new Date();
+      
       const payableData = {
         userId: payable.userId,
         chitFundId: payable.chitFundId,
@@ -558,7 +561,7 @@ export class DatabaseStorage implements IStorage {
         recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
-        due_date: payable.dueDate || payable.paidDate, // Use paidDate as fallback for dueDate
+        due_date: dueDate, // Use paidDate as fallback for dueDate
         status: "paid", // Default status for payables
         paid_amount: payable.amount, // Set paid amount same as amount for withdrawals
       };
