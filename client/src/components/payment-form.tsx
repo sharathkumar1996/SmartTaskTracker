@@ -29,6 +29,7 @@ interface PaymentFormProps {
   chitFundId: number;
   userId: number;
   onSuccess?: () => void;
+  monthNumber: number;
 }
 
 const paymentFormSchema = z.object({
@@ -42,7 +43,7 @@ const paymentFormSchema = z.object({
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
-export function PaymentForm({ className, chitFundId, userId, onSuccess }: PaymentFormProps) {
+export function PaymentForm({ className, chitFundId, userId, onSuccess, monthNumber }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -72,6 +73,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         userId,
         chitFundId,
         amount: amount,
+        monthNumber,
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
