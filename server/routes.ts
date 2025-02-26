@@ -152,12 +152,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
 
     try {
-      const parseResult = insertPaymentSchema.safeParse({
-        ...req.body,
-        paymentDate: new Date(req.body.paymentDate),
-      });
+      // Set monthNumber default if not provided
+      if (!req.body.monthNumber) {
+        req.body.monthNumber = 1; // Default to 1 if not specified
+      }
+
+      // Convert date string to Date object
+      if (req.body.paymentDate && typeof req.body.paymentDate === 'string') {
+        req.body.paymentDate = new Date(req.body.paymentDate);
+      }
+
+      const parseResult = insertPaymentSchema.safeParse(req.body);
 
       if (!parseResult.success) {
+        console.error("Payment validation error:", parseResult.error);
         return res.status(400).json(parseResult.error);
       }
 
@@ -166,7 +174,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.body.userId,
         chitFundId: req.body.chitFundId,
         recordedBy: req.user.id,
-        monthNumber: req.body.monthNumber || 1,
         amount: parseResult.data.amount.toString(),
       });
 
