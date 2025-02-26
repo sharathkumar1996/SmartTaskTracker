@@ -582,12 +582,12 @@ export class DatabaseStorage implements IStorage {
         chitFundId: payable.chitFundId,
         paymentType: payable.paymentType,
         amount: payable.amount,
-        recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
+        recorderId: payable.recordedBy, // Map from API field to schema field
         notes: payable.notes,
-        paid_date: payable.paidDate, // Use paid_date field to match database column name
-        due_date: dueDate, // Always ensure we have a valid Date object for due_date
+        paidDate: payable.paidDate, // Use schema field name
+        dueDate: dueDate, // Always ensure we have a valid Date object
         status: "paid", // Default status for payables
-        paid_amount: payable.amount, // Set paid amount same as amount for withdrawals
+        paidAmount: payable.amount, // Set paid amount same as amount for withdrawals
         commission: payable.commission, // Add the commission field
       };
 
@@ -694,7 +694,7 @@ export class DatabaseStorage implements IStorage {
 
   async getAllPayables(): Promise<AccountsPayable[]> {
     try {
-      // Select with explicit column names to avoid the paid_date issue
+      // Select with explicit column names using the updated schema field names
       const results = await db
         .select({
           id: accountsPayable.id,
@@ -702,8 +702,8 @@ export class DatabaseStorage implements IStorage {
           chitFundId: accountsPayable.chitFundId,
           paymentType: accountsPayable.paymentType,
           amount: accountsPayable.amount,
-          paidDate: accountsPayable.paid_date, // Map paid_date to paidDate in result
-          recordedBy: accountsPayable.recorder_id, // Map recorder_id to recordedBy
+          paidDate: accountsPayable.paidDate, // Use schema field name
+          recordedBy: accountsPayable.recorderId, // Use schema field name 
           notes: accountsPayable.notes,
           commission: accountsPayable.commission, // Include the commission field
           createdAt: accountsPayable.createdAt,

@@ -201,8 +201,8 @@ export const accountsPayable = pgTable("accounts_payable", {
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  paid_date: timestamp("paid_date", { mode: 'date' }),
-  recorder_id: integer("recorder_id").references(() => users.id),
+  paidDate: timestamp("paid_date", { mode: 'date' }),
+  recorderId: integer("recorder_id").references(() => users.id),
   commission: decimal("commission", { precision: 10, scale: 2 }),
 });
 
@@ -228,7 +228,7 @@ export const accountsPayableRelations = relations(accountsPayable, ({ one }) => 
     references: [chitFunds.id],
   }),
   recorder: one(users, {
-    fields: [accountsPayable.recorder_id],
+    fields: [accountsPayable.recorderId],
     references: [users.id],
   }),
 }));
@@ -250,7 +250,7 @@ export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).e
   commission: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
   // Fields for app logic (not stored in DB directly)
   withdrawalMonth: z.number().optional(),
-  recordedBy: z.number(), // mapper for recorder_id
+  recordedBy: z.number(), // Field used in the API but maps to recorderId
 });
 
 // Export types for the new tables
