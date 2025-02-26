@@ -550,8 +550,22 @@ export class DatabaseStorage implements IStorage {
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
     try {
       // Map fields correctly for the database table including required due_date
-      // Ensure we always have a valid date for due_date 
-      const dueDate = payable.dueDate || payable.paidDate || new Date();
+      // Ensure we always have a valid date for due_date
+      let dueDate;
+      
+      try {
+        // Ensure we have a valid Date object for due_date
+        if (payable.dueDate instanceof Date && !isNaN(payable.dueDate.getTime())) {
+          dueDate = payable.dueDate;
+        } else if (payable.paidDate instanceof Date && !isNaN(payable.paidDate.getTime())) {
+          dueDate = payable.paidDate;
+        } else {
+          dueDate = new Date();
+        }
+      } catch (error) {
+        console.error("Error parsing dates for payable, using current date:", error);
+        dueDate = new Date();
+      }
       
       const payableData = {
         userId: payable.userId,
@@ -561,7 +575,7 @@ export class DatabaseStorage implements IStorage {
         recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
-        due_date: dueDate, // Use paidDate as fallback for dueDate
+        due_date: dueDate, // Always use a valid Date object
         status: "paid", // Default status for payables
         paid_amount: payable.amount, // Set paid amount same as amount for withdrawals
       };

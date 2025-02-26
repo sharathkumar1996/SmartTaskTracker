@@ -525,7 +525,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
             <Button
               type="submit"
               className="w-full"
-              disabled={isSubmitting || (memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
+              disabled={isSubmitting || (memberDetails?.isWithdrawn === true && memberDetails?.hasPayable === true)}
             >
               {isSubmitting ? (
                 <>

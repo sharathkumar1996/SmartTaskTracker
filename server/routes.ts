@@ -519,7 +519,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Request body for payable:", req.body);
       
       // Explicitly ensure we have a due date - critical field
-      const payableDueDate = dueDate || paidDate || new Date().toISOString();
+      // Handle various possible input formats and ensure we always have a valid date
+      let payableDueDate;
+      
+      try {
+        if (dueDate) {
+          payableDueDate = new Date(dueDate).toISOString();
+        } else if (paidDate) {
+          payableDueDate = new Date(paidDate).toISOString();
+        } else {
+          payableDueDate = new Date().toISOString();
+        }
+        
+        // If date parsing somehow fails, use current date
+        if (payableDueDate === 'Invalid Date') {
+          payableDueDate = new Date().toISOString();
+        }
+      } catch (error) {
+        console.error("Error parsing dates, using current date:", error);
+        payableDueDate = new Date().toISOString();
+      }
       
       console.log("Using due date:", payableDueDate);
 
