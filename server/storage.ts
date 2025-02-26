@@ -1,6 +1,6 @@
 import { users, chitFunds, payments, fundMembers, notifications, accountsReceivable, accountsPayable, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import Decimal from 'decimal.js';
@@ -122,12 +122,16 @@ export class DatabaseStorage implements IStorage {
     const [chitFund] = await db
       .insert(chitFunds)
       .values({
-        ...fund,
+        name: fund.name,
+        amount: fund.amount,
+        duration: fund.duration,
+        memberCount: fund.memberCount,
         monthlyContribution: fund.monthlyContribution || "5000",
         monthlyBonus: fund.monthlyBonus || "1000",
         baseCommission: fund.baseCommission || "5000",
         startDate: new Date(fund.startDate),
         endDate: new Date(fund.endDate),
+        status: fund.status
       })
       .returning();
     return chitFund;
@@ -152,14 +156,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
-    const [newPayment] = await db
-      .insert(payments)
-      .values({
-        ...payment,
-        paymentDate: new Date(payment.paymentDate),
-      })
-      .returning();
-    return newPayment;
+    try {
+      // Safely handle all numeric values and ensure proper types
+      const paymentData = {
+        userId: payment.userId,
+        chitFundId: payment.chitFundId,
+        amount: payment.amount,
+        paymentType: payment.paymentType,
+        paymentMethod: payment.paymentMethod,
+        recordedBy: payment.recordedBy,
+        notes: payment.notes,
+        paymentDate: payment.paymentDate,
+        // Provide defaults for optional numeric fields
+        monthNumber: payment.monthNumber || 1,
+        bonusAmount: payment.bonusAmount || null,
+        commissionAmount: payment.commissionAmount || null
+      };
+
+      console.log("Creating payment with data:", paymentData);
+
+      const [newPayment] = await db
+        .insert(payments)
+        .values(paymentData)
+        .returning();
+
+      return newPayment;
+    } catch (error) {
+      console.error("Error in createPayment:", error);
+      throw error;
+    }
   }
 
   async getUserPayments(userId: number): Promise<Payment[]> {
@@ -215,21 +240,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
-    return db
-      .select()
+    const results = await db
+      .select({
+        id: chitFunds.id,
+        name: chitFunds.name,
+        amount: chitFunds.amount,
+        duration: chitFunds.duration,
+        memberCount: chitFunds.memberCount,
+        monthlyContribution: chitFunds.monthlyContribution,
+        monthlyBonus: chitFunds.monthlyBonus,
+        startDate: chitFunds.startDate,
+        endDate: chitFunds.endDate,
+        baseCommission: chitFunds.baseCommission,
+        status: chitFunds.status
+      })
       .from(chitFunds)
       .innerJoin(fundMembers, eq(fundMembers.fundId, chitFunds.id))
       .where(eq(fundMembers.userId, userId));
+
+    return results;
   }
 
   async createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable> {
+    const receivableData = {
+      userId: receivable.userId,
+      chitFundId: receivable.chitFundId,
+      monthNumber: receivable.monthNumber,
+      amount: receivable.amount,
+      paymentType: receivable.paymentType,
+      paymentMethod: receivable.paymentMethod,
+      recordedBy: receivable.recordedBy,
+      notes: receivable.notes,
+      receivedDate: receivable.receivedDate,
+    };
+
     const [newReceivable] = await db
       .insert(accountsReceivable)
-      .values({
-        ...receivable,
-        receivedDate: new Date(receivable.receivedDate),
-      })
+      .values(receivableData)
       .returning();
+
     return newReceivable;
   }
 
@@ -263,13 +312,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
+    const payableData = {
+      userId: payable.userId,
+      chitFundId: payable.chitFundId,
+      paymentType: payable.paymentType,
+      amount: payable.amount,
+      recordedBy: payable.recordedBy,
+      notes: payable.notes,
+      paidDate: payable.paidDate,
+    };
+
     const [newPayable] = await db
       .insert(accountsPayable)
-      .values({
-        ...payable,
-        paidDate: new Date(payable.paidDate),
-      })
+      .values(payableData)
       .returning();
+
     return newPayable;
   }
 
@@ -296,7 +353,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(accountsPayable.chitFundId, fundId),
-          eq(accountsPayable.paymentType, type)
+          eq(accountsPayable.paymentType, type as any)
         )
       )
       .orderBy(desc(accountsPayable.paidDate));

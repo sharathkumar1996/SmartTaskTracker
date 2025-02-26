@@ -152,30 +152,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
 
     try {
-      // Set monthNumber default if not provided
-      if (!req.body.monthNumber) {
-        req.body.monthNumber = 1; // Default to 1 if not specified
-      }
+      // Ensure all numeric fields are properly formatted
+      const paymentData = {
+        ...req.body,
+        amount: req.body.amount,
+        userId: parseInt(req.body.userId),
+        chitFundId: parseInt(req.body.chitFundId),
+        monthNumber: parseInt(req.body.monthNumber || 1),
+        recordedBy: req.user.id,
+        // Convert date string to Date object if needed
+        paymentDate: req.body.paymentDate instanceof Date 
+          ? req.body.paymentDate 
+          : new Date(req.body.paymentDate)
+      };
 
-      // Convert date string to Date object
-      if (req.body.paymentDate && typeof req.body.paymentDate === 'string') {
-        req.body.paymentDate = new Date(req.body.paymentDate);
-      }
+      console.log("Payment data before validation:", paymentData);
 
-      const parseResult = insertPaymentSchema.safeParse(req.body);
+      const parseResult = insertPaymentSchema.safeParse(paymentData);
 
       if (!parseResult.success) {
         console.error("Payment validation error:", parseResult.error);
         return res.status(400).json(parseResult.error);
       }
 
-      const payment = await storage.createPayment({
-        ...parseResult.data,
-        userId: req.body.userId,
-        chitFundId: req.body.chitFundId,
-        recordedBy: req.user.id,
-        amount: parseResult.data.amount.toString(),
-      });
+      console.log("Validated payment data:", parseResult.data);
+
+      const payment = await storage.createPayment(parseResult.data);
 
       // Send real-time notification
       const notification = {
