@@ -22,7 +22,49 @@ export const users = pgTable("users", {
   status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
 
-// Define user relations
+export const chitFunds = pgTable("chit_funds", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  duration: integer("duration").notNull(),
+  memberCount: integer("member_count").notNull(),
+  monthlyContribution: decimal("monthly_contribution", { precision: 10, scale: 2 }).notNull(),
+  monthlyBonus: decimal("monthly_bonus", { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  baseCommission: decimal("base_commission", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").$type<"active" | "completed" | "closed">().notNull(),
+});
+
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  monthNumber: integer("month_number").notNull(),
+  bonusAmount: decimal("bonus_amount", { precision: 10, scale: 2 }),
+  commissionAmount: decimal("commission_amount", { precision: 10, scale: 2 }),
+  paymentType: text("payment_type").$type<"monthly" | "bonus" | "withdrawal">().notNull(),
+  paymentMethod: text("payment_method").$type<"cash" | "google_pay" | "phone_pay" | "online_portal">().notNull(),
+  recordedBy: integer("recorded_by").notNull().references(() => users.id),
+  notes: text("notes"),
+  paymentDate: timestamp("payment_date").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const fundMembers = pgTable("fund_members", {
+  fundId: integer("fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  earlyWithdrawalMonth: integer("early_withdrawal_month"),
+  increasedMonthlyAmount: decimal("increased_monthly_amount", { precision: 10, scale: 2 }),
+  totalBonusReceived: decimal("total_bonus_received", { precision: 10, scale: 2 }).default('0'),
+  totalCommissionPaid: decimal("total_commission_paid", { precision: 10, scale: 2 }).default('0'),
+  isWithdrawn: boolean("is_withdrawn").default(false),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.fundId, table.userId] }),
+}));
+
+// Maintain relationships
 export const usersRelations = relations(users, ({ many, one }) => ({
   managedFunds: many(chitFunds),
   payments: many(payments),
@@ -33,37 +75,11 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   }),
 }));
 
-export const chitFunds = pgTable("chit_funds", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  duration: integer("duration").notNull(),
-  memberCount: integer("member_count").notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date").notNull(),
-  status: text("status").$type<"active" | "completed" | "closed">().notNull(),
-});
-
-// Define chit fund relations
 export const chitFundsRelations = relations(chitFunds, ({ many }) => ({
   payments: many(payments),
   members: many(fundMembers),
 }));
 
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paymentType: text("payment_type").$type<"monthly" | "bonus">().notNull(),
-  paymentMethod: text("payment_method").$type<"cash" | "google_pay" | "phone_pay" | "online_portal">().notNull(),
-  recordedBy: integer("recorded_by").notNull().references(() => users.id),
-  notes: text("notes"),
-  paymentDate: timestamp("payment_date").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// Define payment relations
 export const paymentsRelations = relations(payments, ({ one }) => ({
   user: one(users, {
     fields: [payments.userId],
@@ -79,14 +95,6 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
-export const fundMembers = pgTable("fund_members", {
-  fundId: integer("fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.fundId, table.userId] }),
-}));
-
-// Define fund member relations
 export const fundMembersRelations = relations(fundMembers, ({ one }) => ({
   user: one(users, {
     fields: [fundMembers.userId],
@@ -98,7 +106,46 @@ export const fundMembersRelations = relations(fundMembers, ({ one }) => ({
   }),
 }));
 
-// Add notification schema
+// Updated insert schemas with proper validation
+export const insertUserSchema = createInsertSchema(users).extend({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().email("Invalid email format"),
+  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format"),
+});
+
+export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  amount: z.string().or(z.number()).transform(String),
+  duration: z.number().min(1, "Duration must be at least 1 month"),
+  memberCount: z.number().min(2, "Member count must be at least 2"),
+  monthlyContribution: z.string().or(z.number()).transform(String),
+  monthlyBonus: z.string().or(z.number()).transform(String),
+  baseCommission: z.string().or(z.number()).transform(String),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).extend({
+  paymentDate: z.coerce.date(),
+  amount: z.string().or(z.number()).transform(String),
+  monthNumber: z.number().min(1).max(20),
+  bonusAmount: z.string().or(z.number()).optional().transform(String),
+  commissionAmount: z.string().or(z.number()).optional().transform(String),
+});
+
+export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({
+  earlyWithdrawalMonth: z.number().min(1).max(20).optional(),
+  increasedMonthlyAmount: z.string().or(z.number()).optional().transform(String),
+});
+
+// Export types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type ChitFund = typeof chitFunds.$inferSelect;
+export type InsertChitFund = z.infer<typeof insertChitFundSchema>;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type FundMember = typeof fundMembers.$inferSelect;
+export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -116,38 +163,6 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
     references: [users.id],
   }),
 }));
-
-// Updated insert schemas with proper validation
-export const insertUserSchema = createInsertSchema(users).extend({
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  email: z.string().email("Invalid email format"),
-  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format"),
-});
-
-export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-  amount: z.string().or(z.number()).transform(String),
-  duration: z.number().min(1, "Duration must be at least 1 month"),
-  memberCount: z.number().min(2, "Member count must be at least 2"),
-});
-
-export const insertPaymentSchema = createInsertSchema(payments).extend({
-  paymentDate: z.coerce.date(),
-  amount: z.string().or(z.number()).transform(String),
-});
-
-export const insertFundMemberSchema = createInsertSchema(fundMembers);
 export const insertNotificationSchema = createInsertSchema(notifications);
-
-// Export types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type ChitFund = typeof chitFunds.$inferSelect;
-export type InsertChitFund = z.infer<typeof insertChitFundSchema>;
-export type Payment = typeof payments.$inferSelect;
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
-export type FundMember = typeof fundMembers.$inferSelect;
-export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
