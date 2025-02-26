@@ -1,4 +1,4 @@
-import { users, chitFunds, payments, fundMembers, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment } from "@shared/schema";
+import { users, chitFunds, payments, fundMembers, notifications, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import session from "express-session";
@@ -42,6 +42,9 @@ export interface IStorage {
       }[];
     }[];
   }>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotifications(userId: number): Promise<Notification[]>;
+  markNotificationAsRead(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -332,6 +335,28 @@ export class DatabaseStorage implements IStorage {
     );
 
     return { members: membersWithPayments };
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    return newNotification;
+  }
+
+  async getNotifications(userId: number): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(notifications.createdAt);
+  }
+
+  async markNotificationAsRead(id: number): Promise<boolean> {
+    const [updated] = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, id))
+      .returning();
+    return !!updated;
   }
 }
 

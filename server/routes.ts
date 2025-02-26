@@ -1,11 +1,40 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertChitFundSchema, insertPaymentSchema, insertUserSchema } from "@shared/schema";
 
+// Global map to store WebSocket connections by user ID
+const userSockets = new Map<number, WebSocket>();
+
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
+  const httpServer = createServer(app);
+
+  // Setup WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws, req) => {
+    // Extract user ID from session
+    const userId = (req as any).session?.passport?.user;
+
+    if (userId) {
+      userSockets.set(userId, ws);
+
+      ws.on('close', () => {
+        userSockets.delete(userId);
+      });
+    }
+  });
+
+  // Helper function to send notification to a specific user
+  async function sendUserNotification(userId: number, notification: any) {
+    const socket = userSockets.get(userId);
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(notification));
+    }
+  }
 
   // Member Management Routes
   app.get("/api/users", async (req, res) => {
@@ -138,6 +167,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recordedBy: req.user.id,
       });
 
+      // Create and store notification
+      const notification = await storage.createNotification({
+        userId: payment.userId,
+        title: "Payment Received",
+        message: `Payment of ₹${payment.amount} has been recorded`,
+        type: "payment",
+      });
+
+      // Send real-time notification
+      await sendUserNotification(payment.userId, notification);
+
       res.json(payment);
     } catch (error) {
       console.error("Payment creation error:", error);
@@ -216,6 +256,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(funds);
   });
 
-  const httpServer = createServer(app);
+  // Add this route after the existing routes
+  app.post("/api/notifications/:id/read", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      const success = await storage.markNotificationAsRead(parseInt(req.params.id));
+      if (success) {
+        res.sendStatus(200);
+      } else {
+        res.status(404).json({ message: "Notification not found" });
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  // Add route to get user notifications
+  app.get("/api/notifications", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      const notifications = await storage.getNotifications(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
   return httpServer;
 }
