@@ -283,7 +283,8 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         recordedBy: user?.id,
         notes: values.notes,
         paidDate: values.paymentDate,
-        commission: numericCommission,
+        dueDate: values.paymentDate, // Add the required due date field
+        commission: numericCommission, 
         withdrawalMonth: values.withdrawalMonth,
         paidAmount: paidAmount,
         bonusAmount: bonusAmount,
