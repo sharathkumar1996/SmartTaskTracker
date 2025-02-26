@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -9,6 +9,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -17,12 +18,14 @@ import { z } from "zod";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
-import { Loader2, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Calendar, InfoIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
+import { ChitFund, FundMember } from "@shared/schema";
 
 interface PaymentFormProps {
   className?: string;
@@ -38,6 +41,7 @@ const paymentFormSchema = z.object({
   paymentDate: z.date({
     required_error: "Payment date is required",
   }),
+  monthNumber: z.coerce.number().min(1, "Month number is required").max(24, "Month number cannot exceed 24"),
 });
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
@@ -47,6 +51,54 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expectedAmount, setExpectedAmount] = useState<string | null>(null);
+
+  // Fetch the fund details to calculate expected amount
+  const { data: fundData } = useQuery<ChitFund>({
+    queryKey: ["/api/chitfunds", chitFundId],
+    queryFn: async () => {
+      const res = await fetch(`/api/chitfunds/${chitFundId}`);
+      if (!res.ok) throw new Error("Failed to fetch fund details");
+      return res.json();
+    },
+    enabled: !!chitFundId,
+  });
+
+  // Fetch member details to check if they have withdrawn
+  const { data: memberDetails } = useQuery<FundMember>({
+    queryKey: ["/api/chitfunds", chitFundId, "members", userId, "details"],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/chitfunds/${chitFundId}/members/${userId}/details`);
+        if (!res.ok) return { fundId: chitFundId, userId, isWithdrawn: false };
+        return res.json();
+      } catch (error) {
+        console.error("Error fetching member details:", error);
+        return { fundId: chitFundId, userId, isWithdrawn: false };
+      }
+    },
+    enabled: !!chitFundId && !!userId,
+  });
+
+  // Calculate expected payment amount based on fund amount and withdrawal status
+  useEffect(() => {
+    if (fundData && fundData.amount) {
+      try {
+        const fundAmount = parseFloat(fundData.amount.toString());
+        const baseRate = 0.05; // 5% of fund amount per month
+        const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
+
+        if (memberDetails?.isWithdrawn) {
+          setExpectedAmount((fundAmount * withdrawnRate).toString());
+        } else {
+          setExpectedAmount((fundAmount * baseRate).toString());
+        }
+      } catch (error) {
+        console.error("Error calculating expected amount:", error);
+        setExpectedAmount(null);
+      }
+    }
+  }, [fundData, memberDetails]);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -55,6 +107,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
       paymentMethod: "cash",
       notes: "",
       paymentDate: new Date(),
+      monthNumber: 1,
     },
   });
 
@@ -75,6 +128,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
+        monthNumber: values.monthNumber,
         notes: values.notes,
         recordedBy: user?.id,
       };
@@ -88,6 +142,8 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
 
       await queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
+      // Also invalidate accounts receivable to reflect the new payment
+      await queryClient.invalidateQueries({ queryKey: ["/api/accounts/receivables"] });
 
       toast({
         title: "Success",
@@ -99,6 +155,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         paymentMethod: "cash",
         notes: "",
         paymentDate: new Date(),
+        monthNumber: 1,
       });
 
       onSuccess?.();
@@ -118,6 +175,42 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
         <div className="space-y-4">
+          {expectedAmount && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <InfoIcon className="h-4 w-4 text-blue-500" />
+                  <span>
+                    Expected monthly payment: {formatCurrency(expectedAmount)}
+                    {memberDetails?.isWithdrawn && " (withdrawn)"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <FormField
+            control={form.control}
+            name="monthNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Month Number</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="24"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  The month number for this payment (1-24)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="paymentDate"
@@ -171,6 +264,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    placeholder={expectedAmount ? formatCurrency(expectedAmount) : "Enter amount"}
                     {...field}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9]/g, '');

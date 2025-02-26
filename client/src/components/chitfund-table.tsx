@@ -1,4 +1,4 @@
-import { ChitFund, User } from "@shared/schema";
+import { ChitFund, User, FundMember } from "@shared/schema";
 import {
   Table,
   TableBody,
@@ -52,6 +52,8 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { PaymentTrackingSheet } from "./payment-tracking-sheet";
+import { WithdrawalStatusForm } from "./withdrawal-status-form";
+import { formatCurrency } from "@/lib/utils";
 
 interface ChitFundTableProps {
   chitFunds: ChitFund[];
@@ -80,6 +82,34 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
       return res.json();
     },
     enabled: !!selectedFund,
+  });
+
+  // Query to get member details including withdrawal status
+  const { data: memberDetails } = useQuery<FundMember>({
+    queryKey: ["/api/chitfunds", selectedFund?.id, "members", selectedMemberId, "details"],
+    queryFn: async () => {
+      if (!selectedFund || !selectedMemberId) return null;
+      try {
+        const res = await fetch(`/api/chitfunds/${selectedFund.id}/members/${selectedMemberId}/details`);
+        if (!res.ok) {
+          // If endpoint doesn't exist yet, just return default values
+          return { 
+            fundId: selectedFund.id, 
+            userId: selectedMemberId, 
+            isWithdrawn: false 
+          };
+        }
+        return res.json();
+      } catch (error) {
+        console.error("Error fetching member details:", error);
+        return { 
+          fundId: selectedFund.id, 
+          userId: selectedMemberId, 
+          isWithdrawn: false 
+        };
+      }
+    },
+    enabled: !!selectedFund && !!selectedMemberId,
   });
 
   const addMemberMutation = useMutation({
@@ -128,14 +158,6 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
       });
     },
   });
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   return (
     <div className="space-y-8">
@@ -220,7 +242,6 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                             </div>
                             {selectedMemberId && (
                               <PaymentForm
-                                type="payment"
                                 chitFundId={fund.id}
                                 userId={selectedMemberId}
                               />
@@ -249,7 +270,6 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                             </SheetDescription>
                           </SheetHeader>
                           <PaymentForm
-                            type="payment"
                             className="mt-4"
                             chitFundId={fund.id}
                             userId={userId}
@@ -317,18 +337,53 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                                         className="flex items-center justify-between p-2 rounded-md border"
                                       >
                                         <span>{member.fullName}</span>
-                                        <Button
-                                          variant="destructive"
-                                          size="sm"
-                                          onClick={() =>
-                                            removeMemberMutation.mutate({
-                                              fundId: fund.id,
-                                              userId: member.id,
-                                            })
-                                          }
-                                        >
-                                          Remove
-                                        </Button>
+                                        <div className="flex gap-2">
+                                          <Dialog>
+                                            <DialogTrigger asChild>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setSelectedMemberId(member.id)}
+                                              >
+                                                Withdrawal Status
+                                              </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                              <DialogHeader>
+                                                <DialogTitle>Update Withdrawal Status</DialogTitle>
+                                                <DialogDescription>
+                                                  Mark if {member.fullName} has withdrawn from {fund.name}
+                                                </DialogDescription>
+                                              </DialogHeader>
+                                              <WithdrawalStatusForm
+                                                fundId={fund.id}
+                                                userId={member.id}
+                                                initialValues={{
+                                                  isWithdrawn: memberDetails?.isWithdrawn || false,
+                                                  earlyWithdrawalMonth: memberDetails?.earlyWithdrawalMonth || null
+                                                }}
+                                                onSuccess={() => {
+                                                  queryClient.invalidateQueries({
+                                                    queryKey: ["/api/chitfunds", fund.id, "members", member.id, "details"]
+                                                  });
+                                                }}
+                                                className="mt-4"
+                                              />
+                                            </DialogContent>
+                                          </Dialog>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() =>
+                                              removeMemberMutation.mutate({
+                                                fundId: fund.id,
+                                                userId: member.id,
+                                              })
+                                            }
+                                          >
+                                            Remove
+                                          </Button>
+                                        </div>
                                       </div>
                                     ))}
                                   </div>

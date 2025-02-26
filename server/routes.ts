@@ -126,6 +126,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(chitFunds);
   });
 
+  // Add endpoint to get a single chit fund by ID
+  app.get("/api/chitfunds/:id", async (req, res) => {
+    try {
+      const fund = await storage.getChitFund(parseInt(req.params.id));
+      if (!fund) {
+        return res.status(404).json({ message: "Chit fund not found" });
+      }
+      res.json(fund);
+    } catch (error) {
+      console.error("Error fetching chit fund:", error);
+      res.status(500).json({ message: "Failed to fetch chit fund" });
+    }
+  });
+
   app.delete("/api/chitfunds/:id", async (req, res) => {
     if (req.user?.role !== "admin") return res.sendStatus(403);
 
@@ -184,13 +198,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Then, create a corresponding accounts_receivable record
       if (payment && payment.paymentType === "monthly") {
+        // Get the fund details to calculate the expected amount
+        const fund = await storage.getChitFund(payment.chitFundId);
+
+        // Get member details to check if they have withdrawn
+        const memberDetails = await storage.getFundMemberDetails(payment.chitFundId, payment.userId);
+
+        // Calculate expected amount based on fund amount and withdrawal status
+        // Before withdrawal: 5% of fund amount per month (1 lakh fund = 5k per month)
+        // After withdrawal: 6% of fund amount per month (1 lakh fund = 6k per month)
+        let expectedAmount = payment.amount; // Default to payment amount if calculation fails
+
+        if (fund) {
+          const fundAmount = parseFloat(fund.amount.toString());
+          const baseRate = 0.05; // 5% of fund amount per month
+          const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
+
+          if (memberDetails?.isWithdrawn) {
+            expectedAmount = (fundAmount * withdrawnRate).toString();
+          } else {
+            expectedAmount = (fundAmount * baseRate).toString();
+          }
+        }
+
         // Create a receivable record for monthly payments
         const receivableData = {
           userId: payment.userId,
           chitFundId: payment.chitFundId,
           monthNumber: payment.monthNumber || 1, // Use payment month number or default to 1
           paidAmount: payment.amount,
-          expectedAmount: payment.amount, // Set expectedAmount to the same as paidAmount
+          expectedAmount: expectedAmount, // Set dynamically based on fund and withdrawal status
           status: "paid",
           dueDate: payment.paymentDate, // Use payment date as due date
           updatedAt: new Date(),
@@ -275,6 +312,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
     const members = await storage.getFundMembers(parseInt(req.params.fundId));
     res.json(members);
+  });
+
+  // Get member details including withdrawal status
+  app.get("/api/chitfunds/:fundId/members/:userId/details", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      const fundId = parseInt(req.params.fundId);
+      const userId = parseInt(req.params.userId);
+
+      const memberDetails = await storage.getFundMemberDetails(fundId, userId);
+
+      if (!memberDetails) {
+        return res.status(404).json({ message: "Member not found in fund" });
+      }
+
+      res.json(memberDetails);
+    } catch (error) {
+      console.error("Error fetching member details:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch member details",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Update member withdrawal status
+  app.patch("/api/chitfunds/:fundId/members/:userId/withdraw", async (req, res) => {
+    if (req.user?.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const fundId = parseInt(req.params.fundId);
+      const userId = parseInt(req.params.userId);
+      const { isWithdrawn, withdrawalMonth } = req.body;
+
+      const result = await storage.updateMemberWithdrawalStatus(fundId, userId, {
+        isWithdrawn: !!isWithdrawn,
+        earlyWithdrawalMonth: withdrawalMonth || null
+      });
+
+      if (!result) {
+        return res.status(404).json({ message: "Member not found in fund" });
+      }
+
+      res.json({ success: true, message: "Member withdrawal status updated" });
+    } catch (error) {
+      console.error("Error updating member withdrawal status:", error);
+      res.status(500).json({ 
+        message: "Failed to update withdrawal status",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   });
 
   app.get("/api/users/:userId/funds", async (req, res) => {
@@ -460,13 +549,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Only sync monthly payments
         if (payment.paymentType === "monthly") {
           try {
+            // Get the fund details to calculate the expected amount
+            const fund = await storage.getChitFund(payment.chitFundId);
+
+            // Get member details to check if they have withdrawn
+            const memberDetails = await storage.getFundMemberDetails(payment.chitFundId, payment.userId);
+
+            // Calculate expected amount based on fund amount and withdrawal status
+            let expectedAmount = payment.amount.toString(); // Default
+
+            if (fund) {
+              const fundAmount = parseFloat(fund.amount.toString());
+              const baseRate = 0.05; // 5% of fund amount per month
+              const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
+
+              if (memberDetails?.isWithdrawn) {
+                expectedAmount = (fundAmount * withdrawnRate).toString();
+              } else {
+                expectedAmount = (fundAmount * baseRate).toString();
+              }
+            }
+
             // Create receivable data from payment
             const receivableData = {
               userId: payment.userId,
               chitFundId: payment.chitFundId,
               monthNumber: payment.monthNumber || 1,
-              paidAmount: payment.amount,
-              expectedAmount: payment.amount, // Set expectedAmount to the same as paidAmount
+              paidAmount: payment.amount.toString(),
+              expectedAmount: expectedAmount, // Dynamically calculated
               status: "paid",
               dueDate: payment.paymentDate,
               updatedAt: new Date(),

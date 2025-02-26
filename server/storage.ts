@@ -1,4 +1,4 @@
-import { users, chitFunds, payments, fundMembers, notifications, accountsReceivable, accountsPayable, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable } from "@shared/schema";
+import { users, chitFunds, payments, fundMembers, notifications, accountsReceivable, accountsPayable, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable, type FundMember } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import session from "express-session";
@@ -21,6 +21,7 @@ export interface IStorage {
   deleteUser(id: number): Promise<boolean>;
 
   createChitFund(fund: InsertChitFund): Promise<ChitFund>;
+  getChitFund(id: number): Promise<ChitFund | undefined>; // Add method to get a single fund
   getChitFunds(): Promise<ChitFund[]>;
   updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined>;
   deleteChitFund(id: number): Promise<boolean>;
@@ -31,6 +32,8 @@ export interface IStorage {
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<Omit<User, "password">[]>;
+  getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined>; // Add method to get member details
+  updateMemberWithdrawalStatus(fundId: number, userId: number, updates: Partial<FundMember>): Promise<boolean>; // Add method to update withdrawal status
   getMemberFunds(userId: number): Promise<ChitFund[]>;
 
   // Accounts Receivable methods
@@ -139,6 +142,11 @@ export class DatabaseStorage implements IStorage {
     return chitFund;
   }
 
+  async getChitFund(id: number): Promise<ChitFund | undefined> {
+    const [fund] = await db.select().from(chitFunds).where(eq(chitFunds.id, id));
+    return fund;
+  }
+
   async getChitFunds(): Promise<ChitFund[]> {
     return db.select().from(chitFunds);
   }
@@ -238,6 +246,33 @@ export class DatabaseStorage implements IStorage {
       .from(fundMembers)
       .innerJoin(users, eq(fundMembers.userId, users.id))
       .where(eq(fundMembers.fundId, fundId));
+  }
+
+  async getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined> {
+    const [member] = await db
+      .select()
+      .from(fundMembers)
+      .where(
+        and(
+          eq(fundMembers.fundId, fundId),
+          eq(fundMembers.userId, userId)
+        )
+      );
+    return member;
+  }
+
+  async updateMemberWithdrawalStatus(fundId: number, userId: number, updates: Partial<FundMember>): Promise<boolean> {
+    const [updated] = await db
+      .update(fundMembers)
+      .set(updates)
+      .where(
+        and(
+          eq(fundMembers.fundId, fundId),
+          eq(fundMembers.userId, userId)
+        )
+      )
+      .returning();
+    return !!updated;
   }
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
