@@ -149,7 +149,9 @@ export type ChitFund = typeof chitFunds.$inferSelect;
 export type InsertChitFund = z.infer<typeof insertChitFundSchema>;
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
-export type FundMember = typeof fundMembers.$inferSelect;
+export type FundMember = typeof fundMembers.$inferSelect & {
+  hasPayable?: boolean; // Added for client-side display purposes
+};
 export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),

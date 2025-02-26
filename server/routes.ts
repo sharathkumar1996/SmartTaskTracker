@@ -348,8 +348,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!memberDetails) {
         return res.status(404).json({ message: "Member not found in fund" });
       }
+      
+      // Check if member has any payables (payout records)
+      let hasPayable = false;
+      try {
+        const payables = await storage.getPayablesByUser(userId);
+        hasPayable = payables.some(p => 
+          p.chitFundId === fundId && 
+          p.paymentType === "withdrawal"
+        );
+      } catch (error) {
+        console.error("Error checking payables:", error);
+      }
 
-      res.json(memberDetails);
+      res.json({
+        ...memberDetails,
+        hasPayable
+      });
     } catch (error) {
       console.error("Error fetching member details:", error);
       res.status(500).json({

@@ -234,10 +234,15 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   }, [form.watch]);
 
   async function onSubmit(values: PayoutFormValues) {
-    if (memberDetails?.isWithdrawn) {
+    // Allow re-processing payments for already withdrawn members if no payable exists
+    // This handles edge cases where the member was marked as withdrawn but the payout wasn't processed
+    const hasBeenPaidOut = memberDetails?.isWithdrawn && 
+      memberDetails?.hasPayable === true;
+    
+    if (hasBeenPaidOut) {
       toast({
         title: "Error",
-        description: "This member has already withdrawn from this fund",
+        description: "This member has already withdrawn and received payout from this fund",
         variant: "destructive",
       });
       return;
@@ -517,15 +522,17 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
             <Button
               type="submit"
               className="w-full"
-              disabled={isSubmitting || (memberDetails?.isWithdrawn === true)}
+              disabled={isSubmitting || (memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing Payout...
                 </>
+              ) : (memberDetails?.isWithdrawn && memberDetails?.hasPayable) ? (
+                'Member Has Already Withdrawn and Received Payout'
               ) : memberDetails?.isWithdrawn ? (
-                'Member Has Already Withdrawn'
+                'Retry Processing Incomplete Payout'
               ) : (
                 'Process Payout'
               )}

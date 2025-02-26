@@ -159,6 +159,8 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   }, [form.watch]);
 
   async function onSubmit(values: PaymentFormValues) {
+    // Ensure month number is valid (1-20)
+    const monthNumber = Math.max(1, Math.min(20, values.monthNumber || 1));
     try {
       setIsSubmitting(true);
 
@@ -175,7 +177,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
-        monthNumber: values.monthNumber,
+        monthNumber: monthNumber, // Use the validated month number
         notes: values.notes,
         recordedBy: user?.id,
       };
