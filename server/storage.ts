@@ -557,14 +557,23 @@ export class DatabaseStorage implements IStorage {
       try {
         // Ensure we have a valid Date object for due_date
         if (payable.dueDate instanceof Date && !isNaN(payable.dueDate.getTime())) {
+          console.log("Using provided dueDate:", payable.dueDate);
           dueDate = payable.dueDate;
         } else if (payable.paidDate instanceof Date && !isNaN(payable.paidDate.getTime())) {
+          console.log("Using paidDate as dueDate:", payable.paidDate);
           dueDate = payable.paidDate;
         } else {
+          console.log("Using current date as dueDate");
           dueDate = new Date();
         }
       } catch (error) {
         console.error("Error parsing dates for payable, using current date:", error);
+        dueDate = new Date();
+      }
+      
+      // Ensure dueDate is a valid Date object
+      if (!(dueDate instanceof Date) || isNaN(dueDate.getTime())) {
+        console.warn("Invalid dueDate detected, resetting to current date");
         dueDate = new Date();
       }
       
@@ -584,11 +593,15 @@ export class DatabaseStorage implements IStorage {
 
       console.log("Creating payable with data:", payableData);
 
-      // Insert into database with explicit column mapping
+      // Use the original payableData object to insert
+      // Drizzle will handle the correct mapping of field names to database column names
       const result = await db
         .insert(accountsPayable)
         .values(payableData as any)
         .returning();
+      
+      // Log the result for debugging
+      console.log("Payable created successfully:", result);
 
       // If this is a withdrawal payment, update the member's withdrawal status
       if (payable.paymentType === 'withdrawal' && payable.withdrawalMonth) {
