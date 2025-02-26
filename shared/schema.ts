@@ -134,6 +134,7 @@ export const insertPaymentSchema = z.object({
   recordedBy: z.number(),
   notes: z.string().optional().nullable(),
   paymentDate: z.coerce.date(),
+  monthNumber: z.number().optional(),
 });
 
 export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({
@@ -181,7 +182,7 @@ export const accountsReceivable = pgTable("accounts_receivable", {
   dueDate: timestamp("due_date"),
   expectedAmount: decimal("expected_amount", { precision: 10, scale: 2 }),
   paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }),
-  status: text("status").$type<"pending" | "paid" | "overdue">().default("pending"),
+  status: text("status").$type<"pending" | "paid" | "overdue" | "partial">().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
 });
@@ -195,6 +196,7 @@ export const accountsPayable = pgTable("accounts_payable", {
   paidDate: timestamp("paid_date").notNull(),
   recordedBy: integer("recorded_by").notNull().references(() => users.id),
   notes: text("notes"),
+  commission: decimal("commission", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -231,13 +233,14 @@ export const insertAccountsReceivableSchema = createInsertSchema(accountsReceiva
   dueDate: z.coerce.date().optional(),
   expectedAmount: z.string().or(z.number()).transform(String),
   paidAmount: z.string().or(z.number()).transform(String),
-  status: z.enum(["pending", "paid", "overdue"]).default("paid"),
+  status: z.enum(["pending", "paid", "overdue", "partial"]).default("paid"),
   updatedAt: z.coerce.date().optional(),
 });
 
 export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
   paidDate: z.coerce.date(),
   amount: z.string().or(z.number()).transform(String),
+  commission: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
 });
 
 // Export types for the new tables

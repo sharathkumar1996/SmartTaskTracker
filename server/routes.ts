@@ -7,7 +7,6 @@ import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAcco
 import { db } from "./db"; // Assuming db is imported from elsewhere
 import { payments } from "@shared/schema"; // Import the payments table schema
 
-
 // Global map to store WebSocket connections by user ID
 const userSockets = new Map<number, WebSocket>();
 
@@ -491,6 +490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update the payables creation endpoint to handle withdrawals with commission
   app.post("/api/payables", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     if (req.user.role !== "admin") {
@@ -498,14 +498,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // Extract request data
+      const { userId, chitFundId, paymentType, amount, notes, paidDate, commission } = req.body;
+
+      // Create the payable record
       const newPayable = await storage.createPayable({
-        ...req.body,
+        userId: parseInt(userId),
+        chitFundId: parseInt(chitFundId),
+        paymentType,
+        amount: amount.toString(),
         recordedBy: req.user.id,
+        notes: notes || null,
+        paidDate: new Date(paidDate),
+        commission: commission ? commission.toString() : null,
       });
+
+      // If this is a withdrawal payment, we should also update the member's withdrawal status
+      if (paymentType === "withdrawal") {
+        // Update the FundMember record to mark as withdrawn
+        // Note: This is now also done from the client side before making this request
+        try {
+          const memberDetails = await storage.getFundMemberDetails(
+            parseInt(chitFundId),
+            parseInt(userId)
+          );
+
+          // Only update if not already withdrawn
+          if (memberDetails && !memberDetails.isWithdrawn) {
+            await storage.updateMemberWithdrawalStatus(parseInt(chitFundId), parseInt(userId), {
+              isWithdrawn: true,
+              earlyWithdrawalMonth: req.body.withdrawalMonth || null
+            });
+          }
+        } catch (memberError) {
+          console.error("Error updating member withdrawal status:", memberError);
+          // We don't want to fail the payout if this fails
+        }
+      }
+
+      // Send notification to the member
+      const notification = {
+        userId: parseInt(userId),
+        title: paymentType === "withdrawal" ? "Chit Fund Withdrawal" : "Payment Made", 
+        message: paymentType === "withdrawal" 
+          ? `You have withdrawn ₹${amount} from chit fund #${chitFundId}`
+          : `A payment of ₹${amount} has been made to you`,
+        type: "payment",
+      };
+
+      await sendUserNotification(parseInt(userId), notification);
+
       res.json(newPayable);
     } catch (error) {
       console.error("Error creating payable:", error);
-      res.status(500).json({ message: "Failed to create payable" });
+      res.status(500).json({ 
+        message: "Failed to create payable", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
