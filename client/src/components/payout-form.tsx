@@ -44,7 +44,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fundAmount, setFundAmount] = useState<string | null>(null);
   const [payoutAmount, setPayoutAmount] = useState<string | null>(null);
-  const [commissionAmount, setCommissionAmount] = useState<string>("0");
+  const [commissionAmount, setCommissionAmount] = useState<string>("5000");
   const [monthsPaid, setMonthsPaid] = useState(0);
   const [paidAmount, setPaidAmount] = useState<string>("0");
   const [bonusAmount, setBonusAmount] = useState<string>("0");
@@ -224,7 +224,10 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'commission' && value.commission) {
-        setCommissionAmount(value.commission.replace(/[^0-9]/g, ''));
+        // Convert to integer and back to string to ensure it's a clean integer
+        const intValue = parseInt(value.commission, 10);
+        // Use 5000 as fallback if parsing fails
+        setCommissionAmount(isNaN(intValue) ? "5000" : String(intValue));
       }
     });
     return () => subscription.unsubscribe();
@@ -243,11 +246,12 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     try {
       setIsSubmitting(true);
 
-      // Format commission: remove non-numeric characters and ensure it's a valid number
-      const numericCommission = values.commission.replace(/[^0-9]/g, '');
-      if (!numericCommission || isNaN(Number(numericCommission))) {
+      // Ensure commission is a valid integer
+      const commissionValue = parseInt(values.commission, 10);
+      if (isNaN(commissionValue)) {
         throw new Error("Invalid commission amount");
       }
+      const numericCommission = String(commissionValue);
 
       // Calculate payout amount
       if (!payoutAmount) {
@@ -472,14 +476,16 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                   <FormLabel>Commission Amount</FormLabel>
                   <FormControl>
                     <Input
-                      type="text"
+                      type="number"
                       inputMode="numeric"
-                      pattern="[0-9]*"
+                      min="0"
+                      step="1" 
                       placeholder="Enter commission amount in rupees (e.g. 5000)"
                       {...field}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        field.onChange(value);
+                        // Ensure we only save integers
+                        const value = parseInt(e.target.value, 10);
+                        field.onChange(isNaN(value) ? "5000" : String(value));
                       }}
                     />
                   </FormControl>
