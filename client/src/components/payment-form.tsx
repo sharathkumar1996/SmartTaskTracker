@@ -32,9 +32,8 @@ interface PaymentFormProps {
 }
 
 const paymentFormSchema = z.object({
-  amount: z.string().min(1, "Amount is required").transform((val) => val.replace(/[^0-9.]/g, '')),
+  amount: z.string().min(1, "Amount is required"),
   paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
-  monthNumber: z.number().min(1).max(20, "Month number must be between 1 and 20"),
   notes: z.string().optional(),
   paymentDate: z.date({
     required_error: "Payment date is required",
@@ -54,7 +53,6 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
     defaultValues: {
       amount: '',
       paymentMethod: "cash",
-      monthNumber: 1,
       notes: "",
       paymentDate: new Date(),
     },
@@ -65,7 +63,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
       setIsSubmitting(true);
 
       // Ensure amount is a valid number string
-      const amount = values.amount.replace(/[^0-9.]/g, '');
+      const amount = values.amount.replace(/[^0-9]/g, '');
       if (!amount || isNaN(Number(amount))) {
         throw new Error("Invalid amount");
       }
@@ -74,7 +72,6 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         userId,
         chitFundId,
         amount: amount,
-        monthNumber: values.monthNumber,
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
@@ -100,7 +97,6 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
       form.reset({
         amount: '',
         paymentMethod: "cash",
-        monthNumber: 1,
         notes: "",
         paymentDate: new Date(),
       });
@@ -159,26 +155,6 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
                     />
                   </PopoverContent>
                 </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="monthNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Month Number</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={20}
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
