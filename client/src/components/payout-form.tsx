@@ -56,7 +56,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   const form = useForm<PayoutFormValues>({
     resolver: zodResolver(payoutFormSchema),
     defaultValues: {
-      commission: "5000",
+      commission: "5000", // Default value until fund data is loaded
       notes: "",
       paymentDate: new Date(),
       withdrawalMonth: 1,
@@ -211,8 +211,13 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   // Update default values when data is loaded
   useEffect(() => {
     if (fundData?.baseCommission) {
+      // Set the commission to the fund's base commission by default
       form.setValue('commission', fundData.baseCommission);
       setCommissionAmount(fundData.baseCommission);
+    } else {
+      // Fallback to 5000 if no base commission is defined in the fund
+      form.setValue('commission', "5000");
+      setCommissionAmount("5000");
     }
     if (memberDetails?.earlyWithdrawalMonth) {
       form.setValue('withdrawalMonth', memberDetails.earlyWithdrawalMonth);
@@ -483,22 +488,41 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                 <FormItem>
                   <FormLabel>Commission Amount</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min="0"
-                      step="1" 
-                      placeholder="Enter commission amount in rupees (e.g. 5000)"
-                      {...field}
-                      onChange={(e) => {
-                        // Ensure we only save integers
-                        const value = parseInt(e.target.value, 10);
-                        field.onChange(isNaN(value) ? "5000" : String(value));
-                      }}
-                    />
+                    <div className="flex space-x-2">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        step="100" 
+                        placeholder="Enter commission amount in rupees (e.g. 5000)"
+                        {...field}
+                        onChange={(e) => {
+                          // Ensure we only save valid numbers
+                          const value = parseInt(e.target.value, 10);
+                          field.onChange(isNaN(value) ? "5000" : String(value));
+                        }}
+                        className="flex-1"
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => {
+                          // Reset to fund's base commission or 5000 if not available
+                          const baseCommission = fundData?.baseCommission || "5000";
+                          field.onChange(baseCommission);
+                          setCommissionAmount(baseCommission);
+                        }}
+                      >
+                        Reset to Default
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormDescription>
-                    Commission to be deducted from the fund amount (in rupees, not percentage)
+                    Commission to be deducted from the fund amount (in rupees, not percentage).
+                    The default value comes from the fund's base commission setting, which is 
+                    {fundData?.baseCommission 
+                      ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
+                      : " ₹5,000"} for this fund, but can be adjusted as needed.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
