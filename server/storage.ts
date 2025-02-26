@@ -549,7 +549,7 @@ export class DatabaseStorage implements IStorage {
 
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
     try {
-      // Ensure paid_date is included in the data object
+      // Map fields correctly for the database table
       const payableData = {
         userId: payable.userId,
         chitFundId: payable.chitFundId,
@@ -558,7 +558,6 @@ export class DatabaseStorage implements IStorage {
         recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
-        // commission is handled in app logic, not stored in DB directly
       };
 
       console.log("Creating payable with data:", payableData);
@@ -569,10 +568,10 @@ export class DatabaseStorage implements IStorage {
         .values(payableData as any)
         .returning();
 
-      // If this includes commission info and is a withdrawal, update fund_members table
+      // If this is a withdrawal payment, update the member's withdrawal status
       if (payable.paymentType === 'withdrawal' && payable.withdrawalMonth) {
         try {
-          // Update the fund member record with withdrawal info - even though we don't store commission directly
+          // Update the fund member record with withdrawal info
           await this.updateMemberWithdrawalStatus(
             payable.chitFundId, 
             payable.userId, 
@@ -582,6 +581,25 @@ export class DatabaseStorage implements IStorage {
             }
           );
           console.log(`Updated withdrawal status for user ${payable.userId} in fund ${payable.chitFundId}`);
+          
+          // Also create a payment record for better tracking
+          try {
+            await this.createPayment({
+              userId: payable.userId,
+              chitFundId: payable.chitFundId,
+              amount: payable.amount,
+              paymentType: "withdrawal",
+              paymentMethod: "cash", // Default method
+              recordedBy: payable.recordedBy,
+              notes: payable.notes || `Withdrawal payment for month ${payable.withdrawalMonth}`,
+              paymentDate: payable.paidDate,
+              monthNumber: payable.withdrawalMonth
+            });
+            console.log(`Created payment record for withdrawal`);
+          } catch (paymentError) {
+            console.error("Error creating payment record for withdrawal:", paymentError);
+            // Continue anyway - payable record was already created
+          }
         } catch (withdrawalError) {
           console.error("Error updating withdrawal status:", withdrawalError);
           // Continue anyway - we don't want to roll back the payment record

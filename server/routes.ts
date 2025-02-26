@@ -499,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Extract request data
-      const { userId, chitFundId, paymentType, amount, notes, paidDate, commission } = req.body;
+      const { userId, chitFundId, paymentType, amount, notes, paidDate, withdrawalMonth } = req.body;
 
       // Create the payable record
       const newPayable = await storage.createPayable({
@@ -510,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recordedBy: req.user.id,
         notes: notes || null,
         paidDate: new Date(paidDate),
-        commission: commission ? commission.toString() : null,
+        withdrawalMonth: withdrawalMonth ? parseInt(withdrawalMonth) : undefined,
       });
 
       // If this is a withdrawal payment, we should also update the member's withdrawal status
@@ -709,9 +709,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               paymentType: "withdrawal",
               amount: payment.amount.toString(),
               paidDate: payment.paymentDate,
-              recordedBy: payment.recordedBy,
+              recordedBy: payment.recordedBy || req.user.id, // Default to current user if not set
               notes: payment.notes || null,
-              commission: payment.commissionAmount ? payment.commissionAmount.toString() : null,
+              withdrawalMonth: payment.monthNumber,
             };
 
             console.log("Creating payable with data:", payableData);
