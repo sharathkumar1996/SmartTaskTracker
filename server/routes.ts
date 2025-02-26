@@ -510,6 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recordedBy: req.user.id,
         notes: notes || null,
         paidDate: new Date(paidDate),
+        dueDate: new Date(paidDate), // Set due date same as paid date for withdrawals
         withdrawalMonth: withdrawalMonth ? parseInt(withdrawalMonth) : undefined,
       });
 
@@ -709,6 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               paymentType: "withdrawal",
               amount: payment.amount.toString(),
               paidDate: payment.paymentDate,
+              dueDate: payment.paymentDate, // Set due date to payment date
               recordedBy: payment.recordedBy || req.user.id, // Default to current user if not set
               notes: payment.notes || null,
               withdrawalMonth: payment.monthNumber,

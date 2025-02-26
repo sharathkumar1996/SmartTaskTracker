@@ -192,12 +192,15 @@ export const accountsPayable = pgTable("accounts_payable", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   chitFundId: integer("chit_fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   paymentType: text("payment_type").$type<"bonus" | "withdrawal" | "commission">().notNull(),
+  dueDate: timestamp("due_date").notNull(), // Required field in the database
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  paid_date: timestamp("paid_date").notNull(),
-  recorder_id: integer("recorder_id").references(() => users.id),
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0'),
+  status: text("status").$type<"pending" | "paid" | "overdue" | "partial">().notNull().default("pending"),
   notes: text("notes"),
-  // Note: commission is stored in application logic, not in the DB table
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  paid_date: timestamp("paid_date", { mode: 'date' }),
+  recorder_id: integer("recorder_id").references(() => users.id),
 });
 
 // Update the relations to use the new structure
@@ -239,6 +242,7 @@ export const insertAccountsReceivableSchema = createInsertSchema(accountsReceiva
 
 export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
   paidDate: z.coerce.date(),
+  dueDate: z.coerce.date(), // Add the due date field to match the database column
   amount: z.string().or(z.number()).transform(String),
   // Fields for app logic (not stored in DB directly)
   withdrawalMonth: z.number().optional(),
