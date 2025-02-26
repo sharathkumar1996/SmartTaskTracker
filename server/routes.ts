@@ -5,6 +5,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema } from "@shared/schema";
 import { db } from "./db"; // Assuming db is imported from elsewhere
+import { payments } from "@shared/schema"; // Import the payments table schema
 
 
 // Global map to store WebSocket connections by user ID
@@ -415,6 +416,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add API endpoints for accounts data
+  app.get("/api/accounts/receivables", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    try {
+      const receivables = await storage.getAllReceivables();
+      res.json(receivables);
+    } catch (error) {
+      console.error("Error fetching receivables:", error);
+      res.status(500).json({ message: "Failed to fetch receivables" });
+    }
+  });
+
+  app.get("/api/accounts/payables", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    try {
+      const payables = await storage.getAllPayables();
+      res.json(payables);
+    } catch (error) {
+      console.error("Error fetching payables:", error);
+      res.status(500).json({ message: "Failed to fetch payables" });
+    }
+  });
+
   // Add a new endpoint to sync payments to accounts_receivable
   app.post("/api/sync-payments-to-receivables", async (req, res) => {
     if (!req.user || req.user.role !== "admin") {
@@ -422,8 +446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Get all payments
-      const allPayments = await db.select().from("payments"); // Assuming 'payments' is the table name
+      // Get all payments - correctly using the payments table schema
+      // Fix the query approach and use a safer approach with explicit sql
+      const allPayments = await db.query.payments.findMany();
       console.log(`Found ${allPayments.length} payments to sync`);
 
       let syncedCount = 0;
@@ -450,6 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (receivableParseResult.success) {
               await storage.createReceivable(receivableParseResult.data);
               syncedCount++;
+              console.log(`Synced payment ID ${payment.id} to receivables.`);
             } else {
               console.error("Validation error for receivable:", receivableParseResult.error);
               errorCount++;

@@ -38,12 +38,14 @@ export interface IStorage {
   getReceivablesByUser(userId: number): Promise<AccountsReceivable[]>;
   getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]>;
   getReceivablesByMonth(fundId: number, monthNumber: number): Promise<AccountsReceivable[]>;
+  getAllReceivables(): Promise<AccountsReceivable[]>; // Add this method
 
   // Accounts Payable methods
   createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable>;
   getPayablesByUser(userId: number): Promise<AccountsPayable[]>;
   getPayablesByFund(fundId: number): Promise<AccountsPayable[]>;
   getPayablesByType(fundId: number, type: string): Promise<AccountsPayable[]>;
+  getAllPayables(): Promise<AccountsPayable[]>; // Add this method
 }
 
 export class DatabaseStorage implements IStorage {
@@ -287,7 +289,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(accountsReceivable)
       .where(eq(accountsReceivable.userId, userId))
-      .orderBy(desc(accountsReceivable.receivedDate));
+      .orderBy(desc(accountsReceivable.updatedAt));
   }
 
   async getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]> {
@@ -295,7 +297,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(accountsReceivable)
       .where(eq(accountsReceivable.chitFundId, fundId))
-      .orderBy(desc(accountsReceivable.receivedDate));
+      .orderBy(desc(accountsReceivable.updatedAt));
   }
 
   async getReceivablesByMonth(fundId: number, monthNumber: number): Promise<AccountsReceivable[]> {
@@ -308,7 +310,15 @@ export class DatabaseStorage implements IStorage {
           eq(accountsReceivable.monthNumber, monthNumber)
         )
       )
-      .orderBy(desc(accountsReceivable.receivedDate));
+      .orderBy(desc(accountsReceivable.updatedAt));
+  }
+
+  // Implement the missing method to get all receivables
+  async getAllReceivables(): Promise<AccountsReceivable[]> {
+    return db
+      .select()
+      .from(accountsReceivable)
+      .orderBy(desc(accountsReceivable.updatedAt));
   }
 
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
@@ -356,6 +366,14 @@ export class DatabaseStorage implements IStorage {
           eq(accountsPayable.paymentType, type as any)
         )
       )
+      .orderBy(desc(accountsPayable.paidDate));
+  }
+
+  // Implement the missing method to get all payables
+  async getAllPayables(): Promise<AccountsPayable[]> {
+    return db
+      .select()
+      .from(accountsPayable)
       .orderBy(desc(accountsPayable.paidDate));
   }
 }
