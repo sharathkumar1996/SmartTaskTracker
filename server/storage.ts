@@ -38,14 +38,14 @@ export interface IStorage {
   getReceivablesByUser(userId: number): Promise<AccountsReceivable[]>;
   getReceivablesByFund(fundId: number): Promise<AccountsReceivable[]>;
   getReceivablesByMonth(fundId: number, monthNumber: number): Promise<AccountsReceivable[]>;
-  getAllReceivables(): Promise<AccountsReceivable[]>; // Add this method
+  getAllReceivables(): Promise<AccountsReceivable[]>;
 
   // Accounts Payable methods
   createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable>;
   getPayablesByUser(userId: number): Promise<AccountsPayable[]>;
   getPayablesByFund(fundId: number): Promise<AccountsPayable[]>;
   getPayablesByType(fundId: number, type: string): Promise<AccountsPayable[]>;
-  getAllPayables(): Promise<AccountsPayable[]>; // Add this method
+  getAllPayables(): Promise<AccountsPayable[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -315,10 +315,28 @@ export class DatabaseStorage implements IStorage {
 
   // Implement the missing method to get all receivables
   async getAllReceivables(): Promise<AccountsReceivable[]> {
-    return db
-      .select()
+    // Use a join query to get user names along with receivables
+    const results = await db
+      .select({
+        id: accountsReceivable.id,
+        userId: accountsReceivable.userId,
+        chitFundId: accountsReceivable.chitFundId,
+        monthNumber: accountsReceivable.monthNumber,
+        dueDate: accountsReceivable.dueDate,
+        expectedAmount: accountsReceivable.expectedAmount,
+        paidAmount: accountsReceivable.paidAmount,
+        status: accountsReceivable.status,
+        createdAt: accountsReceivable.createdAt,
+        updatedAt: accountsReceivable.updatedAt,
+        userName: users.fullName,
+        fundName: chitFunds.name
+      })
       .from(accountsReceivable)
+      .leftJoin(users, eq(accountsReceivable.userId, users.id))
+      .leftJoin(chitFunds, eq(accountsReceivable.chitFundId, chitFunds.id))
       .orderBy(desc(accountsReceivable.updatedAt));
+
+    return results;
   }
 
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
@@ -371,10 +389,26 @@ export class DatabaseStorage implements IStorage {
 
   // Implement the missing method to get all payables
   async getAllPayables(): Promise<AccountsPayable[]> {
-    return db
-      .select()
+    const results = await db
+      .select({
+        id: accountsPayable.id,
+        userId: accountsPayable.userId,
+        chitFundId: accountsPayable.chitFundId,
+        paymentType: accountsPayable.paymentType,
+        amount: accountsPayable.amount,
+        paidDate: accountsPayable.paidDate,
+        recordedBy: accountsPayable.recordedBy,
+        notes: accountsPayable.notes,
+        createdAt: accountsPayable.createdAt,
+        userName: users.fullName,
+        fundName: chitFunds.name
+      })
       .from(accountsPayable)
+      .leftJoin(users, eq(accountsPayable.userId, users.id))
+      .leftJoin(chitFunds, eq(accountsPayable.chitFundId, chitFunds.id))
       .orderBy(desc(accountsPayable.paidDate));
+
+    return results;
   }
 }
 
