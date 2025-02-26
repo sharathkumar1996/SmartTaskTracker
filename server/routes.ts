@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema } from "@shared/schema";
+import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema, insertAccountsPayableSchema } from "@shared/schema";
 import { db } from "./db"; // Assuming db is imported from elsewhere
 import { payments } from "@shared/schema"; // Import the payments table schema
 
@@ -629,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add a new endpoint to sync payments to accounts_receivable
+  // Add a new endpoint to sync payments to accounts_receivable and accounts_payable
   app.post("/api/sync-payments-to-receivables", async (req, res) => {
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ message: "Unauthorized" });
@@ -637,16 +637,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Get all payments - correctly using the payments table schema
-      // Fix the query approach and use a safer approach with explicit sql
       const allPayments = await db.query.payments.findMany();
       console.log(`Found ${allPayments.length} payments to sync`);
 
-      let syncedCount = 0;
+      let syncedReceivablesCount = 0;
+      let syncedPayablesCount = 0;
       let errorCount = 0;
 
-      // For each payment, create a corresponding accounts_receivable entry if it doesn't exist
+      // For each payment, create a corresponding account entry
       for (const payment of allPayments) {
-        // Only sync monthly payments
+        // Process monthly payments to receivables
         if (payment.paymentType === "monthly") {
           try {
             // Get the fund details to calculate the expected amount
@@ -677,7 +677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               monthNumber: payment.monthNumber || 1,
               paidAmount: payment.amount.toString(),
               expectedAmount: expectedAmount, // Dynamically calculated
-              status: "paid",
+              status: parseFloat(payment.amount.toString()) >= parseFloat(expectedAmount) ? "paid" : "partial",
               dueDate: payment.paymentDate,
               updatedAt: new Date(),
             };
@@ -688,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const receivableParseResult = insertAccountsReceivableSchema.safeParse(receivableData);
             if (receivableParseResult.success) {
               await storage.createReceivable(receivableParseResult.data);
-              syncedCount++;
+              syncedReceivablesCount++;
               console.log(`Synced payment ID ${payment.id} to receivables.`);
             } else {
               console.error("Validation error for receivable:", receivableParseResult.error);
@@ -699,17 +699,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errorCount++;
           }
         }
+        // Process withdrawal payments to payables
+        else if (payment.paymentType === "withdrawal") {
+          try {
+            // Create payable data from payment
+            const payableData = {
+              userId: payment.userId,
+              chitFundId: payment.chitFundId,
+              paymentType: "withdrawal",
+              amount: payment.amount.toString(),
+              paidDate: payment.paymentDate,
+              recordedBy: payment.recordedBy,
+              notes: payment.notes || null,
+              commission: payment.commissionAmount ? payment.commissionAmount.toString() : null,
+            };
+
+            console.log("Creating payable with data:", payableData);
+
+            // Validate payable data
+            const payableParseResult = insertAccountsPayableSchema.safeParse(payableData);
+            if (payableParseResult.success) {
+              await storage.createPayable(payableParseResult.data);
+              syncedPayablesCount++;
+              console.log(`Synced withdrawal payment ID ${payment.id} to payables.`);
+            } else {
+              console.error("Validation error for payable:", payableParseResult.error);
+              errorCount++;
+            }
+          } catch (error) {
+            console.error("Error syncing withdrawal payment to payable:", error, "Payment:", payment);
+            errorCount++;
+          }
+        }
       }
 
       return res.json({
-        message: `Synced ${syncedCount} payments to accounts_receivable, with ${errorCount} errors.`,
-        syncedCount,
+        message: `Synced ${syncedReceivablesCount} payments to accounts_receivable, ${syncedPayablesCount} payments to accounts_payable, with ${errorCount} errors.`,
+        syncedReceivablesCount,
+        syncedPayablesCount,
         errorCount,
       });
     } catch (error) {
-      console.error("Error syncing payments to receivables:", error);
+      console.error("Error syncing payments to accounts:", error);
       return res.status(500).json({
-        message: "Error syncing payments to receivables",
+        message: "Error syncing payments to accounts",
         error: error instanceof Error ? error.message : String(error),
       });
     }

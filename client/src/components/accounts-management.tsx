@@ -36,8 +36,9 @@ export const AccountsManagement = () => {
         title: "Sync Completed",
         description: "Payment data synchronized to accounts successfully.",
       });
-      // Invalidate the receivables query to refresh the data
+      // Invalidate the queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/accounts/receivables'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/accounts/payables'] });
       setIsSyncing(false);
     },
     onError: (error) => {
@@ -92,7 +93,7 @@ export const AccountsManagement = () => {
                 <div className="text-center p-8 text-red-500">
                   Error loading receivables data.
                 </div>
-              ) : receivablesQuery.data?.length === 0 ? (
+              ) : !receivablesQuery.data || receivablesQuery.data.length === 0 ? (
                 <div className="text-center p-8 text-muted-foreground">
                   No receivables data available.
                 </div>
@@ -102,7 +103,7 @@ export const AccountsManagement = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>User</TableHead>
+                      <TableHead>Member</TableHead>
                       <TableHead>Fund</TableHead>
                       <TableHead>Month</TableHead>
                       <TableHead>Expected</TableHead>
@@ -111,11 +112,11 @@ export const AccountsManagement = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {receivablesQuery.data?.map((receivable) => (
+                    {receivablesQuery.data.map((receivable) => (
                       <TableRow key={receivable.id}>
                         <TableCell>{formatDate(receivable.dueDate || receivable.createdAt)}</TableCell>
-                        <TableCell>{receivable.userName || receivable.userId}</TableCell>
-                        <TableCell>{receivable.fundName || receivable.chitFundId}</TableCell>
+                        <TableCell>{receivable.userName || `User ${receivable.userId}`}</TableCell>
+                        <TableCell>{receivable.fundName || `Fund ${receivable.chitFundId}`}</TableCell>
                         <TableCell>{receivable.monthNumber}</TableCell>
                         <TableCell>{formatCurrency(receivable.expectedAmount)}</TableCell>
                         <TableCell>{formatCurrency(receivable.paidAmount)}</TableCell>
@@ -156,7 +157,7 @@ export const AccountsManagement = () => {
                 <div className="text-center p-8 text-red-500">
                   Error loading payables data.
                 </div>
-              ) : payablesQuery.data?.length === 0 ? (
+              ) : !payablesQuery.data || payablesQuery.data.length === 0 ? (
                 <div className="text-center p-8 text-muted-foreground">
                   No payables data available.
                 </div>
@@ -166,20 +167,32 @@ export const AccountsManagement = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>User</TableHead>
+                      <TableHead>Member</TableHead>
                       <TableHead>Fund</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Amount</TableHead>
+                      <TableHead>Commission</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payablesQuery.data?.map((payable) => (
+                    {payablesQuery.data.map((payable) => (
                       <TableRow key={payable.id}>
                         <TableCell>{formatDate(payable.paidDate)}</TableCell>
-                        <TableCell>{payable.userName || payable.userId}</TableCell>
-                        <TableCell>{payable.fundName || payable.chitFundId}</TableCell>
-                        <TableCell>{payable.paymentType}</TableCell>
+                        <TableCell>{payable.userName || `User ${payable.userId}`}</TableCell>
+                        <TableCell>{payable.fundName || `Fund ${payable.chitFundId}`}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            payable.paymentType === 'withdrawal' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : payable.paymentType === 'bonus' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {payable.paymentType}
+                          </span>
+                        </TableCell>
                         <TableCell>{formatCurrency(payable.amount)}</TableCell>
+                        <TableCell>{payable.commission ? formatCurrency(payable.commission) : '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
