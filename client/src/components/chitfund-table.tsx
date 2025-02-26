@@ -54,6 +54,7 @@ import { Loader2 } from "lucide-react";
 import { PaymentTrackingSheet } from "./payment-tracking-sheet";
 import { WithdrawalStatusForm } from "./withdrawal-status-form";
 import { formatCurrency } from "@/lib/utils";
+import { PayoutForm } from "./payout-form";
 
 interface ChitFundTableProps {
   chitFunds: ChitFund[];
@@ -203,52 +204,109 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                 <TableCell>
                   <div className="flex flex-wrap gap-2">
                     {(userRole === "admin" || userRole === "agent") && fund.status === "active" && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedFund(fund);
-                            }}
-                          >
-                            Record Payment
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Record Member Payment</DialogTitle>
-                            <DialogDescription>
-                              Select a member and record their payment for {fund.name}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Select
-                                onValueChange={(value) => setSelectedMemberId(parseInt(value))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a member" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {fundMembers.map((member) => (
-                                    <SelectItem key={member.id} value={member.id.toString()}>
-                                      {member.fullName}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                      <>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFund(fund);
+                              }}
+                            >
+                              Record Payment
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Record Member Payment</DialogTitle>
+                              <DialogDescription>
+                                Select a member and record their payment for {fund.name}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Select
+                                  onValueChange={(value) => setSelectedMemberId(parseInt(value))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a member" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {fundMembers.map((member) => (
+                                      <SelectItem key={member.id} value={member.id.toString()}>
+                                        {member.fullName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {selectedMemberId && (
+                                <PaymentForm
+                                  chitFundId={fund.id}
+                                  userId={selectedMemberId}
+                                />
+                              )}
                             </div>
-                            {selectedMemberId && (
-                              <PaymentForm
-                                chitFundId={fund.id}
-                                userId={selectedMemberId}
-                              />
-                            )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedFund(fund);
+                              }}
+                            >
+                              Process Payout
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Process Member Payout</DialogTitle>
+                              <DialogDescription>
+                                Select a member and process their payout for {fund.name}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Select
+                                  onValueChange={(value) => setSelectedMemberId(parseInt(value))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a member" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {fundMembers.map((member) => (
+                                      <SelectItem key={member.id} value={member.id.toString()}>
+                                        {member.fullName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {selectedMemberId && (
+                                <PayoutForm
+                                  chitFundId={fund.id}
+                                  userId={selectedMemberId}
+                                  onSuccess={() => {
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["/api/chitfunds", fund.id, "members", selectedMemberId, "details"] 
+                                    });
+                                    queryClient.invalidateQueries({ 
+                                      queryKey: ["/api/accounts/payables"] 
+                                    });
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </>
                     )}
 
                     {userRole === "member" && fund.status === "active" && (

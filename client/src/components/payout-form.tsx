@@ -346,7 +346,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    placeholder="Enter commission amount"
+                    placeholder="Enter commission amount in rupees (e.g. 5000)"
                     {...field}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^0-9]/g, '');
@@ -355,7 +355,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                   />
                 </FormControl>
                 <FormDescription>
-                  Commission to be deducted from the fund amount
+                  Commission to be deducted from the fund amount (in rupees, not percentage)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -382,7 +382,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
           <Button
             type="submit"
             className="w-full"
-            disabled={isSubmitting || memberDetails?.isWithdrawn}
+            disabled={isSubmitting || (memberDetails?.isWithdrawn === true)}
           >
             {isSubmitting ? (
               <>
