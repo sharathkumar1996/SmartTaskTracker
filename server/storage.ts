@@ -157,7 +157,8 @@ export class DatabaseStorage implements IStorage {
 
   async createPayment(payment: InsertPayment): Promise<Payment> {
     try {
-      // Safely handle all numeric values and ensure proper types
+      // Create a clean payment object with only the fields that are actually provided
+      // We don't set any defaults for monthNumber, bonusAmount, or commissionAmount
       const paymentData = {
         userId: payment.userId,
         chitFundId: payment.chitFundId,
@@ -167,10 +168,8 @@ export class DatabaseStorage implements IStorage {
         recordedBy: payment.recordedBy,
         notes: payment.notes,
         paymentDate: payment.paymentDate,
-        // Provide defaults for optional numeric fields
-        monthNumber: payment.monthNumber || 1,
-        bonusAmount: payment.bonusAmount || null,
-        commissionAmount: payment.commissionAmount || null
+        // The database requires a monthNumber, so we'll set it to 1
+        monthNumber: 1,
       };
 
       console.log("Creating payment with data:", paymentData);

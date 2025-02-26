@@ -124,12 +124,14 @@ export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
   baseCommission: z.string().or(z.number()).transform(String),
 });
 
-export const insertPaymentSchema = createInsertSchema(payments).extend({
+export const insertPaymentSchema = createInsertSchema(payments, {
+  // Omit optional fields completely
+  monthNumber: false,
+  bonusAmount: false,
+  commissionAmount: false,
+}).extend({
   paymentDate: z.coerce.date(),
   amount: z.string().or(z.number()).transform(String),
-  monthNumber: z.number().min(1).max(20).optional().default(1), // Make monthNumber optional with default value of 1
-  bonusAmount: z.string().or(z.number()).optional().transform(String),
-  commissionAmount: z.string().or(z.number()).optional().transform(String),
 });
 
 export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({

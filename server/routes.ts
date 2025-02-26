@@ -158,7 +158,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: req.body.amount,
         userId: parseInt(req.body.userId),
         chitFundId: parseInt(req.body.chitFundId),
-        monthNumber: parseInt(req.body.monthNumber || 1),
         recordedBy: req.user.id,
         // Convert date string to Date object if needed
         paymentDate: req.body.paymentDate instanceof Date 

@@ -77,7 +77,6 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         paymentDate: values.paymentDate,
         notes: values.notes,
         recordedBy: user?.id,
-        monthNumber: 1, // Always include a default monthNumber value
       };
 
       const response = await apiRequest("POST", "/api/payments", paymentData);
