@@ -190,6 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           chitFundId: payment.chitFundId,
           monthNumber: payment.monthNumber || 1, // Use payment month number or default to 1
           paidAmount: payment.amount,
+          expectedAmount: payment.amount, // Set expectedAmount to the same as paidAmount
           status: "paid",
           dueDate: payment.paymentDate, // Use payment date as due date
           updatedAt: new Date(),
@@ -465,10 +466,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               chitFundId: payment.chitFundId,
               monthNumber: payment.monthNumber || 1,
               paidAmount: payment.amount,
+              expectedAmount: payment.amount, // Set expectedAmount to the same as paidAmount
               status: "paid",
               dueDate: payment.paymentDate,
               updatedAt: new Date(),
             };
+
+            console.log("Creating receivable with data:", receivableData);
 
             // Validate receivable data
             const receivableParseResult = insertAccountsReceivableSchema.safeParse(receivableData);

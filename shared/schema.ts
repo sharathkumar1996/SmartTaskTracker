@@ -229,7 +229,7 @@ export const accountsPayableRelations = relations(accountsPayable, ({ one }) => 
 // Update the insert schema for the new structure
 export const insertAccountsReceivableSchema = createInsertSchema(accountsReceivable).extend({
   dueDate: z.coerce.date().optional(),
-  expectedAmount: z.string().or(z.number()).transform(String).optional(),
+  expectedAmount: z.string().or(z.number()).transform(String),
   paidAmount: z.string().or(z.number()).transform(String),
   status: z.enum(["pending", "paid", "overdue"]).default("paid"),
   updatedAt: z.coerce.date().optional(),
