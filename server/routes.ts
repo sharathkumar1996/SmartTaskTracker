@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Update the record with the new paid amount
           await storage.updateReceivable(userReceivable.id, {
             paidAmount: newPaidAmount,
-            status: parseFloat(newPaidAmount) >= parseFloat(userReceivable.expectedAmount) ? "paid" : "partial",
+            status: parseFloat(newPaidAmount) >= parseFloat(userReceivable.expectedAmount || "0") ? "paid" : "partial",
             updatedAt: new Date()
           });
 
@@ -827,7 +827,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fullName: member.fullName,
             payments: userPayments.map(payment => ({
               month: payment.monthNumber || 1, // Fallback to month 1 if not specified
-              amount: typeof payment.amount === 'string' ? payment.amount : payment.amount?.toString() || '0',
+              amount: (typeof payment.amount === 'string' 
+                ? payment.amount 
+                : (payment.amount ? String(payment.amount) : '0')),
               paymentDate: payment.paymentDate
             }))
           };

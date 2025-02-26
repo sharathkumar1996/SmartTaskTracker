@@ -93,7 +93,8 @@ export class DatabaseStorage implements IStorage {
   async createUser(user: InsertUser): Promise<User> {
     try {
       const result = await db.insert(users).values(user).returning();
-      return result[0] as User;
+      const resultArray = Array.isArray(result) ? result : [result];
+      return resultArray[0] as User;
     } catch (error) {
       console.error("Error in createUser:", error);
       throw error;
