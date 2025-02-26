@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Download, Loader2 } from "lucide-react";
-import type { Payment, ChitFund } from "@shared/schema";
+import type { Payment } from "@shared/schema";
 
 interface FinancialReportProps {
   chitFundId?: number;
@@ -35,7 +35,7 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
       if (chitFundId) params.append("fundId", chitFundId.toString());
       if (dateRange.from) params.append("from", dateRange.from.toISOString());
       if (dateRange.to) params.append("to", dateRange.to.toISOString());
-      
+
       const res = await fetch(`/api/payments/report?${params}`);
       if (!res.ok) throw new Error("Failed to fetch payment report");
       return res.json();

@@ -7,9 +7,6 @@ import createMemoryStore from "memorystore";
 const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
-  users: any;
-  chitFunds: any;
-  payments: any;
   sessionStore: session.Store;
 
   getUser(id: number): Promise<User | undefined>;
@@ -49,9 +46,6 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  users: any;
-  chitFunds: any;
-  payments: any;
   sessionStore: session.Store;
 
   constructor() {
@@ -91,14 +85,19 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
+  async getUserCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users);
+    return result[0]?.count || 0;
+  }
+
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
-    const fundData = {
+    const [chitFund] = await db.insert(chitFunds).values({
       ...fund,
       startDate: new Date(fund.startDate),
       endDate: new Date(fund.endDate)
-    };
-
-    const [chitFund] = await db.insert(chitFunds).values(fundData).returning();
+    }).returning();
     return chitFund;
   }
 
@@ -114,28 +113,28 @@ export class DatabaseStorage implements IStorage {
     return !!deleted;
   }
 
-  async createPayment(payment: InsertPayment): Promise<Payment> {
-    try {
-      const [newPayment] = await db.insert(payments).values({
-        userId: payment.userId,
-        chitFundId: payment.chitFundId,
-        amount: payment.amount,
-        paymentMethod: payment.paymentMethod,
-        paymentType: payment.paymentType,
-        recordedBy: payment.recordedBy,
-        notes: payment.notes,
-        paymentDate: payment.paymentDate,
-        createdAt: new Date()
-      }).returning();
+  async updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined> {
+    const [updatedFund] = await db
+      .update(chitFunds)
+      .set(updates)
+      .where(eq(chitFunds.id, id))
+      .returning();
+    return updatedFund;
+  }
 
-      return newPayment;
-    } catch (error) {
-      console.error('Error creating payment:', error);
-      throw error;
-    }
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await db.insert(payments).values({
+      ...payment,
+      paymentDate: new Date(payment.paymentDate),
+      createdAt: new Date()
+    }).returning();
+    return newPayment;
   }
 
   async getUserPayments(userId: number): Promise<Payment[]> {
+    if (!userId || isNaN(userId)) {
+      throw new Error("Invalid user ID");
+    }
     return await db
       .select()
       .from(payments)
@@ -181,7 +180,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFundMembers(fundId: number): Promise<Omit<User, "password">[]> {
-    const result = await db
+    return await db
       .select({
         id: users.id,
         username: users.username,
@@ -201,27 +200,14 @@ export class DatabaseStorage implements IStorage {
       .from(fundMembers)
       .innerJoin(users, eq(fundMembers.userId, users.id))
       .where(eq(fundMembers.fundId, fundId));
-
-    return result;
   }
 
   async getMemberFunds(userId: number): Promise<ChitFund[]> {
-    const result = await db
-      .select({
-        id: chitFunds.id,
-        name: chitFunds.name,
-        amount: chitFunds.amount,
-        duration: chitFunds.duration,
-        memberCount: chitFunds.memberCount,
-        startDate: chitFunds.startDate,
-        endDate: chitFunds.endDate,
-        status: chitFunds.status
-      })
+    return await db
+      .select()
       .from(fundMembers)
       .innerJoin(chitFunds, eq(fundMembers.fundId, chitFunds.id))
       .where(eq(fundMembers.userId, userId));
-
-    return result;
   }
 
   async getUsersByRole(role: string): Promise<Omit<User, "password">[]> {
@@ -243,29 +229,15 @@ export class DatabaseStorage implements IStorage {
         agentCommission: users.agentCommission
       })
       .from(users)
-      .where(eq(users.role, role as any));
+      .where(eq(users.role, role));
   }
-  async updateChitFund(id: number, updates: Partial<ChitFund>): Promise<ChitFund | undefined> {
-    const [updatedFund] = await db
-      .update(chitFunds)
-      .set(updates)
-      .where(eq(chitFunds.id, id))
-      .returning();
-    return updatedFund;
-  }
+
   async deleteUser(id: number): Promise<boolean> {
     const [deleted] = await db
       .delete(users)
       .where(eq(users.id, id))
       .returning();
     return !!deleted;
-  }
-
-  async getUserCount(): Promise<number> {
-    const result = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(users);
-    return Number(result[0]?.count) || 0;
   }
 
   async getFundPayments(fundId: number): Promise<{
@@ -280,7 +252,6 @@ export class DatabaseStorage implements IStorage {
     }[];
   }> {
     const members = await this.getFundMembers(fundId);
-
     const [fund] = await db
       .select()
       .from(chitFunds)
@@ -291,15 +262,12 @@ export class DatabaseStorage implements IStorage {
     }
 
     const fundStartDate = new Date(fund.startDate);
-
     const membersWithPayments = await Promise.all(
       members.map(async (member) => {
-        // Get all payments for this member in this fund
         const memberPayments = await db
           .select({
             amount: payments.amount,
-            paymentDate: payments.paymentDate,
-            chitFundId: payments.chitFundId,
+            paymentDate: payments.paymentDate
           })
           .from(payments)
           .where(
@@ -309,20 +277,17 @@ export class DatabaseStorage implements IStorage {
             )
           );
 
-        // Process payments to calculate months from fund start date
         const paymentsWithMonth = memberPayments
           .filter(payment => payment.paymentDate)
           .map(payment => {
-            const paymentDate = new Date(payment.paymentDate!);
-
-            // Calculate months since fund start
+            const paymentDate = new Date(payment.paymentDate);
             const yearDiff = paymentDate.getFullYear() - fundStartDate.getFullYear();
             const monthDiff = paymentDate.getMonth() - fundStartDate.getMonth();
-            const month = yearDiff * 12 + monthDiff + 1; // Adding 1 to make it 1-based
+            const month = yearDiff * 12 + monthDiff + 1;
 
             return {
               month,
-              amount: payment.amount,
+              amount: payment.amount.toString(),
               paymentDate
             };
           });
@@ -339,7 +304,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
-    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    const [newNotification] = await db
+      .insert(notifications)
+      .values({
+        ...notification,
+        createdAt: new Date()
+      })
+      .returning();
     return newNotification;
   }
 
@@ -369,7 +340,7 @@ export class DatabaseStorage implements IStorage {
     fromDate?: Date; 
     toDate?: Date;
   }): Promise<Payment[]> {
-    let query = db
+    let baseQuery = db
       .select({
         id: payments.id,
         amount: payments.amount,
@@ -377,37 +348,46 @@ export class DatabaseStorage implements IStorage {
         paymentMethod: payments.paymentMethod,
         paymentDate: payments.paymentDate,
         notes: payments.notes,
-        user: {
-          id: users.id,
-          fullName: users.fullName,
-        },
-        chitFund: {
-          id: chitFunds.id,
-          name: chitFunds.name,
-        },
-        recorder: {
-          id: users.id,
-          fullName: users.fullName,
-        },
+        user: db
+          .select({
+            id: users.id,
+            fullName: users.fullName,
+          })
+          .from(users)
+          .where(eq(users.id, payments.userId))
+          .limit(1),
+        chitFund: db
+          .select({
+            id: chitFunds.id,
+            name: chitFunds.name,
+          })
+          .from(chitFunds)
+          .where(eq(chitFunds.id, payments.chitFundId))
+          .limit(1),
+        recorder: db
+          .select({
+            id: users.id,
+            fullName: users.fullName,
+          })
+          .from(users)
+          .where(eq(users.id, payments.recordedBy))
+          .limit(1),
       })
-      .from(payments)
-      .innerJoin(users, eq(payments.userId, users.id))
-      .innerJoin(chitFunds, eq(payments.chitFundId, chitFunds.id))
-      .innerJoin(users, eq(payments.recordedBy, users.id), "recorder");
+      .from(payments);
 
     if (fundId) {
-      query = query.where(eq(payments.chitFundId, fundId));
+      baseQuery = baseQuery.where(eq(payments.chitFundId, fundId));
     }
 
     if (fromDate) {
-      query = query.where(sql`${payments.paymentDate} >= ${fromDate}`);
+      baseQuery = baseQuery.where(sql`${payments.paymentDate} >= ${fromDate}`);
     }
 
     if (toDate) {
-      query = query.where(sql`${payments.paymentDate} <= ${toDate}`);
+      baseQuery = baseQuery.where(sql`${payments.paymentDate} <= ${toDate}`);
     }
 
-    const results = await query.orderBy(payments.paymentDate);
+    const results = await baseQuery.orderBy(payments.paymentDate);
     return results;
   }
 }
