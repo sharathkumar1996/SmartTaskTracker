@@ -196,7 +196,7 @@ export const accountsPayable = pgTable("accounts_payable", {
   paid_date: timestamp("paid_date").notNull(),
   recorder_id: integer("recorder_id").references(() => users.id),
   notes: text("notes"),
-  commission: decimal("commission", { precision: 10, scale: 2 }),
+  // Note: commission is stored in application logic, not in the DB table
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -240,7 +240,7 @@ export const insertAccountsReceivableSchema = createInsertSchema(accountsReceiva
 export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).extend({
   paidDate: z.coerce.date(),
   amount: z.string().or(z.number()).transform(String),
-  commission: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
+  // Removed commission field as it's not in the database table
 });
 
 // Export types for the new tables

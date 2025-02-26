@@ -558,7 +558,7 @@ export class DatabaseStorage implements IStorage {
         recorder_id: payable.recordedBy, // Map recordedBy to recorder_id
         notes: payable.notes,
         paid_date: payable.paidDate, // Use paid_date field to match database column name
-        commission: payable.commission,
+        // commission field removed as it doesn't exist in the database
       };
 
       console.log("Creating payable with data:", payableData);
@@ -633,7 +633,7 @@ export class DatabaseStorage implements IStorage {
           paidDate: accountsPayable.paid_date, // Map paid_date to paidDate in result
           recordedBy: accountsPayable.recorder_id, // Map recorder_id to recordedBy
           notes: accountsPayable.notes,
-          commission: accountsPayable.commission,
+          // commission removed as it doesn't exist in the database
           createdAt: accountsPayable.createdAt,
           userName: users.fullName,
           fundName: chitFunds.name
