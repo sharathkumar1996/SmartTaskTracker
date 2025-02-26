@@ -12,11 +12,8 @@ import {
 } from "@/components/ui/popover";
 
 interface DateRangePickerProps {
-  value: {
-    from: Date | undefined;
-    to: Date | undefined;
-  };
-  onChange: (range: { from: Date | undefined; to: Date | undefined }) => void;
+  value: DateRange | undefined;
+  onChange: (range: DateRange | undefined) => void;
   className?: string;
 }
 
@@ -57,7 +54,7 @@ export function DateRangePicker({
             initialFocus
             mode="range"
             defaultMonth={value?.from}
-            selected={{ from: value?.from, to: value?.to }}
+            selected={value}
             onSelect={onChange}
             numberOfMonths={2}
           />

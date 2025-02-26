@@ -13,19 +13,14 @@ import {
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Download, Loader2 } from "lucide-react";
 import type { Payment } from "@shared/schema";
+import type { DateRange } from "react-day-picker";
 
 interface FinancialReportProps {
   chitFundId?: number;
 }
 
 export function FinancialReport({ chitFundId }: FinancialReportProps) {
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
-    from: undefined,
-    to: undefined,
-  });
+  const [dateRange, setDateRange] = useState<DateRange>();
 
   // Fetch payments for the given date range
   const { data: payments = [], isLoading } = useQuery<Payment[]>({
@@ -33,14 +28,14 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (chitFundId) params.append("fundId", chitFundId.toString());
-      if (dateRange.from) params.append("from", dateRange.from.toISOString());
-      if (dateRange.to) params.append("to", dateRange.to.toISOString());
+      if (dateRange?.from) params.append("from", dateRange.from.toISOString());
+      if (dateRange?.to) params.append("to", dateRange.to.toISOString());
 
       const res = await fetch(`/api/payments/report?${params}`);
       if (!res.ok) throw new Error("Failed to fetch payment report");
       return res.json();
     },
-    enabled: !!dateRange.from && !!dateRange.to,
+    enabled: !!dateRange?.from && !!dateRange?.to,
   });
 
   const downloadReport = () => {
@@ -48,8 +43,8 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
 
     const headers = [
       "Date",
-      "Member",
-      "Fund",
+      "Member ID",
+      "Fund ID",
       "Amount",
       "Payment Type",
       "Payment Method",
@@ -69,7 +64,7 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
     const csvContent = [
       ["Sri Vasavi Financial Services"],
       ["Financial Report"],
-      [`Period: ${dateRange.from?.toLocaleDateString()} to ${dateRange.to?.toLocaleDateString()}`],
+      [`Period: ${dateRange?.from?.toLocaleDateString()} to ${dateRange?.to?.toLocaleDateString()}`],
       [""],
       headers,
       ...rows
@@ -116,7 +111,10 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-bold">Financial Report</CardTitle>
           <div className="flex items-center gap-4">
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <DateRangePicker 
+              value={dateRange} 
+              onChange={setDateRange}
+            />
             <Button
               onClick={downloadReport}
               disabled={!payments.length}
@@ -143,7 +141,9 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
+                    <TableHead>Member ID</TableHead>
+                    <TableHead>Fund ID</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Notes</TableHead>
@@ -155,6 +155,8 @@ export function FinancialReport({ chitFundId }: FinancialReportProps) {
                       <TableCell>
                         {new Date(payment.paymentDate).toLocaleDateString()}
                       </TableCell>
+                      <TableCell>{payment.userId}</TableCell>
+                      <TableCell>{payment.chitFundId}</TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(payment.amount)}
                       </TableCell>
