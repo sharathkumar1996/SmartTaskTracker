@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertChitFundSchema, insertPaymentSchema, insertUserSchema } from "@shared/schema";
+import { insertChitFundSchema, insertPaymentSchema, insertUserSchema, insertAccountsReceivableSchema } from "@shared/schema";
 
 // Global map to store WebSocket connections by user ID
 const userSockets = new Map<number, WebSocket>();
@@ -176,7 +176,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Validated payment data:", parseResult.data);
 
+      // First, create the payment record
       const payment = await storage.createPayment(parseResult.data);
+
+      // Then, create a corresponding accounts_receivable record
+      if (payment && payment.paymentType === "monthly") {
+        // Create a receivable record for monthly payments
+        const receivableData = {
+          userId: payment.userId,
+          chitFundId: payment.chitFundId,
+          monthNumber: payment.monthNumber || 1, // Use payment month number or default to 1
+          amount: payment.amount,
+          paymentType: "monthly",
+          paymentMethod: payment.paymentMethod,
+          receivedDate: payment.paymentDate,
+          recordedBy: req.user.id,
+          notes: payment.notes
+        };
+
+        try {
+          const receivableParseResult = insertAccountsReceivableSchema.safeParse(receivableData);
+          if (receivableParseResult.success) {
+            await storage.createReceivable(receivableParseResult.data);
+            console.log("Created corresponding receivable record for payment:", payment.id);
+          }
+        } catch (error) {
+          console.error("Error creating corresponding receivable record:", error);
+          // We don't want to fail the payment if the receivable fails
+          // Just log the error and continue
+        }
+      }
 
       // Send real-time notification
       const notification = {
