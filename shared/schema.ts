@@ -3,10 +3,7 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Type declaration to avoid circular reference
-type UserTable = typeof users;
-
-// User table with fixed TypeScript issues and proper constraints
+// User table definition
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -25,13 +22,8 @@ export const users = pgTable("users", {
   status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
 
-// Define user relations with proper return types
-export const usersRelations = relations(users, ({ many, one }): { 
-  managedFunds: ReturnType<typeof many<typeof chitFunds>>;
-  payments: ReturnType<typeof many<typeof payments>>;
-  fundMemberships: ReturnType<typeof many<typeof fundMembers>>;
-  agent: ReturnType<typeof one<typeof users>>;
-} => ({
+// Define user relations
+export const usersRelations = relations(users, ({ many, one }) => ({
   managedFunds: many(chitFunds),
   payments: many(payments),
   fundMemberships: many(fundMembers),
@@ -106,6 +98,25 @@ export const fundMembersRelations = relations(fundMembers, ({ one }) => ({
   }),
 }));
 
+// Add notification schema
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").$type<"payment" | "reminder" | "system">().notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Add notification relations
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
 // Updated insert schemas with proper validation
 export const insertUserSchema = createInsertSchema(users).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -127,7 +138,9 @@ export const insertPaymentSchema = createInsertSchema(payments).extend({
 });
 
 export const insertFundMemberSchema = createInsertSchema(fundMembers);
+export const insertNotificationSchema = createInsertSchema(notifications);
 
+// Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type ChitFund = typeof chitFunds.$inferSelect;
@@ -136,27 +149,5 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type FundMember = typeof fundMembers.$inferSelect;
 export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
-
-// Add notification schema
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  type: text("type").$type<"payment" | "reminder" | "system">().notNull(),
-  isRead: boolean("is_read").default(false).notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// Add notification relations
-export const notificationsRelations = relations(notifications, ({ one }) => ({
-  user: one(users, {
-    fields: [notifications.userId],
-    references: [users.id],
-  }),
-}));
-
-// Add notification insert schema
-export const insertNotificationSchema = createInsertSchema(notifications);
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
