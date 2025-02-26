@@ -29,7 +29,6 @@ interface PaymentFormProps {
   chitFundId: number;
   userId: number;
   onSuccess?: () => void;
-  monthNumber?: number;
 }
 
 const paymentFormSchema = z.object({
@@ -43,7 +42,7 @@ const paymentFormSchema = z.object({
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
-export function PaymentForm({ className, chitFundId, userId, onSuccess, monthNumber }: PaymentFormProps) {
+export function PaymentForm({ className, chitFundId, userId, onSuccess }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -63,22 +62,21 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess, monthNum
     try {
       setIsSubmitting(true);
 
-      // Ensure amount is a valid number string
-      const amount = values.amount.replace(/[^0-9]/g, '');
-      if (!amount || isNaN(Number(amount))) {
+      // Format amount: remove non-numeric characters and ensure it's a valid number
+      const numericAmount = values.amount.replace(/[^0-9]/g, '');
+      if (!numericAmount || isNaN(Number(numericAmount))) {
         throw new Error("Invalid amount");
       }
 
       const paymentData = {
         userId,
         chitFundId,
-        amount: amount,
+        amount: numericAmount,
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
         notes: values.notes,
         recordedBy: user?.id,
-        monthNumber: monthNumber || 1, // Provide a default value if not passed
       };
 
       const response = await apiRequest("POST", "/api/payments", paymentData);

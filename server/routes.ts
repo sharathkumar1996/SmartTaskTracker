@@ -152,27 +152,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user) return res.sendStatus(401);
 
     try {
-      const parseResult = insertPaymentSchema.safeParse(req.body);
+      const parseResult = insertPaymentSchema.safeParse({
+        ...req.body,
+        paymentDate: new Date(req.body.paymentDate),
+      });
+
       if (!parseResult.success) {
         return res.status(400).json(parseResult.error);
       }
 
       const payment = await storage.createPayment({
         ...parseResult.data,
-        userId: parseResult.data.userId,
-        chitFundId: parseResult.data.chitFundId,
+        userId: req.body.userId,
+        chitFundId: req.body.chitFundId,
         recordedBy: req.user.id,
+        monthNumber: req.body.monthNumber || 1,
+        amount: parseResult.data.amount.toString(),
       });
 
-      // Create and store notification
-      const notification = await storage.createNotification({
+      // Send real-time notification
+      const notification = {
         userId: payment.userId,
         title: "Payment Received",
         message: `Payment of ₹${payment.amount} has been recorded`,
         type: "payment",
-      });
+      };
 
-      // Send real-time notification
       await sendUserNotification(payment.userId, notification);
 
       res.json(payment);
