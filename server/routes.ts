@@ -748,5 +748,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/payments/user/:userId/fund/:fundId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+
+    try {
+      const userId = parseInt(req.params.userId);
+      const fundId = parseInt(req.params.fundId);
+
+      const payments = await storage.getUserFundPayments(userId, fundId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching user's fund payments:", error);
+      res.status(500).json({ message: "Failed to fetch user's fund payments" });
+    }
+  });
+
   return httpServer;
 }

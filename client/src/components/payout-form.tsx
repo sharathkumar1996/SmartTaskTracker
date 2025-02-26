@@ -44,6 +44,11 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   const [fundAmount, setFundAmount] = useState<string | null>(null);
   const [payoutAmount, setPayoutAmount] = useState<string | null>(null);
   const [commissionAmount, setCommissionAmount] = useState<string>("0");
+  const [monthsPaid, setMonthsPaid] = useState(0);
+  const [paidAmount, setPaidAmount] = useState<string>("0");
+  const [bonusAmount, setBonusAmount] = useState<string>("0");
+  const [remainingAmount, setRemainingAmount] = useState<string>("0");
+  const [penaltyAmount, setPenaltyAmount] = useState<string>("0");
 
   // Fetch the fund details to calculate payout amount
   const { data: fundData } = useQuery<ChitFund>({
@@ -72,6 +77,17 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     enabled: !!chitFundId && !!userId,
   });
 
+  // Fetch member's payment history to calculate paid amount and months
+  const { data: memberPayments = [] } = useQuery({
+    queryKey: ["/api/payments/user", userId, "fund", chitFundId],
+    queryFn: async () => {
+      const res = await fetch(`/api/payments/user/${userId}/fund/${chitFundId}`);
+      if (!res.ok) throw new Error("Failed to fetch member payments");
+      return res.json();
+    },
+    enabled: !!chitFundId && !!userId,
+  });
+
   // Get member name
   const { data: memberData } = useQuery({
     queryKey: ["/api/users", userId],
@@ -90,20 +106,86 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     }
   }, [fundData]);
 
-  // Calculate payout amount based on fund amount and commission
+  // Calculate months paid and payment amounts from payment history
   useEffect(() => {
-    if (fundAmount) {
+    if (memberPayments && memberPayments.length > 0) {
+      // Count unique months for which payments were made
+      const uniqueMonths = new Set();
+      let totalPaid = 0;
+
+      memberPayments.forEach(payment => {
+        if (payment.paymentType === 'monthly') {
+          uniqueMonths.add(payment.monthNumber);
+          totalPaid += parseFloat(payment.amount);
+        }
+      });
+
+      setMonthsPaid(uniqueMonths.size);
+      setPaidAmount(totalPaid.toString());
+    }
+  }, [memberPayments]);
+
+  // Calculate bonus amount based on months paid
+  useEffect(() => {
+    if (fundData && monthsPaid > 0) {
+      try {
+        const monthlyBonus = parseFloat(fundData.monthlyBonus || "1000");
+        const calculatedBonus = monthsPaid * monthlyBonus;
+        setBonusAmount(calculatedBonus.toString());
+      } catch (error) {
+        console.error("Error calculating bonus amount:", error);
+        setBonusAmount("0");
+      }
+    }
+  }, [fundData, monthsPaid]);
+
+  // Calculate remaining fund amount (fund amount - paid amount)
+  useEffect(() => {
+    if (fundAmount && paidAmount) {
       try {
         const fundAmountValue = parseFloat(fundAmount);
+        const paidAmountValue = parseFloat(paidAmount);
+        const calculated = Math.max(0, fundAmountValue - paidAmountValue);
+        setRemainingAmount(calculated.toString());
+      } catch (error) {
+        console.error("Error calculating remaining amount:", error);
+        setRemainingAmount("0");
+      }
+    }
+  }, [fundAmount, paidAmount]);
+
+  // Calculate total payout amount using the correct formula
+  useEffect(() => {
+    const withdrawalMonthVal = form.watch("withdrawalMonth") || 1;
+
+    // Calculate penalty if withdrawing later than expected
+    // Penalty = max(0, (withdrawalMonth - (monthsPaid + 1))) × 1000
+    try {
+      const penalty = Math.max(0, withdrawalMonthVal - (monthsPaid + 1)) * 1000;
+      setPenaltyAmount(penalty.toString());
+    } catch (error) {
+      console.error("Error calculating penalty:", error);
+      setPenaltyAmount("0");
+    }
+
+    if (paidAmount && bonusAmount && remainingAmount && commissionAmount) {
+      try {
+        const paidAmountValue = parseFloat(paidAmount);
+        const bonusAmountValue = parseFloat(bonusAmount);
+        const remainingAmountValue = parseFloat(remainingAmount);
         const commissionValue = parseFloat(commissionAmount || "0");
-        const calculatedPayoutAmount = fundAmountValue - commissionValue;
+        const penaltyValue = parseFloat(penaltyAmount || "0");
+
+        // Formula: Paid amount + Bonus amount + (Remaining amount - Commission) - Penalty
+        const calculatedPayoutAmount = paidAmountValue + bonusAmountValue + (remainingAmountValue - commissionValue) - penaltyValue;
+
         setPayoutAmount(calculatedPayoutAmount.toString());
       } catch (error) {
         console.error("Error calculating payout amount:", error);
         setPayoutAmount(null);
       }
     }
-  }, [fundAmount, commissionAmount]);
+  }, [paidAmount, bonusAmount, remainingAmount, commissionAmount, penaltyAmount, form.watch("withdrawalMonth"), monthsPaid]);
 
   const form = useForm<PayoutFormValues>({
     resolver: zodResolver(payoutFormSchema),
@@ -156,12 +238,10 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       }
 
       // Calculate payout amount
-      if (!fundAmount) {
-        throw new Error("Fund amount not available");
+      if (!payoutAmount) {
+        throw new Error("Payout amount not available");
       }
-      const fundAmountValue = parseFloat(fundAmount);
-      const commissionValue = parseFloat(numericCommission);
-      const payoutAmountValue = fundAmountValue - commissionValue;
+      const payoutAmountValue = parseFloat(payoutAmount);
 
       if (payoutAmountValue <= 0) {
         throw new Error("Payout amount must be greater than zero");
@@ -192,6 +272,9 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         notes: values.notes,
         paidDate: values.paymentDate,
         commission: numericCommission,
+        withdrawalMonth: values.withdrawalMonth,
+        paidAmount: paidAmount,
+        bonusAmount: bonusAmount,
       };
 
       const response = await apiRequest("POST", "/api/payables", payableData);
@@ -243,11 +326,43 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                     Fund amount: {formatCurrency(fundAmount)}
                   </span>
                 </div>
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  <InfoIcon className="h-4 w-4 text-green-500" />
+                  <span>
+                    Months paid: {monthsPaid}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  <InfoIcon className="h-4 w-4 text-green-500" />
+                  <span>
+                    Amount paid: {formatCurrency(paidAmount)}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  <InfoIcon className="h-4 w-4 text-green-500" />
+                  <span>
+                    Bonus earned: {formatCurrency(bonusAmount)}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-sm">
+                  <InfoIcon className="h-4 w-4 text-amber-500" />
+                  <span>
+                    Remaining fund: {formatCurrency(remainingAmount)}
+                  </span>
+                </div>
                 {commissionAmount && (
                   <div className="mt-2 flex items-center gap-2 text-sm">
                     <InfoIcon className="h-4 w-4 text-amber-500" />
                     <span>
                       Commission: {formatCurrency(commissionAmount)}
+                    </span>
+                  </div>
+                )}
+                {penaltyAmount && parseFloat(penaltyAmount) > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <InfoIcon className="h-4 w-4 text-red-500" />
+                    <span>
+                      Late withdrawal penalty: {formatCurrency(penaltyAmount)}
                     </span>
                   </div>
                 )}

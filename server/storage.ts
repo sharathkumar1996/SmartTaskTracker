@@ -28,6 +28,7 @@ export interface IStorage {
 
   createPayment(payment: InsertPayment): Promise<Payment>;
   getUserPayments(userId: number): Promise<Payment[]>;
+  getUserFundPayments(userId: number, fundId: number): Promise<Payment[]>;  // New method to get payments for a specific user and fund
 
   addMemberToFund(fundId: number, userId: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
@@ -199,6 +200,22 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Invalid user ID");
     }
     return db.select().from(payments).where(eq(payments.userId, userId));
+  }
+
+  async getUserFundPayments(userId: number, fundId: number): Promise<Payment[]> {
+    if (!userId || isNaN(userId) || !fundId || isNaN(fundId)) {
+      throw new Error("Invalid user ID or fund ID");
+    }
+    return db
+      .select()
+      .from(payments)
+      .where(
+        and(
+          eq(payments.userId, userId),
+          eq(payments.chitFundId, fundId)
+        )
+      )
+      .orderBy(payments.paymentDate);
   }
 
   async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
@@ -389,22 +406,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPayable(payable: InsertAccountsPayable): Promise<AccountsPayable> {
-    const payableData = {
-      userId: payable.userId,
-      chitFundId: payable.chitFundId,
-      paymentType: payable.paymentType,
-      amount: payable.amount,
-      recordedBy: payable.recordedBy,
-      notes: payable.notes,
-      paidDate: payable.paidDate,
-    };
+    try {
+      // Ensure paid_date is included in the data object
+      const payableData = {
+        userId: payable.userId,
+        chitFundId: payable.chitFundId,
+        paymentType: payable.paymentType,
+        amount: payable.amount,
+        recordedBy: payable.recordedBy,
+        notes: payable.notes,
+        paid_date: payable.paidDate, // Use paid_date field to match database column name
+        commission: payable.commission,
+      };
 
-    const [newPayable] = await db
-      .insert(accountsPayable)
-      .values(payableData)
-      .returning();
+      console.log("Creating payable with data:", payableData);
 
-    return newPayable;
+      // Insert into database with explicit column mapping
+      const [newPayable] = await db
+        .insert(accountsPayable)
+        .values(payableData)
+        .returning();
+
+      return newPayable;
+    } catch (error) {
+      console.error("Error creating payable:", error);
+      throw error;
+    }
   }
 
   async getPayablesByUser(userId: number): Promise<AccountsPayable[]> {
@@ -412,7 +439,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(accountsPayable)
       .where(eq(accountsPayable.userId, userId))
-      .orderBy(desc(accountsPayable.paidDate));
+      .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
   }
 
   async getPayablesByFund(fundId: number): Promise<AccountsPayable[]> {
@@ -420,7 +447,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(accountsPayable)
       .where(eq(accountsPayable.chitFundId, fundId))
-      .orderBy(desc(accountsPayable.paidDate));
+      .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
   }
 
   async getPayablesByType(fundId: number, type: string): Promise<AccountsPayable[]> {
@@ -433,30 +460,37 @@ export class DatabaseStorage implements IStorage {
           eq(accountsPayable.paymentType, type as any)
         )
       )
-      .orderBy(desc(accountsPayable.paidDate));
+      .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
   }
 
   async getAllPayables(): Promise<AccountsPayable[]> {
-    const results = await db
-      .select({
-        id: accountsPayable.id,
-        userId: accountsPayable.userId,
-        chitFundId: accountsPayable.chitFundId,
-        paymentType: accountsPayable.paymentType,
-        amount: accountsPayable.amount,
-        paidDate: accountsPayable.paidDate,
-        recordedBy: accountsPayable.recordedBy,
-        notes: accountsPayable.notes,
-        createdAt: accountsPayable.createdAt,
-        userName: users.fullName,
-        fundName: chitFunds.name
-      })
-      .from(accountsPayable)
-      .leftJoin(users, eq(accountsPayable.userId, users.id))
-      .leftJoin(chitFunds, eq(accountsPayable.chitFundId, chitFunds.id))
-      .orderBy(desc(accountsPayable.paidDate));
+    try {
+      // Select with explicit column names to avoid the paid_date issue
+      const results = await db
+        .select({
+          id: accountsPayable.id,
+          userId: accountsPayable.userId,
+          chitFundId: accountsPayable.chitFundId,
+          paymentType: accountsPayable.paymentType,
+          amount: accountsPayable.amount,
+          paidDate: accountsPayable.paid_date, // Map paid_date to paidDate in result
+          recordedBy: accountsPayable.recordedBy,
+          notes: accountsPayable.notes,
+          commission: accountsPayable.commission,
+          createdAt: accountsPayable.createdAt,
+          userName: users.fullName,
+          fundName: chitFunds.name
+        })
+        .from(accountsPayable)
+        .leftJoin(users, eq(accountsPayable.userId, users.id))
+        .leftJoin(chitFunds, eq(accountsPayable.chitFundId, chitFunds.id))
+        .orderBy(desc(accountsPayable.createdAt)); // Use createdAt as fallback
 
-    return results;
+      return results;
+    } catch (error) {
+      console.error("Error in getAllPayables:", error);
+      throw error;
+    }
   }
 }
 
