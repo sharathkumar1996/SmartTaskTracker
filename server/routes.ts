@@ -679,15 +679,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Get all payments - correctly using the payments table schema
+      // Get all payments
       const allPayments = await db.query.payments.findMany();
       console.log(`Found ${allPayments.length} payments to sync`);
 
+      // Get existing payables to prevent duplicates
+      const existingPayables = await storage.getAllPayables();
+      
+      // Create a map of existing withdrawal payables keyed by user + fund + date to check for duplicates
+      const existingWithdrawalMap = new Map();
+      
+      // Track processed payment IDs to avoid duplicates
+      const processedPaymentIds = new Set();
+      
+      for (const payable of existingPayables) {
+        if (payable.paymentType === 'withdrawal') {
+          // Create a unique key combining userId, chitFundId, and amount
+          const key = `${payable.userId}_${payable.chitFundId}_${payable.amount}`;
+          existingWithdrawalMap.set(key, payable);
+        }
+      }
+
       let syncedReceivablesCount = 0;
       let syncedPayablesCount = 0;
+      let skippedCount = 0;
       let errorCount = 0;
 
-      // For each payment, create a corresponding account entry
+      // For each payment, create a corresponding account entry if it doesn't exist
       for (const payment of allPayments) {
         // Process monthly payments to receivables
         if (payment.paymentType === "monthly") {
@@ -742,9 +760,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errorCount++;
           }
         }
-        // Process withdrawal payments to payables
+        // Process withdrawal payments to payables - with duplicate prevention
         else if (payment.paymentType === "withdrawal") {
           try {
+            // Create a unique key for this payment
+            const paymentKey = `${payment.userId}_${payment.chitFundId}_${payment.amount}`;
+            
+            // Check if we've already processed this payment in this sync
+            if (processedPaymentIds.has(payment.id)) {
+              console.log(`Skipping already processed payment ID ${payment.id}`);
+              skippedCount++;
+              continue;
+            }
+            
+            // Check if a similar withdrawal already exists
+            if (existingWithdrawalMap.has(paymentKey)) {
+              console.log(`Skipping withdrawal payment ID ${payment.id} as it appears to be a duplicate`);
+              skippedCount++;
+              continue;
+            }
+            
+            // Process this payment and track it
+            processedPaymentIds.add(payment.id);
+            
             // Create payable data from payment
             const payableData = {
               userId: payment.userId,
@@ -754,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               paidDate: payment.paymentDate,
               dueDate: payment.paymentDate, // Set due date to payment date
               recordedBy: payment.recordedBy || req.user.id, // Default to current user if not set
-              notes: payment.notes || null,
+              notes: payment.notes || `Withdrawal payment for month ${payment.monthNumber || 1}`,
               withdrawalMonth: payment.monthNumber,
             };
 
@@ -765,6 +803,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (payableParseResult.success) {
               await storage.createPayable(payableParseResult.data);
               syncedPayablesCount++;
+              
+              // Add this to our tracking map to prevent duplicates within the same sync operation
+              existingWithdrawalMap.set(paymentKey, true);
+              
               console.log(`Synced withdrawal payment ID ${payment.id} to payables.`);
             } else {
               console.error("Validation error for payable:", payableParseResult.error);
@@ -778,9 +820,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       return res.json({
-        message: `Synced ${syncedReceivablesCount} payments to accounts_receivable, ${syncedPayablesCount} payments to accounts_payable, with ${errorCount} errors.`,
+        message: `Synced ${syncedReceivablesCount} payments to accounts_receivable, ${syncedPayablesCount} payments to accounts_payable, skipped ${skippedCount} duplicates, with ${errorCount} errors.`,
         syncedReceivablesCount,
         syncedPayablesCount,
+        skippedCount,
         errorCount,
       });
     } catch (error) {
