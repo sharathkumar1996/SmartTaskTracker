@@ -72,8 +72,8 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess, monthNum
       const paymentData = {
         userId,
         chitFundId,
+        monthNumber, // Using the monthNumber from props
         amount: amount,
-        monthNumber,
         paymentMethod: values.paymentMethod,
         paymentType: "monthly",
         paymentDate: values.paymentDate,
