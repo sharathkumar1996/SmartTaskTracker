@@ -181,14 +181,29 @@ export class DatabaseStorage implements IStorage {
     fromDate?: Date;
     toDate?: Date;
   }): Promise<Payment[]> {
-    let query = db.select().from(payments);
+    let query = db
+      .select({
+        id: payments.id,
+        userId: payments.userId,
+        chitFundId: payments.chitFundId,
+        amount: payments.amount,
+        paymentType: payments.paymentType,
+        paymentMethod: payments.paymentMethod,
+        recordedBy: payments.recordedBy,
+        notes: payments.notes,
+        paymentDate: payments.paymentDate,
+        createdAt: payments.createdAt
+      })
+      .from(payments);
 
     if (fundId) {
       query = query.where(eq(payments.chitFundId, fundId));
     }
+
     if (fromDate) {
       query = query.where(sql`${payments.paymentDate} >= ${fromDate}`);
     }
+
     if (toDate) {
       query = query.where(sql`${payments.paymentDate} <= ${toDate}`);
     }
