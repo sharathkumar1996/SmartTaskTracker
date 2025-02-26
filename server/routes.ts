@@ -514,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Extract request data
-      const { userId, chitFundId, paymentType, amount, notes, paidDate, dueDate, withdrawalMonth } = req.body;
+      const { userId, chitFundId, paymentType, amount, notes, paidDate, dueDate, withdrawalMonth, commission } = req.body;
 
       console.log("Request body for payable:", req.body);
       
@@ -553,6 +553,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paidDate: new Date(paidDate),
         dueDate: new Date(payableDueDate), // Ensure we always have a valid due date
         withdrawalMonth: withdrawalMonth ? parseInt(withdrawalMonth) : undefined,
+        commission: commission ? commission.toString() : undefined, // Include commission with proper conversion
       });
 
       // If this is a withdrawal payment, we should also update the member's withdrawal status
