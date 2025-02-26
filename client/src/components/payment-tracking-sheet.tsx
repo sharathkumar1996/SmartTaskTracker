@@ -18,6 +18,9 @@ interface FundMemberPayment {
   month: number;
   amount: string;
   paymentDate: Date;
+  paymentType?: string;
+  notes?: string;
+  isWithdrawal?: boolean;
 }
 
 interface FundMember {
@@ -66,19 +69,31 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
         headers.push(`Month ${i}`);
       }
 
-      // Create rows for each member
+      // Create rows for each member with withdrawal information
       const rows = data.members.map((member: FundMember) => {
         const row = [member.fullName];
         for (let month = 1; month <= 20; month++) {
           // Get all payments for this month
           const monthPayments = member.payments.filter(p => p.month === month);
+          
+          // Check if any payment is a withdrawal
+          const hasWithdrawal = monthPayments.some(payment => 
+            payment.isWithdrawal === true || 
+            payment.paymentType === 'withdrawal' ||
+            (payment.notes?.toLowerCase().includes('withdrawal') ?? false)
+          );
+          
           // Sum up all payments for this month - safely parse the amount
           const totalAmount = monthPayments.reduce((sum, p) => {
             // Handle potential parsing errors
             const amount = parseFloat(String(p.amount).replace(/[^\d.-]/g, ''));
             return sum + (isNaN(amount) ? 0 : amount);
           }, 0);
-          row.push(totalAmount > 0 ? totalAmount.toString() : "");
+          
+          // Add W to indicate withdrawal payments in CSV
+          row.push(totalAmount > 0 ? 
+            (hasWithdrawal ? `${totalAmount.toString()} (W)` : totalAmount.toString()) : 
+            "");
         }
         return row;
       });
@@ -240,14 +255,26 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                           paymentDate = date.toLocaleDateString("en-IN");
                         }
                         
-                        // Check if any payment is a withdrawal
-                        const hasWithdrawal = monthPayments.some(p => 
-                          p.amount.toString().includes('withdrawal') || // Check description
-                          monthPayments.some(payment => {
-                            const amt = payment.amount?.toString() || '';
-                            return amt.includes('withdrawal');
-                          })
-                        );
+                        // Check if any payment in this month is a withdrawal
+                        // Using the direct isWithdrawal flag and multiple fallback checks
+                        const hasWithdrawal = monthPayments.some(payment => {
+                          // First check the direct flag we added
+                          if (payment.isWithdrawal === true) {
+                            return true;
+                          }
+                          
+                          // Then check payment type
+                          if (payment.paymentType === 'withdrawal') {
+                            return true;
+                          }
+                          
+                          // Finally check notes as a last resort
+                          const notes = payment.notes?.toString().toLowerCase() || '';
+                          
+                          return notes.includes('withdrawal') || 
+                                 notes.includes('withdrew') ||
+                                 notes.includes('payout');
+                        });
                         
                         return (
                           <TableCell 

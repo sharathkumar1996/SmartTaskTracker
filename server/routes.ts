@@ -927,10 +927,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Try to extract the month from the notes or use the withdrawalMonth field
             let monthNum = 1; // Default to month 1
             
-            // First, check if we have a withdrawalMonth field directly
-            if (withdrawal.withdrawalMonth) {
-              monthNum = parseInt(withdrawal.withdrawalMonth.toString());
-            } 
+            // First, check if withdrawal has a withdrawalMonth field
+            // Using optional chaining and type checking to avoid errors
+            if (typeof (withdrawal as any).withdrawalMonth !== 'undefined') {
+              const withdrawalMonthValue = (withdrawal as any).withdrawalMonth;
+              monthNum = parseInt(withdrawalMonthValue.toString());
+            }
             // Next, try to extract from notes using regex
             else if (withdrawal.notes && withdrawal.notes.match(/month (\d+)/i)) {
               monthNum = parseInt(withdrawal.notes.match(/month (\d+)/i)?.[1] || '1');
@@ -953,7 +955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const allUserPayments = [...userPayments, ...withdrawalPayments];
           
-          // Format payments as needed by the client
+          // Format payments as needed by the client with additional info
           return {
             id: member.id,
             fullName: member.fullName,
@@ -962,7 +964,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               amount: (typeof payment.amount === 'string' 
                 ? payment.amount 
                 : (payment.amount ? String(payment.amount) : '0')),
-              paymentDate: payment.paymentDate
+              paymentDate: payment.paymentDate,
+              // Add these fields to help the client identify payment types
+              paymentType: payment.paymentType || 'monthly',
+              notes: payment.notes || '',
+              isWithdrawal: payment.paymentType === 'withdrawal'
             }))
           };
         })
