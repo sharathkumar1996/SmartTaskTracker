@@ -302,9 +302,20 @@ export class DatabaseStorage implements IStorage {
 
   async getPaymentsByFund(fundId: number): Promise<Payment[]> {
     try {
+      // Special case: fundId 0 means get all payments (for dashboard analytics)
+      if (fundId === 0) {
+        console.log("Getting all payments for analytics");
+        return (await db
+          .select()
+          .from(payments)
+          .orderBy(payments.paymentDate)) as Payment[];
+      }
+      
+      // Regular case - check for valid fundId
       if (!fundId || isNaN(fundId)) {
         throw new Error("Invalid fund ID");
       }
+      
       return (await db
         .select()
         .from(payments)

@@ -19,8 +19,9 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Calculate total cash payments (payment_method === 'cash')
   const totalCashAmount = payments?.reduce((sum, payment) => {
     try {
-      // Only include cash payments
-      if (payment.paymentMethod !== 'cash') {
+      // Only include cash payments - make sure we check for case issues too
+      const method = String(payment.paymentMethod || '').toLowerCase();
+      if (method !== 'cash') {
         return sum;
       }
       
@@ -28,6 +29,12 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
       const numAmount = typeof payment.amount === 'string' 
         ? parseFloat(payment.amount) 
         : Number(payment.amount);
+      
+      // Add debugging
+      if (!isNaN(numAmount) && numAmount > 0) {
+        console.log(`Found cash payment: ${numAmount}`);
+      }
+      
       return sum + (isNaN(numAmount) ? 0 : numAmount);
     } catch (e) {
       console.error('Error processing cash payment amount:', e);
@@ -38,10 +45,13 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Calculate total digital payments (payment_method === 'google_pay', 'phone_pay', 'online_portal')
   const totalDigitalAmount = payments?.reduce((sum, payment) => {
     try {
-      // Only include digital payment methods from our schema
-      if (payment.paymentMethod !== 'google_pay' && 
-          payment.paymentMethod !== 'phone_pay' && 
-          payment.paymentMethod !== 'online_portal') {
+      // Normalize the payment method to handle case differences
+      const method = String(payment.paymentMethod || '').toLowerCase();
+      
+      // Only include digital payment methods
+      if (method !== 'google_pay' && 
+          method !== 'phone_pay' && 
+          method !== 'online_portal') {
         return sum;
       }
       
@@ -49,12 +59,22 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
       const numAmount = typeof payment.amount === 'string' 
         ? parseFloat(payment.amount) 
         : Number(payment.amount);
+      
+      // Add debugging
+      if (!isNaN(numAmount) && numAmount > 0) {
+        console.log(`Found digital payment (${method}): ${numAmount}`);
+      }
+      
       return sum + (isNaN(numAmount) ? 0 : numAmount);
     } catch (e) {
       console.error('Error processing digital payment amount:', e);
       return sum;
     }
   }, 0) ?? 0;
+  
+  // Log totals for debugging
+  console.log(`Total cash amount: ${totalCashAmount}`);
+  console.log(`Total digital amount: ${totalDigitalAmount}`);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
