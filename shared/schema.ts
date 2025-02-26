@@ -124,14 +124,16 @@ export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
   baseCommission: z.string().or(z.number()).transform(String),
 });
 
-export const insertPaymentSchema = createInsertSchema(payments, {
-  // Omit optional fields completely
-  monthNumber: false,
-  bonusAmount: false,
-  commissionAmount: false,
-}).extend({
-  paymentDate: z.coerce.date(),
+// Define a completely custom payments schema instead of using createInsertSchema
+export const insertPaymentSchema = z.object({
+  userId: z.number(),
+  chitFundId: z.number(),
   amount: z.string().or(z.number()).transform(String),
+  paymentType: z.enum(["monthly", "bonus", "withdrawal"]),
+  paymentMethod: z.enum(["cash", "google_pay", "phone_pay", "online_portal"]),
+  recordedBy: z.number(),
+  notes: z.string().optional().nullable(),
+  paymentDate: z.coerce.date(),
 });
 
 export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({
