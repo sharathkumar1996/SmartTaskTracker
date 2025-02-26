@@ -763,5 +763,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add endpoint for the payment tracking sheet - this was missing
+  app.get("/api/chitfunds/:id/payments", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    
+    try {
+      const fundId = parseInt(req.params.id);
+      
+      // 1. Get all members of the fund
+      const members = await storage.getFundMembers(fundId);
+      
+      // 2. For each member, get their payments for this fund
+      const membersWithPayments = await Promise.all(
+        members.map(async (member) => {
+          const userPayments = await storage.getUserFundPayments(member.id, fundId);
+          
+          // Format payments as needed by the client
+          return {
+            id: member.id,
+            fullName: member.fullName,
+            payments: userPayments.map(payment => ({
+              month: payment.monthNumber || 1,
+              amount: payment.amount.toString(),
+              paymentDate: payment.paymentDate
+            }))
+          };
+        })
+      );
+      
+      res.json({ members: membersWithPayments });
+    } catch (error) {
+      console.error("Error fetching fund payments for tracking sheet:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch fund payments",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   return httpServer;
 }
