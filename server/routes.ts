@@ -288,6 +288,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all payments (admin/agent only)
+  app.get("/api/payments", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "agent")) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
+      const payments = await storage.getPaymentsByFund(0); // 0 means get all payments
+      
+      // Log payment data for debugging
+      console.log("Payments data sample:", 
+        payments.slice(0, 3).map(p => ({
+          id: p.id,
+          amount: p.amount,
+          paymentMethod: p.paymentMethod,
+          paymentType: p.paymentType,
+          monthNumber: p.monthNumber
+        }))
+      );
+      
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
   app.get("/api/payments/:userId", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     const payments = await storage.getUserPayments(parseInt(req.params.userId));
