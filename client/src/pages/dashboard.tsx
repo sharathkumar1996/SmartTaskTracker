@@ -7,6 +7,7 @@ import { MemberManagement } from "@/components/member-management";
 import { AccountsManagement } from "@/components/accounts-management";
 import { RevenueChart } from "@/components/revenue-chart";
 import { OverduePayments } from "@/components/overdue-payments";
+import { GroupMemberManagement } from "@/components/group-member-management";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -99,6 +100,7 @@ export default function Dashboard() {
               <TabsTrigger value="accounts">Accounts</TabsTrigger>
               {user.role === "admin" && (
                 <>
+                  <TabsTrigger value="groups">Member Groups</TabsTrigger>
                   <TabsTrigger value="closed">Closed Funds</TabsTrigger>
                   <TabsTrigger value="users">Users</TabsTrigger>
                 </>
@@ -149,6 +151,13 @@ export default function Dashboard() {
 
             {user.role === "admin" && (
               <>
+                <TabsContent value="groups">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Member Groups Management</h2>
+                  </div>
+                  <GroupMemberManagement />
+                </TabsContent>
+                
                 <TabsContent value="closed">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Closed Chit Funds</h2>
