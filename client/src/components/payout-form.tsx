@@ -212,15 +212,20 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
 
   // Update default values when data is loaded
   useEffect(() => {
-    if (fundData?.baseCommission) {
-      // Set the commission to the fund's base commission by default
-      form.setValue('commission', fundData.baseCommission);
-      setCommissionAmount(fundData.baseCommission);
-    } else {
-      // Fallback to 5000 if no base commission is defined in the fund
-      form.setValue('commission', "5000");
-      setCommissionAmount("5000");
+    if (fundData) {
+      if (fundData.baseCommission) {
+        // Set the commission to the fund's base commission by default
+        form.setValue('commission', fundData.baseCommission);
+        setCommissionAmount(fundData.baseCommission);
+      } else {
+        // Calculate default commission as 5% of fund amount (5k per lakh)
+        const fundAmountNum = parseFloat(fundData.amount);
+        const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5% of fund amount
+        form.setValue('commission', defaultCommission);
+        setCommissionAmount(defaultCommission);
+      }
     }
+    
     if (memberDetails?.earlyWithdrawalMonth) {
       form.setValue('withdrawalMonth', memberDetails.earlyWithdrawalMonth);
       setWithdrawalMonthValue(memberDetails.earlyWithdrawalMonth);
@@ -338,8 +343,17 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         description: "Payout recorded successfully",
       });
 
+      // Reset form with default commission or calculate 5% of fund amount
+      let defaultCommission = "5000";
+      if (fundData?.baseCommission) {
+        defaultCommission = fundData.baseCommission;
+      } else if (fundData?.amount) {
+        const fundAmountNum = parseFloat(fundData.amount);
+        defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5% of fund amount
+      }
+      
       form.reset({
-        commission: fundData?.baseCommission || "5000",
+        commission: defaultCommission,
         notes: "",
         paymentDate: new Date(),
         withdrawalMonth: 1,
@@ -523,8 +537,14 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                         type="button" 
                         variant="outline"
                         onClick={() => {
-                          // Reset to fund's base commission or 5000 if not available
-                          const baseCommission = fundData?.baseCommission || "5000";
+                          // Reset to fund's base commission or calculate 5% of fund amount
+                          let baseCommission = "5000";
+                          if (fundData?.baseCommission) {
+                            baseCommission = fundData.baseCommission;
+                          } else if (fundData?.amount) {
+                            const fundAmountNum = parseFloat(fundData.amount);
+                            baseCommission = Math.round(fundAmountNum * 0.05).toString(); // 5% of fund amount
+                          }
                           field.onChange(baseCommission);
                           setCommissionAmount(baseCommission);
                         }}
