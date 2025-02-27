@@ -719,6 +719,7 @@ export class DatabaseStorage implements IStorage {
         status: "paid", // Default status for payables
         paidAmount: payable.amount, // Set paid amount same as amount for withdrawals
         commission: payable.commission, // Add the commission field
+        paymentMethod: payable.paymentMethod, // Add payment method field
       };
 
       console.log("Creating payable with data:", payableData);
@@ -836,6 +837,7 @@ export class DatabaseStorage implements IStorage {
           recordedBy: accountsPayable.recorderId, // Use schema field name 
           notes: accountsPayable.notes,
           commission: accountsPayable.commission, // Include the commission field
+          paymentMethod: accountsPayable.paymentMethod, // Include payment method
           createdAt: accountsPayable.createdAt,
           userName: users.fullName,
           fundName: chitFunds.name

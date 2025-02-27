@@ -1054,7 +1054,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Extract request data
-      const { userId, chitFundId, paymentType, amount, notes, paidDate, dueDate, withdrawalMonth, commission } = req.body;
+      const { 
+        userId, 
+        chitFundId, 
+        paymentType, 
+        amount, 
+        notes, 
+        paidDate, 
+        dueDate, 
+        withdrawalMonth, 
+        commission,
+        paymentMethod 
+      } = req.body;
 
       console.log("Request body for payable:", req.body);
       
@@ -1082,6 +1093,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Using due date:", payableDueDate);
 
+      // Track balance based on payment method
+      const payMethodToUse = paymentMethod || 'cash'; // Default to cash if not specified
+      console.log(`Processing payment with method: ${payMethodToUse}`);
+
       // Create the payable record
       const newPayable = await storage.createPayable({
         userId: parseInt(userId),
@@ -1094,6 +1109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dueDate: new Date(payableDueDate), // Ensure we always have a valid due date
         withdrawalMonth: withdrawalMonth ? parseInt(withdrawalMonth) : undefined,
         commission: commission ? commission.toString() : undefined, // Include commission with proper conversion
+        paymentMethod: payMethodToUse,
       });
 
       // If this is a withdrawal payment, we should also update the member's withdrawal status
