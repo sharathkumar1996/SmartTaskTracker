@@ -360,6 +360,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const members = await storage.getFundMembers(parseInt(req.params.fundId));
     res.json(members);
   });
+  
+  // Get members payment status (for overdue payments tracking)
+  app.get("/api/fund-members/payment-status/:fundId", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    
+    try {
+      const fundId = parseInt(req.params.fundId);
+      if (isNaN(fundId)) {
+        return res.status(400).json({ error: "Invalid fund ID" });
+      }
+      
+      // Get all members for this fund
+      const members = await storage.getFundMembers(fundId);
+      if (!members || members.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get current date info to determine current and previous month
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1; // 1-12
+      const currentYear = currentDate.getFullYear();
+      
+      // Calculate previous month (handle January case)
+      const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+      const previousMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+      
+      // Prepare result data structure
+      const results = [];
+      
+      // For each member, check their payment status
+      for (const member of members) {
+        // Get all the member's payments for this fund
+        const payments = await storage.getUserFundPayments(member.id, fundId);
+        
+        // Check if member has paid for current month
+        const hasCurrentMonthPayment = payments.some(payment => {
+          const paymentDate = new Date(payment.paymentDate);
+          return (
+            payment.paymentType === 'monthly' &&
+            paymentDate.getMonth() + 1 === currentMonth &&
+            paymentDate.getFullYear() === currentYear
+          );
+        });
+        
+        // Check if member has paid for previous month
+        const hasPreviousMonthPayment = payments.some(payment => {
+          const paymentDate = new Date(payment.paymentDate);
+          return (
+            payment.paymentType === 'monthly' &&
+            paymentDate.getMonth() + 1 === previousMonth &&
+            paymentDate.getFullYear() === previousMonthYear
+          );
+        });
+        
+        // Add to results
+        results.push({
+          userId: member.id,
+          fullName: member.fullName,
+          phone: member.phone || "Not provided",
+          email: member.email || "Not provided",
+          currentMonthPaid: hasCurrentMonthPayment,
+          previousMonthPaid: hasPreviousMonthPayment
+        });
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error getting payment status:", error);
+      res.status(500).json({ error: "Failed to get payment status" });
+    }
+  });
 
   // Get member details including withdrawal status
   app.get("/api/chitfunds/:fundId/members/:userId/details", async (req, res) => {

@@ -6,6 +6,7 @@ import { StatsCards } from "@/components/stats-cards";
 import { MemberManagement } from "@/components/member-management";
 import { AccountsManagement } from "@/components/accounts-management";
 import { RevenueChart } from "@/components/revenue-chart";
+import { OverduePayments } from "@/components/overdue-payments";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -80,10 +81,14 @@ export default function Dashboard() {
           users={users}
         />
         
-        {/* Add Revenue & Commission Chart */}
+        {/* Dashboard charts and analytics for admin/agent */}
         {(user.role === "admin" || user.role === "agent") && (
-          <div className="mt-8">
+          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
+            {/* Revenue & Commission Chart */}
             <RevenueChart months={6} />
+            
+            {/* Overdue Payments Overview */}
+            <OverduePayments />
           </div>
         )}
 
