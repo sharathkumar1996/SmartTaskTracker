@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ChitFund, MemberGroup } from "@shared/schema";
@@ -74,7 +74,7 @@ type GroupPaymentFormValues = z.infer<typeof groupPaymentFormSchema>;
 
 export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuccess }: GroupPaymentFormProps) {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
   const [expectedAmount, setExpectedAmount] = useState<string | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [paymentDistribution, setPaymentDistribution] = useState<Array<{
@@ -148,7 +148,7 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
       }
       
       // Calculate individual amounts based on share percentages
-      const distribution = groupWithMembers.members.map(member => {
+      const distribution = groupWithMembers.members.map((member: { userId: number; sharePercentage: string; user?: { fullName: string }}) => {
         const sharePercentage = parseFloat(member.sharePercentage);
         const amountDue = (totalAmount * sharePercentage / 100).toFixed(2);
         
@@ -173,6 +173,58 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
     }
   };
 
+  // Create mutation for group payment submission
+  const groupPaymentMutation = useMutation({
+    mutationFn: async (data: GroupPaymentFormValues & { distribution: any[] }) => {
+      const response = await apiRequest("POST", "/api/member-groups/payments", {
+        body: JSON.stringify({
+          groupId,
+          chitFundId,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          notes: data.notes || `Group payment for month ${data.monthNumber}`,
+          paymentDate: data.paymentDate,
+          monthNumber: data.monthNumber,
+          distribution: data.distribution
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to process group payment");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Payment recorded",
+        description: "The group payment has been recorded successfully and distributed to members.",
+      });
+      
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
+      
+      // Reset the form
+      form.reset();
+      setPaymentDistribution([]);
+      
+      // Call the success callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: (error: Error) => {
+      console.error("Error recording group payment:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record group payment",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle form submission
   const onSubmit = async (values: GroupPaymentFormValues) => {
     if (!groupWithMembers || !groupWithMembers.members || groupWithMembers.members.length === 0) {
@@ -184,51 +236,19 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Create a bulk payment record for the entire group
-      const groupPaymentResponse = await apiRequest("POST", "/api/member-groups/payments", {
-        body: JSON.stringify({
-          groupId,
-          chitFundId,
-          amount: values.amount,
-          paymentMethod: values.paymentMethod,
-          notes: values.notes || `Group payment for month ${values.monthNumber}`,
-          paymentDate: values.paymentDate,
-          monthNumber: values.monthNumber,
-          distribution: paymentDistribution
-        }),
-      });
-
-      if (!groupPaymentResponse.ok) {
-        const errorData = await groupPaymentResponse.json();
-        throw new Error(errorData.message || "Failed to process group payment");
-      }
-
+    if (paymentDistribution.length === 0) {
       toast({
-        title: "Payment recorded",
-        description: "The group payment has been recorded successfully and distributed to members.",
-      });
-
-      // Reset the form
-      form.reset();
-      setPaymentDistribution([]);
-
-      // Call the success callback if provided
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (error) {
-      console.error("Error recording group payment:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to record group payment",
+        title: "Missing distribution",
+        description: "Please calculate the payment distribution first",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    groupPaymentMutation.mutate({
+      ...values,
+      distribution: paymentDistribution
+    });
   };
 
   return (
@@ -442,9 +462,9 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
           <Button
             type="submit"
             className="w-full"
-            disabled={isSubmitting || isLoadingGroup || paymentDistribution.length === 0}
+            disabled={groupPaymentMutation.isPending || isLoadingGroup || paymentDistribution.length === 0}
           >
-            {isSubmitting ? (
+            {groupPaymentMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Processing Payment...
