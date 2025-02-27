@@ -9,6 +9,7 @@ import { RevenueChart } from "@/components/revenue-chart";
 import { OverduePayments } from "@/components/overdue-payments";
 import { GroupMemberManagement } from "@/components/group-member-management";
 import { FinancialManagement } from "@/components/financial-management";
+import { GSTReports } from "@/components/gst-reports";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -105,6 +106,7 @@ export default function Dashboard() {
                   <TabsTrigger value="closed">Closed Funds</TabsTrigger>
                   <TabsTrigger value="users">Users</TabsTrigger>
                   <TabsTrigger value="finances">Financial Management</TabsTrigger>
+                  <TabsTrigger value="gst">GST Reports</TabsTrigger>
                 </>
               )}
             </TabsList>
@@ -186,6 +188,13 @@ export default function Dashboard() {
                     <h2 className="text-xl font-semibold">Financial Management</h2>
                   </div>
                   <FinancialManagement />
+                </TabsContent>
+                
+                <TabsContent value="gst">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">GST Reports</h2>
+                  </div>
+                  <GSTReports />
                 </TabsContent>
               </>
             )}
