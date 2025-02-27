@@ -367,7 +367,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async addMemberToFund(fundId: number, userId: number, isGroup: boolean = false, groupId?: number): Promise<boolean> {
+  async addMemberToFund(fundId: number, userId: number, isGroup: boolean = false, groupId?: number, metadataString?: string): Promise<boolean> {
     try {
       // Validate inputs
       if (!fundId || !userId) {
@@ -1024,18 +1024,58 @@ export class DatabaseStorage implements IStorage {
   // Fund Members with Group support
   async addGroupToFund(fundId: number, groupId: number): Promise<boolean> {
     try {
-      // First, get the primary user for this group
-      const group = await this.getMemberGroup(groupId);
+      console.log(`Adding group ${groupId} to fund ${fundId}`);
       
-      if (!group || !group.primaryUserId) {
-        console.error("Cannot add group to fund: Group not found or no primary user");
+      // Get the group details
+      const group = await this.getMemberGroup(groupId);
+      if (!group) {
+        console.error(`Group with ID ${groupId} not found`);
+        return false;
+      }
+      console.log(`Found group: ${JSON.stringify(group)}`);
+      
+      // Get all group members
+      const members = await this.getGroupMembers(groupId);
+      console.log(`Group ${groupId} has ${members.length} members`);
+      
+      if (!members || members.length === 0) {
+        console.error(`Group ${groupId} has no members`);
         return false;
       }
       
-      // Add the primary user to the fund as a representative of the group
-      return await this.addMemberToFund(fundId, group.primaryUserId, true, groupId);
+      // Get a primary user for the group (either designated primary or first member)
+      let primaryUserId = group.primaryUserId;
+      
+      if (!primaryUserId) {
+        // Use the first member as the primary user
+        primaryUserId = members[0].userId;
+        console.log(`Using first member (${primaryUserId}) as primary user`);
+      }
+      
+      if (!primaryUserId) {
+        console.error("Cannot add group to fund: No primary user could be determined");
+        return false;
+      }
+      
+      // Create the metadata that will be stored in the notes field
+      const metadata = JSON.stringify({
+        isGroup: true,
+        groupId: groupId,
+        memberCount: members.length,
+        groupName: group.name
+      });
+      
+      console.log(`Adding primary user ${primaryUserId} to fund ${fundId} as group representative`);
+      console.log(`With metadata: ${metadata}`);
+      
+      // Add the primary user to the fund with group metadata
+      return await this.addMemberToFund(fundId, primaryUserId, true, groupId, metadata);
     } catch (error) {
       console.error("Error in addGroupToFund:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        console.error("Stack trace:", error.stack);
+      }
       return false;
     }
   }
