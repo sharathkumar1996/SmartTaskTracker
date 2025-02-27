@@ -642,6 +642,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
     
     try {
+      // Log the raw request body to help debug
+      console.log("Adding member to group, data:", JSON.stringify(req.body));
+      
+      // Handle case where body might be a string (JSON parse issue)
+      let parsedBody = req.body;
+      if (typeof req.body === 'string' || req.body.body) {
+        try {
+          parsedBody = typeof req.body === 'string' 
+            ? JSON.parse(req.body) 
+            : JSON.parse(req.body.body);
+          console.log("Parsed request body:", parsedBody);
+        } catch (e) {
+          console.error("Error parsing request body:", e);
+        }
+      }
+      
       const groupId = parseInt(req.params.groupId);
       
       // Make sure the group exists
@@ -650,14 +666,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Member group not found" });
       }
       
+      // Get existing members to check if the member is already in the group
+      const existingMembers = await storage.getGroupMembers(groupId);
+      const userId = parseInt(parsedBody.userId);
+      
+      // Check if member already exists in the group
+      const memberExists = existingMembers.some(member => member.userId === userId);
+      if (memberExists) {
+        return res.status(409).json({ 
+          message: "Member already exists in this group",
+          code: "MEMBER_EXISTS"
+        });
+      }
+      
       // Add groupId to the member data
       const memberData = {
-        ...req.body,
+        ...parsedBody,
         groupId
       };
       
+      console.log("Member data to insert:", memberData);
+      
       const parseResult = insertGroupMemberSchema.safeParse(memberData);
       if (!parseResult.success) {
+        console.error("Validation error:", parseResult.error);
         return res.status(400).json(parseResult.error);
       }
       

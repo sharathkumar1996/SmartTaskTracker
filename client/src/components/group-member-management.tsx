@@ -303,10 +303,18 @@ export function GroupMemberManagement({
   const addMemberMutation = useMutation({
     mutationFn: async (values: z.infer<typeof addMemberSchema>) => {
       if (!selectedGroup) throw new Error("No group selected");
-      const response = await apiRequest("POST", `/api/member-groups/${selectedGroup.id}/members`, {
-        body: JSON.stringify(values)
-      });
-      return response;
+      try {
+        const response = await apiRequest("POST", `/api/member-groups/${selectedGroup.id}/members`, {
+          body: JSON.stringify(values)
+        });
+        return response;
+      } catch (error) {
+        // Check for specific error types
+        if (error instanceof Response && error.status === 409) {
+          throw new Error("Member already exists in this group");
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -318,11 +326,8 @@ export function GroupMemberManagement({
       addMemberForm.reset();
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add member to group",
-        variant: "destructive",
-      });
+      // Our onAddMemberSubmit function handles the error display now
+      console.error("Member addition error:", error);
     },
   });
 
@@ -372,7 +377,41 @@ export function GroupMemberManagement({
 
   // Handle submit for adding a member to a group
   const onAddMemberSubmit = (values: z.infer<typeof addMemberSchema>) => {
-    addMemberMutation.mutate(values);
+    try {
+      addMemberMutation.mutate(values, {
+        onError: (error: Error) => {
+          console.error("Error adding member to group:", error);
+          
+          // Check if this is a duplicate member error (409 status)
+          if (error.message.includes("409") || error.message.includes("already exists")) {
+            toast({
+              variant: "destructive",
+              title: "Member already exists",
+              description: "This member is already part of the group. Please select a different member.",
+            });
+          } else if (error.message.includes("400")) {
+            toast({
+              variant: "destructive",
+              title: "Invalid form data",
+              description: "Please ensure all fields are filled correctly.",
+            });
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Error adding member",
+              description: error.message || "Failed to add member to group",
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error in mutation execution:", error);
+      toast({
+        variant: "destructive",
+        title: "Error adding member",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+      });
+    }
   };
 
   // Handle adding the selected group to a chitfund
