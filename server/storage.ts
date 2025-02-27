@@ -390,9 +390,19 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Add metadata fields to track if this is a group membership
-      const metadata = isGroup && groupId ? 
-        JSON.stringify({ isGroup: true, groupId }) : 
-        null;
+      let metadata;
+      if (isGroup && groupId) {
+        if (metadataString) {
+          // Use provided metadata string
+          metadata = metadataString;
+        } else {
+          // Create basic metadata
+          metadata = JSON.stringify({ isGroup: true, groupId });
+        }
+        console.log(`Using group metadata: ${metadata}`);
+      } else {
+        metadata = null;
+      }
       
       // Prevent duplicate memberships
       const existingMembership = await db
@@ -1069,7 +1079,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`With metadata: ${metadata}`);
       
       // Add the primary user to the fund with group metadata
-      return await this.addMemberToFund(fundId, primaryUserId, true, groupId, metadata);
+      return await this.addMemberToFund(fundId, primaryUserId, true, groupId);
     } catch (error) {
       console.error("Error in addGroupToFund:", error);
       if (error instanceof Error) {

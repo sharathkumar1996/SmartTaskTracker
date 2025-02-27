@@ -417,6 +417,18 @@ export function GroupMemberManagement({
   // Handle adding the selected group to a chitfund
   const handleAddGroupToFund = (fundId: number) => {
     if (!selectedGroup) return;
+    
+    // Check if the group has members and total share is 100%
+    if (totalPercentage !== 100) {
+      toast({
+        title: "Invalid group configuration",
+        description: `Group members' share percentages must add up to 100% (currently: ${totalPercentage.toFixed(2)}%)`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    console.log(`Adding group ${selectedGroup.id} to fund ${fundId}`);
     addGroupToFundMutation.mutate({ fundId, groupId: selectedGroup.id });
   };
 
