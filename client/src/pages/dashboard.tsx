@@ -8,6 +8,7 @@ import { AccountsManagement } from "@/components/accounts-management";
 import { RevenueChart } from "@/components/revenue-chart";
 import { OverduePayments } from "@/components/overdue-payments";
 import { GroupMemberManagement } from "@/components/group-member-management";
+import { FinancialManagement } from "@/components/financial-management";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,

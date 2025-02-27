@@ -16,7 +16,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useUser } from "@/hooks/use-user";
+import { useAuth } from "@/hooks/use-auth";
 
 // Financial transaction types
 type TransactionType = 
@@ -69,7 +69,7 @@ interface FinancialSummary {
 export function FinancialManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [formValues, setFormValues] = useState({
     transactionDate: new Date().toISOString().split('T')[0],
     amount: "",
