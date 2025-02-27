@@ -5,6 +5,7 @@ import { ChitFundForm } from "@/components/chitfund-form";
 import { StatsCards } from "@/components/stats-cards";
 import { MemberManagement } from "@/components/member-management";
 import { AccountsManagement } from "@/components/accounts-management";
+import { RevenueChart } from "@/components/revenue-chart";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -78,6 +79,13 @@ export default function Dashboard() {
           role={user.role}
           users={users}
         />
+        
+        {/* Add Revenue & Commission Chart */}
+        {(user.role === "admin" || user.role === "agent") && (
+          <div className="mt-8">
+            <RevenueChart months={6} />
+          </div>
+        )}
 
         <div className="mt-8">
           <Tabs defaultValue="active" className="space-y-8">
