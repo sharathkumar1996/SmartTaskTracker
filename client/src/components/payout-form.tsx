@@ -122,6 +122,9 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       // Set the commission based on the fund amount (5k per lakh = 5% of fund amount)
       const fundAmountNum = parseFloat(fundData.amount);
       const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
+      
+      console.log(`Fund amount: ${fundAmountNum}, Calculated commission: ${defaultCommission}`);
+      
       setCommissionAmount(defaultCommission);
       form.setValue('commission', defaultCommission);
     }
@@ -216,28 +219,14 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     }
   }, [paidAmount, bonusAmount, remainingAmount, commissionAmount, penaltyAmount, withdrawalMonthValue, monthsPaid]);
 
-  // Update default values when data is loaded
+  // This effect has been removed as it was causing issues with duplicate commission calculation
+  // The calculation is now handled in the first useEffect above
   useEffect(() => {
-    if (fundData) {
-      if (fundData.baseCommission) {
-        // Set the commission to the fund's base commission by default
-        form.setValue('commission', fundData.baseCommission);
-        setCommissionAmount(fundData.baseCommission);
-      } else {
-        // Calculate default commission as 5k per lakh (5% of fund amount)
-        const fundAmountNum = parseFloat(fundData.amount);
-        // 5k per lakh = 5000 per 100000 = 0.05 * fund amount
-        const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
-        form.setValue('commission', defaultCommission);
-        setCommissionAmount(defaultCommission);
-      }
-    }
-    
     if (memberDetails?.earlyWithdrawalMonth) {
       form.setValue('withdrawalMonth', memberDetails.earlyWithdrawalMonth);
       setWithdrawalMonthValue(memberDetails.earlyWithdrawalMonth);
     }
-  }, [fundData, memberDetails, form]);
+  }, [memberDetails, form]);
 
   // Update the commission amount when the form value changes
   useEffect(() => {
