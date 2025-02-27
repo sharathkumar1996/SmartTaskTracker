@@ -218,9 +218,10 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         form.setValue('commission', fundData.baseCommission);
         setCommissionAmount(fundData.baseCommission);
       } else {
-        // Calculate default commission as 5% of fund amount (5k per lakh)
+        // Calculate default commission as 5k per lakh (5% of fund amount)
         const fundAmountNum = parseFloat(fundData.amount);
-        const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5% of fund amount
+        // 5k per lakh = 5000 per 100000 = 0.05 * fund amount
+        const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
         form.setValue('commission', defaultCommission);
         setCommissionAmount(defaultCommission);
       }
@@ -343,13 +344,13 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         description: "Payout recorded successfully",
       });
 
-      // Reset form with default commission or calculate 5% of fund amount
+      // Reset form with default commission or calculate 5k per lakh (5% of fund amount)
       let defaultCommission = "5000";
       if (fundData?.baseCommission) {
         defaultCommission = fundData.baseCommission;
       } else if (fundData?.amount) {
         const fundAmountNum = parseFloat(fundData.amount);
-        defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5% of fund amount
+        defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
       }
       
       form.reset({
@@ -537,13 +538,13 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                         type="button" 
                         variant="outline"
                         onClick={() => {
-                          // Reset to fund's base commission or calculate 5% of fund amount
+                          // Reset to fund's base commission or calculate 5k per lakh (5% of fund amount)
                           let baseCommission = "5000";
                           if (fundData?.baseCommission) {
                             baseCommission = fundData.baseCommission;
                           } else if (fundData?.amount) {
                             const fundAmountNum = parseFloat(fundData.amount);
-                            baseCommission = Math.round(fundAmountNum * 0.05).toString(); // 5% of fund amount
+                            baseCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh (5% of fund amount)
                           }
                           field.onChange(baseCommission);
                           setCommissionAmount(baseCommission);
@@ -555,10 +556,11 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                   </FormControl>
                   <FormDescription>
                     Commission to be deducted from the fund amount (in rupees, not percentage).
-                    The default value comes from the fund's base commission setting, which is 
-                    {fundData?.baseCommission 
+                    The default commission is calculated at 5k per lakh (5% of fund amount).
+                    For this fund, it is {fundData?.baseCommission 
                       ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
-                      : " ₹5,000"} for this fund, but can be adjusted as needed.
+                      : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}, 
+                    but can be adjusted by an admin as needed.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
