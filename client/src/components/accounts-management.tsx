@@ -13,6 +13,8 @@ export const AccountsManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [cashBalance, setCashBalance] = useState(0);
+  const [bankBalance, setBankBalance] = useState(0);
 
   // Query for received payments (accounts receivable)
   const receivablesQuery = useQuery({
@@ -24,6 +26,31 @@ export const AccountsManagement = () => {
   const payablesQuery = useQuery({
     queryKey: ['/api/accounts/payables'],
     retry: 1,
+    onSuccess: (data) => {
+      if (data && Array.isArray(data)) {
+        // Calculate cash and bank balances from payables
+        let cashTotal = 0;
+        let bankTotal = 0;
+
+        data.forEach((payable: any) => {
+          const amount = parseFloat(payable.amount || '0');
+          
+          if (payable.paymentMethod === 'cash') {
+            cashTotal += amount;
+          } else if (
+            payable.paymentMethod === 'bank_transfer' || 
+            payable.paymentMethod === 'google_pay' || 
+            payable.paymentMethod === 'phone_pay' || 
+            payable.paymentMethod === 'online_portal'
+          ) {
+            bankTotal += amount;
+          }
+        });
+
+        setCashBalance(cashTotal);
+        setBankBalance(bankTotal);
+      }
+    }
   });
 
   // Mutation to sync payments to receivables
@@ -68,6 +95,28 @@ export const AccountsManagement = () => {
           {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {isSyncing ? "Syncing..." : "Sync Payments to Accounts"}
         </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Cash Balance</CardTitle>
+            <CardDescription>Total funds disbursed via cash</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatCurrency(cashBalance)}</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Bank Balance</CardTitle>
+            <CardDescription>Total funds disbursed via bank transfers and online methods</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{formatCurrency(bankBalance)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="received">
@@ -172,6 +221,7 @@ export const AccountsManagement = () => {
                       <TableHead>Type</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Commission</TableHead>
+                      <TableHead>Payment Method</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -193,6 +243,22 @@ export const AccountsManagement = () => {
                         </TableCell>
                         <TableCell>{formatCurrency(payable.amount)}</TableCell>
                         <TableCell>{payable.commission ? formatCurrency(payable.commission) : '-'}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            payable.paymentMethod === 'cash' 
+                              ? 'bg-amber-100 text-amber-800' 
+                              : payable.paymentMethod === 'bank_transfer' 
+                                ? 'bg-indigo-100 text-indigo-800' 
+                                : 'bg-cyan-100 text-cyan-800'
+                          }`}>
+                            {payable.paymentMethod === 'cash' ? 'Cash' :
+                             payable.paymentMethod === 'bank_transfer' ? 'Bank Transfer' :
+                             payable.paymentMethod === 'google_pay' ? 'Google Pay' :
+                             payable.paymentMethod === 'phone_pay' ? 'Phone Pay' :
+                             payable.paymentMethod === 'online_portal' ? 'Online Portal' :
+                             'Other'}
+                          </span>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
