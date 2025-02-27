@@ -1227,6 +1227,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch payables" });
     }
   });
+  
+  // Financial Transactions API endpoints
+  app.get("/api/financial-transactions", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const transactions = await storage.getFinancialTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching financial transactions:", error);
+      res.status(500).json({ message: "Failed to fetch financial transactions" });
+    }
+  });
+  
+  app.get("/api/financial-transactions/summary", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const summary = await storage.getFinancialSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching financial summary:", error);
+      res.status(500).json({ message: "Failed to fetch financial summary" });
+    }
+  });
+  
+  app.get("/api/financial-transactions/:type", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    const { type } = req.params;
+    
+    try {
+      const transactions = await storage.getFinancialTransactionsByType(type);
+      res.json(transactions);
+    } catch (error) {
+      console.error(`Error fetching financial transactions by type ${type}:`, error);
+      res.status(500).json({ message: "Failed to fetch financial transactions" });
+    }
+  });
+  
+  app.post("/api/financial-transactions", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const transaction = {
+        ...req.body,
+        recordedBy: req.user.id, // Always use the current admin user as the recorder
+      };
+      
+      const result = await storage.createFinancialTransaction(transaction);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating financial transaction:", error);
+      res.status(500).json({ 
+        message: "Failed to create financial transaction",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Add a new endpoint to sync payments to accounts_receivable and accounts_payable
   app.post("/api/sync-payments-to-receivables", async (req, res) => {

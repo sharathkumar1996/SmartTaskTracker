@@ -327,6 +327,38 @@ export type InsertMemberGroup = z.infer<typeof insertMemberGroupSchema>;
 export type GroupMember = typeof groupMembers.$inferSelect;
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
 
+// Create table for financial transactions that don't belong to a specific chit fund
+export const financialTransactions = pgTable("financial_transactions", {
+  id: serial("id").primaryKey(),
+  transactionDate: timestamp("transaction_date").notNull().defaultNow(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  transactionType: text("transaction_type").$type<"admin_borrow" | "admin_repay" | "external_loan" | "loan_repayment" | "agent_salary" | "expense" | "other_income">().notNull(),
+  paymentMethod: text("payment_method").$type<"cash" | "bank_transfer" | "google_pay" | "phone_pay" | "online_portal">().default("cash"),
+  description: text("description"),
+  interestRate: decimal("interest_rate", { precision: 5, scale: 2 }),
+  lenderName: text("lender_name"),
+  agentId: integer("agent_id").references(() => users.id),
+  recordedBy: integer("recorded_by").notNull().references(() => users.id),
+  documentUrl: text("document_url"),
+  gstEligible: boolean("gst_eligible").default(false),
+  hsn: text("hsn"), // HSN/SAC code for GST
+  gstRate: decimal("gst_rate", { precision: 5, scale: 2 }),
+  gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+});
+
+// Add schema for the financial transactions
+export const insertFinancialTransactionSchema = createInsertSchema(financialTransactions).extend({
+  amount: z.string().or(z.number()).transform(String),
+  interestRate: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
+  gstRate: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
+  gstAmount: z.string().or(z.number()).optional().transform(val => val ? String(val) : undefined),
+});
+
+// Export types for the financial transactions
+export type FinancialTransaction = typeof financialTransactions.$inferSelect;
+export type InsertFinancialTransaction = z.infer<typeof insertFinancialTransactionSchema>;
+
 // Export types for the new tables
 export type AccountsReceivable = typeof accountsReceivable.$inferSelect;
 export type InsertAccountsReceivable = z.infer<typeof insertAccountsReceivableSchema>;

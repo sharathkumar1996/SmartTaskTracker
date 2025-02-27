@@ -1,14 +1,14 @@
 import { 
   users, chitFunds, payments, fundMembers, notifications, accountsReceivable, 
-  accountsPayable, memberGroups, groupMembers,
+  accountsPayable, memberGroups, groupMembers, financialTransactions,
   type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, 
   type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, 
   type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable, 
   type FundMember, type InsertFundMember, type MemberGroup, type InsertMemberGroup,
-  type GroupMember, type InsertGroupMember
+  type GroupMember, type InsertGroupMember, type FinancialTransaction, type InsertFinancialTransaction
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, or } from "drizzle-orm";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import Decimal from 'decimal.js';
@@ -646,6 +646,183 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getReceivablesByMonth:", error);
       return [];
+    }
+  }
+
+  // Financial transactions methods
+  async createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction> {
+    try {
+      const result = await db
+        .insert(financialTransactions)
+        .values({
+          transactionDate: transaction.transactionDate || new Date(),
+          amount: transaction.amount,
+          transactionType: transaction.transactionType,
+          paymentMethod: transaction.paymentMethod || "cash",
+          description: transaction.description,
+          interestRate: transaction.interestRate,
+          lenderName: transaction.lenderName,
+          agentId: transaction.agentId,
+          recordedBy: transaction.recordedBy,
+          documentUrl: transaction.documentUrl,
+          gstEligible: transaction.gstEligible || false,
+          hsn: transaction.hsn,
+          gstRate: transaction.gstRate,
+          gstAmount: transaction.gstAmount,
+          notes: transaction.notes
+        })
+        .returning();
+      return result[0] as FinancialTransaction;
+    } catch (error) {
+      console.error("Error in createFinancialTransaction:", error);
+      throw error;
+    }
+  }
+
+  async getFinancialTransactions(): Promise<FinancialTransaction[]> {
+    try {
+      const transactions = await db
+        .select({
+          id: financialTransactions.id,
+          transactionDate: financialTransactions.transactionDate,
+          amount: financialTransactions.amount,
+          transactionType: financialTransactions.transactionType,
+          paymentMethod: financialTransactions.paymentMethod,
+          description: financialTransactions.description,
+          interestRate: financialTransactions.interestRate,
+          lenderName: financialTransactions.lenderName,
+          agentId: financialTransactions.agentId,
+          recordedBy: financialTransactions.recordedBy,
+          documentUrl: financialTransactions.documentUrl,
+          gstEligible: financialTransactions.gstEligible,
+          hsn: financialTransactions.hsn,
+          gstRate: financialTransactions.gstRate,
+          gstAmount: financialTransactions.gstAmount,
+          notes: financialTransactions.notes,
+          agentName: users.fullName
+        })
+        .from(financialTransactions)
+        .leftJoin(users, eq(financialTransactions.agentId, users.id))
+        .orderBy(desc(financialTransactions.transactionDate));
+
+      return transactions as FinancialTransaction[];
+    } catch (error) {
+      console.error("Error in getFinancialTransactions:", error);
+      return [];
+    }
+  }
+  
+  async getFinancialTransactionsByType(type: string): Promise<FinancialTransaction[]> {
+    try {
+      const transactions = await db
+        .select()
+        .from(financialTransactions)
+        .where(eq(financialTransactions.transactionType, type as any))
+        .orderBy(desc(financialTransactions.transactionDate));
+      
+      return transactions as FinancialTransaction[];
+    } catch (error) {
+      console.error(`Error in getFinancialTransactionsByType for type ${type}:`, error);
+      return [];
+    }
+  }
+  
+  async getFinancialSummary() {
+    try {
+      // Calculate total admin borrowings vs repayments
+      const adminTransactions = await db
+        .select()
+        .from(financialTransactions)
+        .where(
+          or(
+            eq(financialTransactions.transactionType, 'admin_borrow'),
+            eq(financialTransactions.transactionType, 'admin_repay')
+          )
+        );
+      
+      let adminBorrowTotal = 0;
+      let adminRepayTotal = 0;
+      
+      adminTransactions.forEach(transaction => {
+        const amount = parseFloat(transaction.amount.toString());
+        if (transaction.transactionType === 'admin_borrow') {
+          adminBorrowTotal += amount;
+        } else if (transaction.transactionType === 'admin_repay') {
+          adminRepayTotal += amount;
+        }
+      });
+      
+      // Calculate external loans vs repayments
+      const loanTransactions = await db
+        .select()
+        .from(financialTransactions)
+        .where(
+          or(
+            eq(financialTransactions.transactionType, 'external_loan'),
+            eq(financialTransactions.transactionType, 'loan_repayment')
+          )
+        );
+      
+      let externalLoanTotal = 0;
+      let loanRepaymentTotal = 0;
+      
+      loanTransactions.forEach(transaction => {
+        const amount = parseFloat(transaction.amount.toString());
+        if (transaction.transactionType === 'external_loan') {
+          externalLoanTotal += amount;
+        } else if (transaction.transactionType === 'loan_repayment') {
+          loanRepaymentTotal += amount;
+        }
+      });
+      
+      // Calculate total agent salaries
+      const agentSalaries = await db
+        .select()
+        .from(financialTransactions)
+        .where(eq(financialTransactions.transactionType, 'agent_salary'));
+      
+      let agentSalaryTotal = 0;
+      
+      agentSalaries.forEach(transaction => {
+        agentSalaryTotal += parseFloat(transaction.amount.toString());
+      });
+      
+      // Calculate total GST eligible transactions
+      const gstTransactions = await db
+        .select()
+        .from(financialTransactions)
+        .where(eq(financialTransactions.gstEligible, true));
+      
+      let gstTotal = 0;
+      
+      gstTransactions.forEach(transaction => {
+        if (transaction.gstAmount) {
+          gstTotal += parseFloat(transaction.gstAmount.toString());
+        }
+      });
+      
+      return {
+        adminBorrowTotal,
+        adminRepayTotal,
+        adminNetDebt: adminBorrowTotal - adminRepayTotal,
+        externalLoanTotal,
+        loanRepaymentTotal,
+        externalNetDebt: externalLoanTotal - loanRepaymentTotal,
+        agentSalaryTotal,
+        gstTotal
+      };
+    } catch (error) {
+      console.error("Error in getFinancialSummary:", error);
+      return {
+        adminBorrowTotal: 0,
+        adminRepayTotal: 0,
+        adminNetDebt: 0,
+        externalLoanTotal: 0,
+        loanRepaymentTotal: 0,
+        externalNetDebt: 0,
+        agentSalaryTotal: 0,
+        gstTotal: 0
+      };
     }
   }
 
