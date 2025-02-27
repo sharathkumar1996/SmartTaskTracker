@@ -99,6 +99,19 @@ const createGroupSchema = z.object({
   name: z.string().min(3, "Group name must be at least 3 characters"),
   notes: z.string().optional().nullable(),
   createdBy: z.number().optional(), // This will be set on the server
+  initialMember: z.object({
+    userId: z.coerce.number({
+      required_error: "Please select a member",
+      invalid_type_error: "Please select a valid member",
+    }),
+    sharePercentage: z.string().refine(
+      (val) => {
+        const num = parseFloat(val);
+        return !isNaN(num) && num > 0 && num <= 100;
+      },
+      { message: "Share percentage must be between 0 and 100" }
+    )
+  })
 });
 
 // Add member to group form schema
@@ -139,6 +152,10 @@ export function GroupMemberManagement({
     defaultValues: {
       name: "",
       notes: "",
+      initialMember: {
+        userId: 0,
+        sharePercentage: "100"
+      }
     },
   });
 
@@ -588,12 +605,68 @@ export function GroupMemberManagement({
                         placeholder="Optional notes about this group"
                         className="resize-none"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              <div className="space-y-2 pt-2 pb-1">
+                <h3 className="font-medium text-sm">Initial Member</h3>
+                <p className="text-sm text-muted-foreground">Add at least one member to the group</p>
+              </div>
+              
+              <div className="space-y-4 border rounded-md p-4">
+                <FormField
+                  control={createGroupForm.control}
+                  name="initialMember.userId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Member</FormLabel>
+                      <FormControl>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          {...field}
+                          value={field.value || ""}
+                        >
+                          <option value="" disabled>Select a member</option>
+                          {members.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.fullName} ({member.phone})
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={createGroupForm.control}
+                  name="initialMember.sharePercentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Share Percentage</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="100" 
+                          {...field} 
+                          min="1" 
+                          max="100" 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Percentage share of this member in the group (1-100)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <DialogFooter>
                 <Button
