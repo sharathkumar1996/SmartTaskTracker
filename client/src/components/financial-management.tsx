@@ -92,7 +92,7 @@ export function FinancialManagement() {
   });
 
   const summaryQuery = useQuery<FinancialSummary>({
-    queryKey: ['/api/financial-summary'],
+    queryKey: ['/api/financial-transactions/summary'],
     enabled: user?.role === "admin",
   });
 
@@ -131,7 +131,7 @@ export function FinancialManagement() {
         notes: "",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/financial-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/financial-transactions/summary'] });
     },
     onError: (error) => {
       toast({
@@ -516,7 +516,7 @@ export function FinancialManagement() {
               <CardFooter>
                 <Button 
                   variant="outline" 
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/financial-summary'] })}
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/financial-transactions/summary'] })}
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className="h-4 w-4" />
