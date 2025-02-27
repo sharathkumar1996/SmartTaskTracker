@@ -206,7 +206,7 @@ export function ChitFundForm() {
                           form.setValue("endDate", endDate);
                         }
                       }}
-                      disabled={(date) => date < new Date()}
+                      /* Allow dates in the past for historical data */
                       initialFocus
                     />
                   </PopoverContent>
