@@ -9,7 +9,7 @@ import { ChitFund, MemberGroup } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, InfoIcon, Calculator, AlertCircle } from "lucide-react";
+import { Loader2, InfoIcon, Calculator, AlertCircle, CalendarIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -34,12 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -402,7 +396,7 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
+                        date > new Date() // Only restrict future dates, allow historical dates
                       }
                       initialFocus
                     />

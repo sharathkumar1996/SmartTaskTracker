@@ -9,12 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, PlusCircle, RefreshCw } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { Loader2, PlusCircle, RefreshCw, Calendar } from "lucide-react";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 // Financial transaction types
 type TransactionType = 
@@ -285,14 +288,42 @@ export function FinancialManagement() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="transactionDate">Transaction Date</Label>
-                    <Input
-                      id="transactionDate"
-                      name="transactionDate"
-                      type="date"
-                      value={formValues.transactionDate}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <div className="relative">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !formValues.transactionDate && "text-muted-foreground"
+                            )}
+                          >
+                            {formValues.transactionDate ? (
+                              format(new Date(formValues.transactionDate), "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={formValues.transactionDate ? new Date(formValues.transactionDate) : undefined}
+                            onSelect={(date: Date | undefined) => {
+                              if (date) {
+                                setFormValues({
+                                  ...formValues,
+                                  transactionDate: format(date, "yyyy-MM-dd")
+                                });
+                              }
+                            }}
+                            disabled={(date: Date) => date > new Date()} // Only restrict future dates
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="amount">Amount (₹)</Label>
