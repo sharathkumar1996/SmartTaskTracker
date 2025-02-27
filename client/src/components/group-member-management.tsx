@@ -97,7 +97,8 @@ interface ChitFund {
 // Create group form schema
 const createGroupSchema = z.object({
   name: z.string().min(3, "Group name must be at least 3 characters"),
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
+  createdBy: z.number().optional(), // This will be set on the server
 });
 
 // Add member to group form schema

@@ -381,18 +381,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
     
     try {
+      console.log("Creating member group with data:", req.body);
+      
       // Set the created_by field to current user's ID
       const groupData = {
         ...req.body,
-        createdBy: req.user.id
+        createdBy: req.user.id,
+        // Convert empty strings to null
+        notes: req.body.notes || null
       };
+      
+      console.log("Processed group data:", groupData);
       
       const parseResult = insertMemberGroupSchema.safeParse(groupData);
       if (!parseResult.success) {
+        console.error("Validation error:", parseResult.error);
         return res.status(400).json(parseResult.error);
       }
       
       const group = await storage.createMemberGroup(parseResult.data);
+      console.log("Group created successfully:", group);
       res.status(201).json(group);
     } catch (error) {
       console.error("Error creating member group:", error);
