@@ -134,9 +134,9 @@ export function OverduePayments({ className }: OverduePaymentsProps) {
           </Select>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {overdueMembers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-6 text-center">
+          <div className="flex flex-col items-center justify-center p-6 text-center h-[300px]">
             <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-2">No overdue payments found</p>
             <p className="text-sm text-muted-foreground">
@@ -144,54 +144,56 @@ export function OverduePayments({ className }: OverduePaymentsProps) {
             </p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Current Month</TableHead>
-                <TableHead>Previous Month</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {overdueMembers.map(member => (
-                <TableRow key={member.userId}>
-                  <TableCell className="font-medium">{member.fullName}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <div className="flex items-center">
-                        <Phone className="h-3 w-3 mr-1" />
-                        <span>{member.phone}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{member.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {member.currentMonthPaid ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Paid
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                        Overdue
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {member.previousMonthPaid ? (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Paid
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                        Overdue
-                      </Badge>
-                    )}
-                  </TableCell>
+          <div className="h-[300px] overflow-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <TableHead>Member Name</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Current Month</TableHead>
+                  <TableHead>Previous Month</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {overdueMembers.map(member => (
+                  <TableRow key={member.userId}>
+                    <TableCell className="font-medium">{member.fullName}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
+                          <Phone className="h-3 w-3 mr-1" />
+                          <span>{member.phone}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{member.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {member.currentMonthPaid ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Paid
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          Overdue
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {member.previousMonthPaid ? (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Paid
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          Overdue
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
