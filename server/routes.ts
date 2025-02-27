@@ -508,16 +508,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fundId = parseInt(req.params.fundId);
       const groupId = parseInt(req.params.groupId);
       
+      // Validate params
+      if (isNaN(fundId) || isNaN(groupId)) {
+        return res.status(400).json({ 
+          message: "Invalid parameters", 
+          details: "Fund ID and Group ID must be valid numbers"
+        });
+      }
+      
+      // Check if the fund exists
+      const fund = await storage.getChitFund(fundId);
+      if (!fund) {
+        return res.status(404).json({ 
+          message: "Chit Fund not found", 
+          details: `No fund found with ID ${fundId}`
+        });
+      }
+      
+      // Check if the group exists
+      const group = await storage.getMemberGroup(groupId);
+      if (!group) {
+        return res.status(404).json({ 
+          message: "Member Group not found", 
+          details: `No group found with ID ${groupId}` 
+        });
+      }
+      
+      // Ensure group members add up to 100%
+      const groupWithMembers = await storage.getMemberGroupWithMembers(groupId);
+      if (!groupWithMembers || !groupWithMembers.members || groupWithMembers.members.length === 0) {
+        return res.status(400).json({ 
+          message: "Invalid group", 
+          details: "Group has no members" 
+        });
+      }
+      
+      // Calculate total percentage
+      const totalPercentage = groupWithMembers.members.reduce(
+        (sum: number, member: { sharePercentage: string }) => sum + parseFloat(member.sharePercentage), 
+        0
+      );
+      
+      if (Math.abs(totalPercentage - 100) > 0.01) {
+        return res.status(400).json({ 
+          message: "Invalid group percentage", 
+          details: `Group members' share percentages must add up to 100% (currently: ${totalPercentage.toFixed(2)}%)` 
+        });
+      }
+      
+      // Add the group to the fund
       const success = await storage.addGroupToFund(fundId, groupId);
       
       if (success) {
-        res.sendStatus(200);
+        res.status(200).json({ 
+          message: "Group added to fund successfully" 
+        });
       } else {
-        res.status(500).json({ message: "Failed to add group to fund" });
+        res.status(500).json({ 
+          message: "Failed to add group to fund", 
+          details: "An error occurred while adding the group to the fund" 
+        });
       }
     } catch (error) {
       console.error("Error adding group to fund:", error);
-      res.status(500).json({ message: "Failed to add group to fund" });
+      res.status(500).json({ 
+        message: "Server error", 
+        details: "An unexpected error occurred while processing your request" 
+      });
     }
   });
   

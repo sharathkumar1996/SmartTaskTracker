@@ -116,6 +116,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getUserById(id: number): Promise<User | undefined> {
+    try {
+      if (!id || isNaN(id)) {
+        console.error("Invalid user ID in getUserById:", id);
+        return undefined;
+      }
+      
+      const result = await db.select().from(users).where(eq(users.id, id));
+      return result.length > 0 ? result[0] as User : undefined;
+    } catch (error) {
+      console.error("Error in getUserById:", error);
+      return undefined;
+    }
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     try {
       const result = await db.insert(users).values(user).returning();
@@ -354,26 +369,71 @@ export class DatabaseStorage implements IStorage {
 
   async addMemberToFund(fundId: number, userId: number, isGroup: boolean = false, groupId?: number): Promise<boolean> {
     try {
+      // Validate inputs
+      if (!fundId || !userId) {
+        console.error("Invalid fundId or userId in addMemberToFund:", { fundId, userId });
+        return false;
+      }
+      
+      // Check if fund exists
+      const fund = await this.getChitFund(fundId);
+      if (!fund) {
+        console.error(`Fund with ID ${fundId} not found`);
+        return false;
+      }
+      
+      // Check if user exists
+      const user = await this.getUserById(userId);
+      if (!user) {
+        console.error(`User with ID ${userId} not found`);
+        return false;
+      }
+      
       // Add metadata fields to track if this is a group membership
       const metadata = isGroup && groupId ? 
         JSON.stringify({ isGroup: true, groupId }) : 
         null;
+      
+      // Prevent duplicate memberships
+      const existingMembership = await db
+        .select()
+        .from(fundMembers)
+        .where(and(
+          eq(fundMembers.fundId, fundId),
+          eq(fundMembers.userId, userId)
+        ))
+        .limit(1);
         
+      if (existingMembership.length > 0) {
+        console.log(`User ${userId} is already a member of fund ${fundId}`);
+        return true; // Consider this a success since the relationship already exists
+      }
+      
+      // Add the member to the fund with proper values
       const result = await db
         .insert(fundMembers)
         .values({
-          fundId,
-          userId,
+          fundId: fundId,
+          userId: userId,
+          earlyWithdrawalMonth: null,
+          increasedMonthlyAmount: null,
           totalBonusReceived: "0",
           totalCommissionPaid: "0",
           isWithdrawn: false,
-          // Store group information in notes field (since we can't modify the table)
           notes: metadata
         })
         .returning();
+      
       return result.length > 0;
     } catch (error) {
       console.error("Error in addMemberToFund:", error);
+      
+      // Log more detailed error information
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+        console.error("Stack trace:", error.stack);
+      }
+      
       return false;
     }
   }
@@ -802,6 +862,58 @@ export class DatabaseStorage implements IStorage {
       return result.length > 0 ? result[0] as MemberGroup : undefined;
     } catch (error) {
       console.error("Error in getMemberGroup:", error);
+      return undefined;
+    }
+  }
+
+  async getMemberGroupWithMembers(id: number): Promise<{
+    id: number;
+    name: string;
+    notes: string | null;
+    createdBy: number;
+    primaryUserId: number | null;
+    members: GroupMember[];
+  } | undefined> {
+    try {
+      // Get the group first
+      const group = await this.getMemberGroup(id);
+      if (!group) return undefined;
+
+      // Get all the members for this group
+      const members = await db
+        .select()
+        .from(groupMembers)
+        .where(eq(groupMembers.groupId, id));
+
+      // For each group member, get the user details (but exclude password)
+      const membersWithUser = await Promise.all(
+        members.map(async (member) => {
+          const user = await this.getUserById(member.userId);
+          return {
+            ...member,
+            user: user ? {
+              id: user.id,
+              username: user.username,
+              role: user.role,
+              fullName: user.fullName,
+              email: user.email,
+              phone: user.phone,
+              address: user.address,
+              city: user.city,
+              state: user.state,
+              pincode: user.pincode,
+              status: user.status,
+            } : null,
+          };
+        })
+      );
+
+      return {
+        ...group,
+        members: membersWithUser,
+      };
+    } catch (error) {
+      console.error("Error in getMemberGroupWithMembers:", error);
       return undefined;
     }
   }
