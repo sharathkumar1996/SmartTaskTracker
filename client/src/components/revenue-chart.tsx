@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   LineChart,
@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -42,8 +43,23 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
+  // Get the current year
+  const currentYear = new Date().getFullYear();
+  
+  // Set up year selection state
+  const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  
+  // Create an array of years (current year and 3 years back)
+  const availableYears = useMemo(() => {
+    const years = [];
+    for (let i = 0; i < 4; i++) {
+      years.push((currentYear - i).toString());
+    }
+    return years;
+  }, [currentYear]);
+  
   const { data: payments, isLoading, error, refetch } = useQuery({
-    queryKey: ["api/payments", fundId],
+    queryKey: ["api/payments", fundId, selectedYear],
     queryFn: async () => {
       let url = '/api/payments';
       if (fundId) {
@@ -70,6 +86,12 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
       if (!payment.paymentDate) return;
 
       const date = new Date(payment.paymentDate);
+      
+      // Filter by selected year
+      if (date.getFullYear().toString() !== selectedYear) {
+        return;
+      }
+      
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       // Initialize month data if not exists
@@ -135,12 +157,37 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
       ...item,
       month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
     }));
-  }, [payments]);
+  }, [payments, selectedYear]);
 
-  // Get the last N months of data
+  // We don't need to slice data for yearly view, we want to show all months
   const recentData = useMemo(() => {
-    return chartData.slice(-months);
-  }, [chartData, months]);
+    // Create array for all 12 months of the year to ensure all months are shown
+    const allMonths = Array.from({ length: 12 }, (_, i) => {
+      const monthDate = new Date(parseInt(selectedYear), i, 1);
+      return {
+        month: monthDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        revenue: 0,
+        commission: 0
+      };
+    });
+    
+    // Merge with actual data (if any)
+    if (chartData.length) {
+      chartData.forEach(dataPoint => {
+        // Find the month in our all-months array
+        const monthName = dataPoint.month;
+        const existingMonthIndex = allMonths.findIndex(m => m.month === monthName);
+        
+        if (existingMonthIndex >= 0) {
+          // Update with actual data
+          allMonths[existingMonthIndex].revenue = dataPoint.revenue;
+          allMonths[existingMonthIndex].commission = dataPoint.commission;
+        }
+      });
+    }
+    
+    return allMonths;
+  }, [chartData, selectedYear]);
 
   if (isLoading) {
     return (
@@ -184,8 +231,21 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Revenue & Commission</CardTitle>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">Year:</span>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select year" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.map(year => (
+                <SelectItem key={year} value={year}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="pt-0">
         <ChartContainer
