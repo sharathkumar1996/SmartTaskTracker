@@ -98,9 +98,11 @@ export function FinancialManagement() {
     enabled: user?.role === "admin",
   });
 
-  const agentsQuery = useQuery({
+  const agentsQuery = useQuery<any[]>({
     queryKey: ['/api/users/agents'],
     enabled: user?.role === "admin" && formValues.transactionType === "agent_salary",
+    // Default to empty array if data is not available
+    initialData: [],
   });
 
   // Mutation for creating transactions
