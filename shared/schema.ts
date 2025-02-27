@@ -209,6 +209,7 @@ export const accountsPayable = pgTable("accounts_payable", {
   paidDate: timestamp("paid_date", { mode: 'date' }),
   recorderId: integer("recorder_id").references(() => users.id),
   commission: decimal("commission", { precision: 10, scale: 2 }),
+  paymentMethod: text("payment_method").$type<"cash" | "bank_transfer" | "google_pay" | "phone_pay" | "online_portal">().default("cash"),
 });
 
 // Update the relations to use the new structure
@@ -256,6 +257,7 @@ export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).e
   // Fields for app logic (not stored in DB directly)
   withdrawalMonth: z.number().optional(),
   recordedBy: z.number(), // Field used in the API but maps to recorderId
+  paymentMethod: z.enum(["cash", "bank_transfer", "google_pay", "phone_pay", "online_portal"]).default("cash"),
 });
 
 // Member Groups for handling group members - one logical member consists of multiple physical members
