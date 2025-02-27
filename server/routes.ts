@@ -400,6 +400,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Process group payments and distribute to members
+  app.post("/api/member-groups/payments", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const { 
+        groupId, 
+        chitFundId, 
+        amount, 
+        paymentMethod, 
+        notes, 
+        paymentDate, 
+        monthNumber,
+        distribution 
+      } = req.body;
+      
+      // Validate required fields
+      if (!groupId || !chitFundId || !amount || !distribution) {
+        return res.status(400).json({ 
+          message: "Missing required fields", 
+          details: "groupId, chitFundId, amount, and distribution are required"
+        });
+      }
+      
+      // Ensure valid IDs
+      const fundId = parseInt(chitFundId);
+      const memberGroupId = parseInt(groupId);
+      
+      if (isNaN(fundId) || isNaN(memberGroupId)) {
+        return res.status(400).json({ 
+          message: "Invalid IDs", 
+          details: "Fund ID and Group ID must be valid numbers"
+        });
+      }
+      
+      // Validate amount
+      const paymentAmount = parseFloat(amount);
+      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        return res.status(400).json({ 
+          message: "Invalid amount", 
+          details: "Amount must be a positive number"
+        });
+      }
+      
+      // Get the group details
+      const group = await storage.getMemberGroup(memberGroupId);
+      if (!group) {
+        return res.status(404).json({ 
+          message: "Group not found", 
+          details: `No group found with ID ${memberGroupId}`
+        });
+      }
+      
+      // Get the group members
+      const groupWithMembers = await storage.getMemberGroupWithMembers(memberGroupId);
+      if (!groupWithMembers?.members || groupWithMembers.members.length === 0) {
+        return res.status(400).json({ 
+          message: "Invalid group", 
+          details: "Group has no members"
+        });
+      }
+      
+      // Ensure distribution contains all members
+      const allMembersIncluded = groupWithMembers.members.every(member => 
+        distribution.some((d: any) => d.userId === member.userId)
+      );
+      
+      if (!allMembersIncluded) {
+        return res.status(400).json({
+          message: "Invalid distribution",
+          details: "All group members must be included in the distribution"
+        });
+      }
+      
+      // Process payments for each member
+      const payments = [];
+      const month = parseInt(monthNumber) || 1;
+      
+      for (const item of distribution) {
+        try {
+          // Create individual payment for each member
+          const payment = await storage.createPayment({
+            userId: item.userId,
+            chitFundId: fundId,
+            amount: item.amountDue,
+            paymentType: "monthly",
+            paymentMethod: paymentMethod || "cash",
+            recordedBy: req.user.id,
+            notes: notes ? `${notes} (Group: ${group.name})` : `Group payment (${group.name})`,
+            paymentDate: new Date(paymentDate),
+            monthNumber: month,
+          });
+          
+          payments.push(payment);
+          
+          // Create matching receivable record for tracking
+          try {
+            // Get the chit fund to get the expected monthly contribution
+            const fund = await storage.getChitFund(fundId);
+            
+            await storage.createReceivable({
+              userId: item.userId,
+              chitFundId: fundId,
+              monthNumber: month,
+              paidAmount: item.amountDue,
+              expectedAmount: fund?.monthlyContribution || item.amountDue,
+              status: "paid",
+              dueDate: new Date(paymentDate),
+            });
+          } catch (receivableError) {
+            console.error("Error creating receivable record:", receivableError);
+            // Continue processing payments even if receivable creation fails
+          }
+        } catch (memberPaymentError) {
+          console.error("Error processing payment for member:", memberPaymentError);
+          // Continue with other members even if one fails
+        }
+      }
+      
+      // Create a record in the group payment log (if you have such a table)
+      // const groupPaymentLog = await storage.createGroupPaymentLog({...});
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Group payment processed successfully",
+        payments: payments.length,
+        groupId: memberGroupId,
+        chitFundId: fundId
+      });
+    } catch (error) {
+      console.error("Error processing group payment:", error);
+      res.status(500).json({ 
+        message: "Failed to process group payment", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   app.get("/api/member-groups", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     
