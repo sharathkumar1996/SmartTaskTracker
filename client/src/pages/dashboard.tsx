@@ -103,6 +103,7 @@ export default function Dashboard() {
                   <TabsTrigger value="groups">Member Groups</TabsTrigger>
                   <TabsTrigger value="closed">Closed Funds</TabsTrigger>
                   <TabsTrigger value="users">Users</TabsTrigger>
+                  <TabsTrigger value="finances">Financial Management</TabsTrigger>
                 </>
               )}
             </TabsList>
@@ -177,6 +178,13 @@ export default function Dashboard() {
 
                 <TabsContent value="users">
                   <MemberManagement />
+                </TabsContent>
+                
+                <TabsContent value="finances">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Financial Management</h2>
+                  </div>
+                  <FinancialManagement />
                 </TabsContent>
               </>
             )}
