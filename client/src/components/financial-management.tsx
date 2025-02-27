@@ -292,7 +292,6 @@ export function FinancialManagement() {
                       value={formValues.transactionDate}
                       onChange={handleInputChange}
                       required
-                      // No min or max to allow historical data entry
                     />
                   </div>
                   <div className="space-y-2">

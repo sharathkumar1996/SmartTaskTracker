@@ -206,7 +206,7 @@ export function ChitFundForm() {
                           form.setValue("endDate", endDate);
                         }
                       }}
-                      disabled={(date) => false} // Allow any date to enable backdating
+                      disabled={(date) => date < new Date()}
                       initialFocus
                     />
                   </PopoverContent>
