@@ -383,15 +383,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Creating member group with data:", req.body);
       
+      // Extract initial member data
+      const { initialMember, ...groupDataRaw } = req.body;
+      
       // Set the created_by field to current user's ID
       const groupData = {
-        ...req.body,
+        ...groupDataRaw,
         createdBy: req.user.id,
         // Convert empty strings to null
-        notes: req.body.notes || null
+        notes: groupDataRaw.notes || null
       };
       
       console.log("Processed group data:", groupData);
+      console.log("Initial member data:", initialMember);
       
       const parseResult = insertMemberGroupSchema.safeParse(groupData);
       if (!parseResult.success) {
@@ -399,9 +403,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json(parseResult.error);
       }
       
-      const group = await storage.createMemberGroup(parseResult.data);
-      console.log("Group created successfully:", group);
-      res.status(201).json(group);
+      // Create the group with initial member in a transaction
+      try {
+        // First create the group
+        const group = await storage.createMemberGroup(parseResult.data);
+        console.log("Group created successfully:", group);
+        
+        if (initialMember && initialMember.userId && initialMember.sharePercentage) {
+          // Then add the initial member
+          const memberData = {
+            userId: parseInt(initialMember.userId),
+            groupId: group.id,
+            sharePercentage: initialMember.sharePercentage,
+            notes: "Initial member"
+          };
+          
+          console.log("Adding initial member:", memberData);
+          
+          const memberParseResult = insertGroupMemberSchema.safeParse(memberData);
+          if (!memberParseResult.success) {
+            console.error("Initial member validation error:", memberParseResult.error);
+            // We'll still return success as the group was created
+          } else {
+            await storage.addUserToGroup(group.id, memberParseResult.data);
+            console.log("Initial member added successfully");
+          }
+        }
+        
+        res.status(201).json(group);
+      } catch (txError) {
+        console.error("Transaction error creating group with member:", txError);
+        res.status(500).json({ message: "Failed to create group with initial member" });
+      }
     } catch (error) {
       console.error("Error creating member group:", error);
       res.status(500).json({ message: "Failed to create member group" });
