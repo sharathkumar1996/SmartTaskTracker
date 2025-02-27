@@ -1,4 +1,12 @@
-import { users, chitFunds, payments, fundMembers, notifications, accountsReceivable, accountsPayable, type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable, type FundMember } from "@shared/schema";
+import { 
+  users, chitFunds, payments, fundMembers, notifications, accountsReceivable, 
+  accountsPayable, memberGroups, groupMembers,
+  type User, type ChitFund, type Payment, type InsertUser, type InsertChitFund, 
+  type InsertPayment, type Notification, type InsertNotification, type AccountsReceivable, 
+  type InsertAccountsReceivable, type AccountsPayable, type InsertAccountsPayable, 
+  type FundMember, type InsertFundMember, type MemberGroup, type InsertMemberGroup,
+  type GroupMember, type InsertGroupMember
+} from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import session from "express-session";
@@ -771,6 +779,207 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getAllPayables:", error);
       throw error;
+    }
+  }
+
+  // Member Group methods implementation
+  async createMemberGroup(group: InsertMemberGroup): Promise<MemberGroup> {
+    try {
+      const result = await db
+        .insert(memberGroups)
+        .values(group)
+        .returning();
+      return result[0] as MemberGroup;
+    } catch (error) {
+      console.error("Error in createMemberGroup:", error);
+      throw error;
+    }
+  }
+
+  async getMemberGroup(id: number): Promise<MemberGroup | undefined> {
+    try {
+      const result = await db.select().from(memberGroups).where(eq(memberGroups.id, id));
+      return result.length > 0 ? result[0] as MemberGroup : undefined;
+    } catch (error) {
+      console.error("Error in getMemberGroup:", error);
+      return undefined;
+    }
+  }
+
+  async getMemberGroups(): Promise<MemberGroup[]> {
+    try {
+      return (await db.select().from(memberGroups)) as MemberGroup[];
+    } catch (error) {
+      console.error("Error in getMemberGroups:", error);
+      return [];
+    }
+  }
+
+  async getMemberGroupsWithMembers(): Promise<(MemberGroup & { members: (GroupMember & { user: Omit<User, "password"> })[] })[]> {
+    try {
+      const groups = await db.select().from(memberGroups);
+      
+      // For each group, fetch members with user details
+      const groupsWithMembers = await Promise.all(
+        groups.map(async (group) => {
+          const members = await this.getGroupMembers(group.id);
+          return {
+            ...group,
+            members
+          };
+        })
+      );
+      
+      return groupsWithMembers as (MemberGroup & { members: (GroupMember & { user: Omit<User, "password"> })[] })[];
+    } catch (error) {
+      console.error("Error in getMemberGroupsWithMembers:", error);
+      return [];
+    }
+  }
+
+  async addUserToGroup(groupId: number, member: InsertGroupMember): Promise<boolean> {
+    try {
+      const result = await db
+        .insert(groupMembers)
+        .values({
+          groupId: member.groupId,
+          userId: member.userId,
+          sharePercentage: member.sharePercentage,
+          notes: member.notes
+        })
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in addUserToGroup:", error);
+      return false;
+    }
+  }
+
+  async removeUserFromGroup(groupId: number, userId: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(groupMembers)
+        .where(
+          and(
+            eq(groupMembers.groupId, groupId),
+            eq(groupMembers.userId, userId)
+          )
+        )
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error in removeUserFromGroup:", error);
+      return false;
+    }
+  }
+
+  async getGroupMembers(groupId: number): Promise<(GroupMember & { user: Omit<User, "password"> })[]> {
+    try {
+      const results = await db
+        .select({
+          groupId: groupMembers.groupId,
+          userId: groupMembers.userId,
+          sharePercentage: groupMembers.sharePercentage,
+          notes: groupMembers.notes,
+          user: {
+            id: users.id,
+            username: users.username,
+            role: users.role,
+            fullName: users.fullName,
+            email: users.email,
+            phone: users.phone,
+            address: users.address,
+            city: users.city,
+            state: users.state,
+            pincode: users.pincode,
+            status: users.status,
+            fundPreferences: users.fundPreferences,
+            agentId: users.agentId,
+            agentCommission: users.agentCommission,
+          }
+        })
+        .from(groupMembers)
+        .innerJoin(users, eq(groupMembers.userId, users.id))
+        .where(eq(groupMembers.groupId, groupId));
+      
+      return results as unknown as (GroupMember & { user: Omit<User, "password"> })[];
+    } catch (error) {
+      console.error("Error in getGroupMembers:", error);
+      return [];
+    }
+  }
+
+  // Fund Members with Group support
+  async addGroupToFund(fundId: number, groupId: number): Promise<boolean> {
+    try {
+      // First, get the primary user for this group
+      const group = await this.getMemberGroup(groupId);
+      
+      if (!group || !group.primaryUserId) {
+        console.error("Cannot add group to fund: Group not found or no primary user");
+        return false;
+      }
+      
+      // Add the primary user to the fund as a representative of the group
+      return await this.addMemberToFund(fundId, group.primaryUserId, true, groupId);
+    } catch (error) {
+      console.error("Error in addGroupToFund:", error);
+      return false;
+    }
+  }
+
+  async getFundMembersWithGroups(fundId: number): Promise<(FundMember & { 
+    isGroup?: boolean; 
+    groupId?: number; 
+    groupMembers?: (GroupMember & { user: Omit<User, "password"> })[] 
+  })[]> {
+    try {
+      // Get basic fund members data
+      const memberships = await db
+        .select()
+        .from(fundMembers)
+        .where(eq(fundMembers.fundId, fundId));
+      
+      // Process each membership to check if it's a group
+      const result = await Promise.all(
+        memberships.map(async (membership) => {
+          // Check if this is a group membership by examining the notes field
+          if (membership.notes) {
+            try {
+              const metadata = JSON.parse(membership.notes as string);
+              
+              if (metadata.isGroup && metadata.groupId) {
+                // This is a group, get the group members
+                const groupMembers = await this.getGroupMembers(metadata.groupId);
+                
+                return {
+                  ...membership,
+                  isGroup: true,
+                  groupId: metadata.groupId,
+                  groupMembers
+                };
+              }
+            } catch (e) {
+              // Not a valid JSON or not containing group info, treat as regular member
+            }
+          }
+          
+          // Regular member, no group data
+          return {
+            ...membership,
+            isGroup: false
+          };
+        })
+      );
+      
+      return result as (FundMember & { 
+        isGroup?: boolean; 
+        groupId?: number; 
+        groupMembers?: (GroupMember & { user: Omit<User, "password"> })[] 
+      })[];
+    } catch (error) {
+      console.error("Error in getFundMembersWithGroups:", error);
+      return [];
     }
   }
 }
