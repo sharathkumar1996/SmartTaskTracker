@@ -7,6 +7,7 @@ import { Loader2, Download, RefreshCw, FileText } from "lucide-react";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
+import { ChitFund, Payment, FinancialTransaction } from "@shared/schema";
 
 // Mock invoice data generator for GST invoices with proper invoice numbers
 const generateInvoiceNumber = (index: number, month: string, year: string) => {
@@ -140,7 +141,7 @@ export function GSTReports() {
   });
 
   // Fetch all payments - these will be used to calculate commission for GSTR-1
-  const { data: payments = [], isLoading: isLoadingPayments } = useQuery({
+  const { data: payments = [], isLoading: isLoadingPayments } = useQuery<Payment[]>({
     queryKey: ["/api/payments"],
     queryFn: async () => {
       const res = await fetch('/api/payments');
@@ -150,7 +151,7 @@ export function GSTReports() {
   });
 
   // Fetch all chit funds to get commission rates
-  const { data: chitFunds = [], isLoading: isLoadingFunds } = useQuery({
+  const { data: chitFunds = [], isLoading: isLoadingFunds } = useQuery<ChitFund[]>({
     queryKey: ["/api/chitfunds"],
   });
 

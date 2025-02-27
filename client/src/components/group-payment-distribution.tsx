@@ -37,6 +37,7 @@ import {
 import { format } from "date-fns";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
