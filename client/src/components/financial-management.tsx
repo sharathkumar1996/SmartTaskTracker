@@ -7,9 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, PlusCircle, RefreshCw } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -215,6 +213,7 @@ export function FinancialManagement() {
       transactionDate: new Date(formValues.transactionDate),
       amount: formValues.amount,
       agentId: formValues.agentId ? parseInt(formValues.agentId) : undefined,
+      recordedBy: user?.id
     };
 
     // Submit transaction
@@ -425,7 +424,7 @@ export function FinancialManagement() {
 
                   {formValues.gstEligible && (
                     <div className="pt-2 space-y-4">
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="hsn">HSN/SAC Code</Label>
                           <Input
@@ -448,18 +447,19 @@ export function FinancialManagement() {
                             onChange={handleInputChange}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="gstAmount">GST Amount (₹)</Label>
-                          <Input
-                            id="gstAmount"
-                            name="gstAmount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={formValues.gstAmount}
-                            onChange={handleInputChange}
-                          />
-                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="gstAmount">GST Amount (₹)</Label>
+                        <Input
+                          id="gstAmount"
+                          name="gstAmount"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={formValues.gstAmount}
+                          onChange={handleInputChange}
+                          readOnly
+                        />
                       </div>
                     </div>
                   )}
@@ -470,13 +470,12 @@ export function FinancialManagement() {
                   <Textarea
                     id="notes"
                     name="notes"
-                    placeholder="Any additional notes or references"
+                    placeholder="Any additional notes"
                     value={formValues.notes}
                     onChange={handleInputChange}
                   />
                 </div>
               </div>
-
               <SheetFooter>
                 <SheetClose asChild>
                   <Button type="button" variant="outline">Cancel</Button>
@@ -484,13 +483,10 @@ export function FinancialManagement() {
                 <Button 
                   type="submit" 
                   disabled={createTransactionMutation.isPending}
+                  className="flex items-center gap-2"
                 >
-                  {createTransactionMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : "Save Transaction"}
+                  {createTransactionMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Save Transaction
                 </Button>
               </SheetFooter>
             </form>
@@ -498,180 +494,174 @@ export function FinancialManagement() {
         </Sheet>
       </div>
 
-      {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Admin Borrowings</CardTitle>
-            <CardDescription>Net amount borrowed by admin</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {summaryQuery.data 
-                ? formatCurrency(summaryQuery.data.adminNetDebt) 
-                : <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
-            </p>
-            <div className="text-xs text-muted-foreground mt-1">
-              {summaryQuery.data && (
-                <>
-                  <span>Borrowed: {formatCurrency(summaryQuery.data.adminBorrowTotal)}</span>
-                  <span className="mx-1">•</span>
-                  <span>Repaid: {formatCurrency(summaryQuery.data.adminRepayTotal)}</span>
-                </>
-              )}
+      {/* Tabs for Financial Data */}
+      <Tabs defaultValue="summary" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="summary">Financial Summary</TabsTrigger>
+          <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary" className="space-y-6">
+          {summaryQuery.isLoading ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          </CardContent>
-        </Card>
+          ) : summaryQuery.isError ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Error</CardTitle>
+                <CardDescription>Failed to load financial summary data</CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/financial-transactions/summary'] })}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </Button>
+              </CardFooter>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Admin Funds Usage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Borrowed:</span>
+                      <span className="font-semibold">{formatCurrency(summaryQuery.data?.adminBorrowTotal || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Repaid:</span>
+                      <span className="font-semibold">{formatCurrency(summaryQuery.data?.adminRepayTotal || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t">
+                      <span className="text-sm font-medium">Net Outstanding:</span>
+                      <span className={`font-semibold ${(summaryQuery.data?.adminNetDebt || 0) > 0 ? "text-red-500" : "text-green-500"}`}>
+                        {formatCurrency(summaryQuery.data?.adminNetDebt || 0)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">External Loans</CardTitle>
-            <CardDescription>Net amount from external lenders</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {summaryQuery.data 
-                ? formatCurrency(summaryQuery.data.externalNetDebt) 
-                : <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
-            </p>
-            <div className="text-xs text-muted-foreground mt-1">
-              {summaryQuery.data && (
-                <>
-                  <span>Borrowed: {formatCurrency(summaryQuery.data.externalLoanTotal)}</span>
-                  <span className="mx-1">•</span>
-                  <span>Repaid: {formatCurrency(summaryQuery.data.loanRepaymentTotal)}</span>
-                </>
-              )}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    External Loans
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Borrowed:</span>
+                      <span className="font-semibold">{formatCurrency(summaryQuery.data?.externalLoanTotal || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Repaid:</span>
+                      <span className="font-semibold">{formatCurrency(summaryQuery.data?.loanRepaymentTotal || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t">
+                      <span className="text-sm font-medium">Net Outstanding:</span>
+                      <span className={`font-semibold ${(summaryQuery.data?.externalNetDebt || 0) > 0 ? "text-red-500" : "text-green-500"}`}>
+                        {formatCurrency(summaryQuery.data?.externalNetDebt || 0)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Other Financial Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Agent Salaries Paid:</span>
+                      <span className="font-semibold">{formatCurrency(summaryQuery.data?.agentSalaryTotal || 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">GST Collected:</span>
+                      <span className="font-semibold">{formatCurrency(summaryQuery.data?.gstTotal || 0)}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </TabsContent>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Agent Salaries</CardTitle>
-            <CardDescription>Total agent salaries paid</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {summaryQuery.data 
-                ? formatCurrency(summaryQuery.data.agentSalaryTotal) 
-                : <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">GST</CardTitle>
-            <CardDescription>Total GST amount recorded</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {summaryQuery.data 
-                ? formatCurrency(summaryQuery.data.gstTotal) 
-                : <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Financial Transactions</CardTitle>
-          <CardDescription>
-            Record of all financial transactions outside of regular chit fund operations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <TabsContent value="transactions">
           {transactionsQuery.isLoading ? (
             <div className="flex justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : transactionsQuery.isError ? (
-            <div className="text-center p-8 text-red-500">
-              Error loading transaction data.
-            </div>
-          ) : !transactionsQuery.data || transactionsQuery.data.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              No transaction data available.
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Error</CardTitle>
+                <CardDescription>Failed to load transactions data</CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/financial-transactions'] })}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </Button>
+              </CardFooter>
+            </Card>
+          ) : transactionsQuery.data?.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>No Transactions</CardTitle>
+                <CardDescription>No financial transactions have been recorded yet.</CardDescription>
+              </CardHeader>
+            </Card>
           ) : (
-            <Table>
-              <TableCaption>A list of all financial transactions.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Payment Method</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead>GST</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactionsQuery.data.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{formatDate(new Date(transaction.transactionDate))}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        transaction.transactionType === 'admin_borrow' 
-                          ? 'bg-orange-100 text-orange-800' 
-                          : transaction.transactionType === 'admin_repay' 
-                          ? 'bg-green-100 text-green-800' 
-                          : transaction.transactionType === 'external_loan' 
-                          ? 'bg-blue-100 text-blue-800'
-                          : transaction.transactionType === 'loan_repayment' 
-                          ? 'bg-indigo-100 text-indigo-800'
-                          : transaction.transactionType === 'agent_salary' 
-                          ? 'bg-purple-100 text-purple-800'
-                          : transaction.transactionType === 'expense' 
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-teal-100 text-teal-800'
-                      }`}>
-                        {getTransactionTypeLabel(transaction.transactionType)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                    <TableCell>
-                      <span className="px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-800">
-                        {getPaymentMethodLabel(transaction.paymentMethod)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{transaction.description || "-"}</TableCell>
-                    <TableCell>
-                      {transaction.transactionType === 'external_loan' || transaction.transactionType === 'loan_repayment' ? (
-                        <span>
-                          {transaction.lenderName}
-                          {transaction.interestRate && ` @ ${transaction.interestRate}%`}
-                        </span>
-                      ) : transaction.transactionType === 'agent_salary' ? (
-                        <span>{transaction.agentName || `Agent ID: ${transaction.agentId}`}</span>
-                      ) : (
-                        <span>{transaction.notes || "-"}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {transaction.gstEligible ? (
-                        <span>
-                          {transaction.gstAmount ? formatCurrency(transaction.gstAmount) : "-"}
-                          {transaction.gstRate && ` (${transaction.gstRate}%)`}
-                          {transaction.hsn && ` HSN: ${transaction.hsn}`}
-                        </span>
-                      ) : (
-                        <span>N/A</span>
-                      )}
-                    </TableCell>
+            <div className="rounded-md border">
+              <Table>
+                <TableCaption>A list of all financial transactions</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Payment Method</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>GST</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {transactionsQuery.data?.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{formatDate(new Date(transaction.transactionDate))}</TableCell>
+                      <TableCell>{getTransactionTypeLabel(transaction.transactionType)}</TableCell>
+                      <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+                      <TableCell>{getPaymentMethodLabel(transaction.paymentMethod)}</TableCell>
+                      <TableCell className="max-w-xs truncate">{transaction.description || '-'}</TableCell>
+                      <TableCell>
+                        {transaction.gstEligible ? formatCurrency(transaction.gstAmount) : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
-
-export default FinancialManagement;
