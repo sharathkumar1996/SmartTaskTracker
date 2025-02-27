@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { PaymentForm } from "./payment-form";
+import { GroupMemberManagement } from "./group-member-management";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Users, UserPlus, UserCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
@@ -351,44 +359,57 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                               Manage Members
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-md">
+                          <DialogContent className="max-w-5xl">
                             <DialogHeader>
                               <DialogTitle>Manage Fund Members</DialogTitle>
                               <DialogDescription>
-                                Add or remove members from this fund
+                                Add individual members or groups to this fund
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="mb-2 text-sm font-medium">Add Member</h4>
-                                <Select
-                                  onValueChange={(value) => {
-                                    addMemberMutation.mutate({
-                                      fundId: fund.id,
-                                      userId: parseInt(value),
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a member" />
-                                  </SelectTrigger>
-                                  <SelectContent className="max-h-[200px]">
-                                    <ScrollArea className="h-full">
-                                      {users
-                                        .filter((u) => u.role === "member")
-                                        .map((user) => (
-                                          <SelectItem key={user.id} value={user.id.toString()}>
-                                            {user.fullName}
-                                          </SelectItem>
-                                        ))}
-                                    </ScrollArea>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <h4 className="mb-2 text-sm font-medium">Current Members</h4>
-                                <ScrollArea className="h-[200px]">
-                                  <div className="space-y-2 pr-4">
+                            
+                            <Tabs defaultValue="individual" className="w-full">
+                              <TabsList className="grid grid-cols-2 mb-4">
+                                <TabsTrigger value="individual" className="flex items-center gap-2">
+                                  <UserCircle className="h-4 w-4" />
+                                  Individual Members
+                                </TabsTrigger>
+                                <TabsTrigger value="groups" className="flex items-center gap-2">
+                                  <Users className="h-4 w-4" />
+                                  Member Groups
+                                </TabsTrigger>
+                              </TabsList>
+                            
+                              <TabsContent value="individual" className="space-y-4">
+                                <div>
+                                  <h4 className="mb-2 text-sm font-medium">Add Individual Member</h4>
+                                  <Select
+                                    onValueChange={(value) => {
+                                      addMemberMutation.mutate({
+                                        fundId: fund.id,
+                                        userId: parseInt(value),
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a member" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[200px]">
+                                      <ScrollArea className="h-full">
+                                        {users
+                                          .filter((u) => u.role === "member")
+                                          .map((user) => (
+                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                              {user.fullName}
+                                            </SelectItem>
+                                          ))}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <h4 className="mb-2 text-sm font-medium">Current Members</h4>
+                                  <ScrollArea className="h-[200px]">
+                                    <div className="space-y-2 pr-4">
                                     {fundMembers.map((member) => (
                                       <div
                                         key={member.id}
@@ -447,7 +468,21 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                                   </div>
                                 </ScrollArea>
                               </div>
-                            </div>
+                              </TabsContent>
+                              
+                              <TabsContent value="groups" className="space-y-4">
+                                <GroupMemberManagement 
+                                  chitFundId={fund.id}
+                                  onGroupAdded={(groupId) => {
+                                    queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", fund.id, "members"] });
+                                    toast({
+                                      title: "Success",
+                                      description: "Group added to fund successfully",
+                                    });
+                                  }}
+                                />
+                              </TabsContent>
+                            </Tabs>
                           </DialogContent>
                         </Dialog>
 

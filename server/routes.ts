@@ -361,8 +361,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/chitfunds/:fundId/members", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
-    const members = await storage.getFundMembers(parseInt(req.params.fundId));
-    res.json(members);
+    
+    // Check for query param to include group data
+    const includeGroups = req.query.includeGroups === 'true';
+    
+    if (includeGroups) {
+      // Get fund members with group information
+      const membersWithGroups = await storage.getFundMembersWithGroups(parseInt(req.params.fundId));
+      res.json(membersWithGroups);
+    } else {
+      // Get regular members list
+      const members = await storage.getFundMembers(parseInt(req.params.fundId));
+      res.json(members);
+    }
+  });
+  
+  // Member Group Management Routes
+  app.post("/api/member-groups", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      // Set the created_by field to current user's ID
+      const groupData = {
+        ...req.body,
+        createdBy: req.user.id
+      };
+      
+      const parseResult = insertMemberGroupSchema.safeParse(groupData);
+      if (!parseResult.success) {
+        return res.status(400).json(parseResult.error);
+      }
+      
+      const group = await storage.createMemberGroup(parseResult.data);
+      res.status(201).json(group);
+    } catch (error) {
+      console.error("Error creating member group:", error);
+      res.status(500).json({ message: "Failed to create member group" });
+    }
+  });
+  
+  app.get("/api/member-groups", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    
+    try {
+      let groups;
+      
+      // Check if we should include members in the response
+      if (req.query.includeMembers === 'true') {
+        groups = await storage.getMemberGroupsWithMembers();
+      } else {
+        groups = await storage.getMemberGroups();
+      }
+      
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching member groups:", error);
+      res.status(500).json({ message: "Failed to fetch member groups" });
+    }
+  });
+  
+  app.get("/api/member-groups/:id", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    
+    try {
+      const groupId = parseInt(req.params.id);
+      const group = await storage.getMemberGroup(groupId);
+      
+      if (!group) {
+        return res.status(404).json({ message: "Member group not found" });
+      }
+      
+      // Include members if requested
+      if (req.query.includeMembers === 'true') {
+        const members = await storage.getGroupMembers(groupId);
+        res.json({ ...group, members });
+      } else {
+        res.json(group);
+      }
+    } catch (error) {
+      console.error("Error fetching member group:", error);
+      res.status(500).json({ message: "Failed to fetch member group" });
+    }
+  });
+  
+  app.post("/api/member-groups/:groupId/members", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const groupId = parseInt(req.params.groupId);
+      
+      // Make sure the group exists
+      const group = await storage.getMemberGroup(groupId);
+      if (!group) {
+        return res.status(404).json({ message: "Member group not found" });
+      }
+      
+      // Add groupId to the member data
+      const memberData = {
+        ...req.body,
+        groupId
+      };
+      
+      const parseResult = insertGroupMemberSchema.safeParse(memberData);
+      if (!parseResult.success) {
+        return res.status(400).json(parseResult.error);
+      }
+      
+      const success = await storage.addUserToGroup(groupId, parseResult.data);
+      
+      if (success) {
+        res.sendStatus(200);
+      } else {
+        res.status(500).json({ message: "Failed to add member to group" });
+      }
+    } catch (error) {
+      console.error("Error adding member to group:", error);
+      res.status(500).json({ message: "Failed to add member to group" });
+    }
+  });
+  
+  app.delete("/api/member-groups/:groupId/members/:userId", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const userId = parseInt(req.params.userId);
+      
+      const success = await storage.removeUserFromGroup(groupId, userId);
+      
+      if (success) {
+        res.sendStatus(200);
+      } else {
+        res.status(404).json({ message: "Member not found in group" });
+      }
+    } catch (error) {
+      console.error("Error removing member from group:", error);
+      res.status(500).json({ message: "Failed to remove member from group" });
+    }
+  });
+  
+  // Add a group to a chit fund
+  app.post("/api/chitfunds/:fundId/group-members/:groupId", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
+    
+    try {
+      const fundId = parseInt(req.params.fundId);
+      const groupId = parseInt(req.params.groupId);
+      
+      const success = await storage.addGroupToFund(fundId, groupId);
+      
+      if (success) {
+        res.sendStatus(200);
+      } else {
+        res.status(500).json({ message: "Failed to add group to fund" });
+      }
+    } catch (error) {
+      console.error("Error adding group to fund:", error);
+      res.status(500).json({ message: "Failed to add group to fund" });
+    }
   });
   
   // Get members payment status (for overdue payments tracking)
