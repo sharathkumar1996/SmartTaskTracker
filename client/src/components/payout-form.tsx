@@ -33,6 +33,7 @@ const payoutFormSchema = z.object({
     required_error: "Payment date is required",
   }),
   withdrawalMonth: z.coerce.number().min(1, "Withdrawal month is required").max(24, "Withdrawal month cannot exceed 24"),
+  paymentMethod: z.enum(['cash', 'bank_transfer', 'google_pay', 'phone_pay', 'online_portal']),
 });
 
 type PayoutFormValues = z.infer<typeof payoutFormSchema>;
@@ -60,6 +61,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       notes: "",
       paymentDate: new Date(),
       withdrawalMonth: 1,
+      paymentMethod: "cash", // Default payment method
     },
   });
 
@@ -317,6 +319,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         withdrawalMonth: values.withdrawalMonth,
         paidAmount: paidAmount,
         bonusAmount: bonusAmount,
+        paymentMethod: values.paymentMethod, // Add payment method
       };
 
       const response = await apiRequest("POST", "/api/payables", payableData);
@@ -340,6 +343,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         notes: "",
         paymentDate: new Date(),
         withdrawalMonth: 1,
+        paymentMethod: "cash",
       });
 
       onSuccess?.();
@@ -541,6 +545,32 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="paymentMethod"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Method</FormLabel>
+                  <FormControl>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      {...field}
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="google_pay">Google Pay</option>
+                      <option value="phone_pay">Phone Pay</option>
+                      <option value="online_portal">Online Portal</option>
+                    </select>
+                  </FormControl>
+                  <FormDescription>
+                    Select the payment method used for this payout. This affects the balance tracking.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <FormField
               control={form.control}
               name="notes"
