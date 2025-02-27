@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -140,6 +140,8 @@ export const insertPaymentSchema = z.object({
 export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({
   earlyWithdrawalMonth: z.number().min(1).max(20).optional(),
   increasedMonthlyAmount: z.string().or(z.number()).optional().transform(String),
+  isGroup: z.boolean().optional(),
+  groupId: z.number().optional(),
 });
 
 // Export types
@@ -151,6 +153,9 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type FundMember = typeof fundMembers.$inferSelect & {
   hasPayable?: boolean; // Added for client-side display purposes
+  isGroup?: boolean; // Is this a group membership (not stored in DB)
+  groupId?: number; // Reference to a member group (not stored in DB)
+  groupMembers?: GroupMember[]; // Group members for this spot (not stored in DB)
 };
 export type InsertFundMember = z.infer<typeof insertFundMemberSchema>;
 export const notifications = pgTable("notifications", {
@@ -252,6 +257,73 @@ export const insertAccountsPayableSchema = createInsertSchema(accountsPayable).e
   withdrawalMonth: z.number().optional(),
   recordedBy: z.number(), // Field used in the API but maps to recorderId
 });
+
+// Member Groups for handling group members - one logical member consists of multiple physical members
+export const memberGroups = pgTable("member_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  primaryUserId: integer("primary_user_id").references(() => users.id, { onDelete: 'cascade' }),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+});
+
+// Store individual members in a group
+export const groupMembers = pgTable("group_members", {
+  groupId: integer("group_id").notNull().references(() => memberGroups.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sharePercentage: decimal("share_percentage", { precision: 5, scale: 2 }).notNull(),
+  notes: text("notes"),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.groupId, table.userId] }),
+}));
+
+// Relations for member groups
+export const memberGroupsRelations = relations(memberGroups, ({ one, many }) => ({
+  primaryUser: one(users, {
+    fields: [memberGroups.primaryUserId],
+    references: [users.id],
+  }),
+  creator: one(users, {
+    fields: [memberGroups.createdBy],
+    references: [users.id],
+  }),
+  members: many(groupMembers),
+}));
+
+export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
+  group: one(memberGroups, {
+    fields: [groupMembers.groupId],
+    references: [memberGroups.id],
+  }),
+  user: one(users, {
+    fields: [groupMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+// Add relation to users
+export const usersWithGroupsRelations = relations(users, ({ many }) => ({
+  memberGroups: many(memberGroups, { relationName: "userGroups" }),
+  groupMemberships: many(groupMembers, { relationName: "userGroupMemberships" }),
+}));
+
+// We can't modify the existing table directly, so we need to handle this in the code
+// Instead of creating a new table, we'll extend the type
+// Note: This doesn't change the DB structure, just adds fields for TypeScript
+
+// Schemas for member groups
+export const insertMemberGroupSchema = createInsertSchema(memberGroups);
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).extend({
+  sharePercentage: z.string().or(z.number()).transform(String),
+});
+
+// Export types for groups
+export type MemberGroup = typeof memberGroups.$inferSelect;
+export type InsertMemberGroup = z.infer<typeof insertMemberGroupSchema>;
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
 
 // Export types for the new tables
 export type AccountsReceivable = typeof accountsReceivable.$inferSelect;

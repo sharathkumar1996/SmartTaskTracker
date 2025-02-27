@@ -31,12 +31,29 @@ export interface IStorage {
   getUserFundPayments(userId: number, fundId: number): Promise<Payment[]>;  // Get payments for a specific user and fund
   getPaymentsByFund(fundId: number): Promise<Payment[]>;  // Get all payments for a fund
 
-  addMemberToFund(fundId: number, userId: number): Promise<boolean>;
+  addMemberToFund(fundId: number, userId: number, isGroup?: boolean, groupId?: number): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<Omit<User, "password">[]>;
   getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined>; 
   updateMemberWithdrawalStatus(fundId: number, userId: number, updates: Partial<FundMember>): Promise<boolean>; 
   getMemberFunds(userId: number): Promise<ChitFund[]>;
+
+  // Member Group methods
+  createMemberGroup(group: InsertMemberGroup): Promise<MemberGroup>;
+  getMemberGroup(id: number): Promise<MemberGroup | undefined>;
+  getMemberGroups(): Promise<MemberGroup[]>;
+  getMemberGroupsWithMembers(): Promise<(MemberGroup & { members: (GroupMember & { user: Omit<User, "password"> })[] })[]>;
+  addUserToGroup(groupId: number, user: InsertGroupMember): Promise<boolean>;
+  removeUserFromGroup(groupId: number, userId: number): Promise<boolean>;
+  getGroupMembers(groupId: number): Promise<(GroupMember & { user: Omit<User, "password"> })[]>;
+
+  // Fund Members with Group support
+  addGroupToFund(fundId: number, groupId: number): Promise<boolean>;
+  getFundMembersWithGroups(fundId: number): Promise<(FundMember & { 
+    isGroup?: boolean; 
+    groupId?: number; 
+    groupMembers?: (GroupMember & { user: Omit<User, "password"> })[] 
+  })[]>;
 
   // Accounts Receivable methods
   createReceivable(receivable: InsertAccountsReceivable): Promise<AccountsReceivable>;
@@ -327,8 +344,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async addMemberToFund(fundId: number, userId: number): Promise<boolean> {
+  async addMemberToFund(fundId: number, userId: number, isGroup: boolean = false, groupId?: number): Promise<boolean> {
     try {
+      // Add metadata fields to track if this is a group membership
+      const metadata = isGroup && groupId ? 
+        JSON.stringify({ isGroup: true, groupId }) : 
+        null;
+        
       const result = await db
         .insert(fundMembers)
         .values({
@@ -337,6 +359,8 @@ export class DatabaseStorage implements IStorage {
           totalBonusReceived: "0",
           totalCommissionPaid: "0",
           isWithdrawn: false,
+          // Store group information in notes field (since we can't modify the table)
+          notes: metadata
         })
         .returning();
       return result.length > 0;
