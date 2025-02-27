@@ -154,15 +154,24 @@ export function GroupMemberManagement({
   // Query to get all member groups with better error handling
   const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
     queryKey: ["/api/member-groups"],
-    select: (data: MemberGroup[]) => data,
-    onError: (error: Error) => {
-      console.error("Error loading member groups:", error);
-      toast({
-        title: "Error loading groups",
-        description: "Unable to load member groups. Please try again.",
-        variant: "destructive",
-      });
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/member-groups");
+        if (!response.ok) {
+          throw new Error("Failed to fetch member groups");
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Error loading member groups:", error);
+        toast({
+          title: "Error loading groups",
+          description: "Unable to load member groups. Please try again.",
+          variant: "destructive",
+        });
+        throw error;
+      }
     },
+    select: (data: MemberGroup[]) => data,
     // Avoid unnecessary refetches and improve performance
     staleTime: 30000, // 30 seconds
   });
@@ -193,15 +202,24 @@ export function GroupMemberManagement({
   // Query to get all members (for adding to group)
   const { data: members = [], isLoading: isLoadingMembers } = useQuery({
     queryKey: ["/api/users/members"],
-    select: (data: User[]) => data,
-    onError: (error: Error) => {
-      console.error("Error loading users:", error);
-      toast({
-        title: "Error loading members",
-        description: "Unable to load user list.",
-        variant: "destructive",
-      });
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/users/members");
+        if (!response.ok) {
+          throw new Error("Failed to fetch member users");
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Error loading users:", error);
+        toast({
+          title: "Error loading members",
+          description: "Unable to load user list.",
+          variant: "destructive",
+        });
+        throw error;
+      }
     },
+    select: (data: User[]) => data,
     // Cache user data longer to improve performance
     staleTime: 60000, // 1 minute
   });
@@ -209,6 +227,23 @@ export function GroupMemberManagement({
   // Query to get available chitfunds
   const { data: chitFunds = [], isLoading: isLoadingChitFunds } = useQuery({
     queryKey: ["/api/chitfunds"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/chitfunds");
+        if (!response.ok) {
+          throw new Error("Failed to fetch chit funds");
+        }
+        return response.json();
+      } catch (error) {
+        console.error("Error loading chit funds:", error);
+        toast({
+          title: "Error loading chit funds",
+          description: "Unable to load available chit funds.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
     select: (data: ChitFund[]) => data,
     enabled: !chitFundId, // Only fetch if we don't already have a chitFundId
     staleTime: 30000, // 30 seconds
