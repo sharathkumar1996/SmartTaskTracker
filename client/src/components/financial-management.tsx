@@ -210,7 +210,8 @@ export function FinancialManagement() {
     // Create transaction object
     const transaction = {
       ...formValues,
-      transactionDate: new Date(formValues.transactionDate),
+      // Keep the date as ISO string instead of converting to Date object
+      transactionDate: formValues.transactionDate,
       amount: formValues.amount,
       agentId: formValues.agentId ? parseInt(formValues.agentId) : undefined,
       recordedBy: user?.id
