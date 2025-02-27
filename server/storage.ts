@@ -77,6 +77,21 @@ export interface IStorage {
   getPayablesByFund(fundId: number): Promise<AccountsPayable[]>;
   getPayablesByType(fundId: number, type: string): Promise<AccountsPayable[]>;
   getAllPayables(): Promise<AccountsPayable[]>;
+  
+  // Financial Transaction methods
+  createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction>;
+  getFinancialTransactions(): Promise<FinancialTransaction[]>;
+  getFinancialTransactionsByType(type: string): Promise<FinancialTransaction[]>;
+  getFinancialSummary(): Promise<{
+    adminBorrowTotal: number;
+    adminRepayTotal: number;
+    adminNetDebt: number;
+    externalLoanTotal: number;
+    loanRepaymentTotal: number;
+    externalNetDebt: number;
+    agentSalaryTotal: number;
+    gstTotal: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {

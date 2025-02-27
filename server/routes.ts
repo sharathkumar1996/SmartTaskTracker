@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { 
   insertChitFundSchema, insertPaymentSchema, insertUserSchema, 
   insertAccountsReceivableSchema, insertAccountsPayableSchema, Payment,
-  insertMemberGroupSchema, insertGroupMemberSchema
+  insertMemberGroupSchema, insertGroupMemberSchema, insertFinancialTransactionSchema
 } from "@shared/schema";
 import { db } from "./db"; // Assuming db is imported from elsewhere
 import { payments } from "@shared/schema"; // Import the payments table schema
@@ -1595,6 +1595,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         message: "Failed to fetch fund payments",
         error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Financial Transaction Routes
+  app.post("/api/financial-transactions", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Only admin users can record financial transactions" });
+    }
+    
+    try {
+      // Ensure all required fields are properly formatted
+      const transactionData = {
+        ...req.body,
+        recordedBy: req.user.id, // Set the recordedBy field to the current user's ID
+        transactionDate: req.body.transactionDate ? new Date(req.body.transactionDate) : new Date(),
+      };
+      
+      console.log("Transaction data before validation:", transactionData);
+      
+      const parseResult = insertFinancialTransactionSchema.safeParse(transactionData);
+      
+      if (!parseResult.success) {
+        console.error("Transaction validation error:", parseResult.error);
+        return res.status(400).json(parseResult.error);
+      }
+      
+      console.log("Validated transaction data:", parseResult.data);
+      
+      // Create the financial transaction record
+      const transaction = await storage.createFinancialTransaction(parseResult.data);
+      
+      res.status(201).json(transaction);
+    } catch (error) {
+      console.error("Error creating financial transaction:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to create financial transaction",
+      });
+    }
+  });
+  
+  app.get("/api/financial-transactions", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Only admin users can view financial transactions" });
+    }
+    
+    try {
+      let transactions;
+      // Check if we need to filter by type
+      if (req.query.type) {
+        transactions = await storage.getFinancialTransactionsByType(req.query.type as string);
+      } else {
+        transactions = await storage.getFinancialTransactions();
+      }
+      
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching financial transactions:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to fetch financial transactions",
+      });
+    }
+  });
+  
+  app.get("/api/financial-summary", async (req, res) => {
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({ error: "Only admin users can view financial summary" });
+    }
+    
+    try {
+      const summary = await storage.getFinancialSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching financial summary:", error);
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to fetch financial summary",
       });
     }
   });
