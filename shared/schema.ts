@@ -3,7 +3,7 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User table definition
+// User table definition with proper type annotation
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -17,7 +17,7 @@ export const users = pgTable("users", {
   state: text("state"),
   pincode: text("pincode"),
   fundPreferences: text("fund_preferences"),
-  agentId: integer("agent_id").references(() => users.id, { onDelete: 'set null' }),
+  agentId: integer("agent_id").references((): any => users.id, { onDelete: 'set null' }),
   agentCommission: decimal("agent_commission", { precision: 5, scale: 2 }),
   status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
