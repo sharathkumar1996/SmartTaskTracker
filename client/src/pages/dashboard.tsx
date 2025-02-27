@@ -64,7 +64,7 @@ export default function Dashboard() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Chit Fund Management</h1>
+            <h1 className="text-2xl font-bold">Sri Vasavi Chit Fund</h1>
             <p className="text-muted-foreground">Welcome, {user.fullName}</p>
           </div>
           <Button variant="outline" onClick={() => logoutMutation.mutate()} className="gap-2">

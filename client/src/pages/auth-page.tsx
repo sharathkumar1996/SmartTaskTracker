@@ -65,7 +65,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Chit Fund Management</CardTitle>
+            <CardTitle>Sri Vasavi Chit Fund</CardTitle>
             <CardDescription>
               Manage your chit funds efficiently and securely
             </CardDescription>
@@ -225,7 +225,7 @@ export default function AuthPage() {
       <div className="hidden lg:flex flex-1 bg-primary items-center justify-center p-8">
         <div className="max-w-md text-primary-foreground">
           <h1 className="text-4xl font-bold mb-4">
-            Welcome to Chit Fund Management
+            Welcome to Sri Vasavi Chit Fund
           </h1>
           <p className="text-lg opacity-90">
             Manage your chit funds efficiently with our secure platform. Track
