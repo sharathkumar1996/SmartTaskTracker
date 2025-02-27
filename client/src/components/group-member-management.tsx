@@ -567,7 +567,7 @@ export function GroupMemberManagement({
 
       {/* Create Group Dialog */}
       <Dialog open={isCreateGroupOpen} onOpenChange={setIsCreateGroupOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Member Group</DialogTitle>
             <DialogDescription>
@@ -603,7 +603,7 @@ export function GroupMemberManagement({
                     <FormControl>
                       <Textarea
                         placeholder="Optional notes about this group"
-                        className="resize-none"
+                        className="resize-none h-20"
                         {...field}
                         value={field.value || ""}
                       />
@@ -627,7 +627,7 @@ export function GroupMemberManagement({
                       <FormLabel>Member</FormLabel>
                       <FormControl>
                         <select
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 overflow-ellipsis"
                           {...field}
                           value={field.value || ""}
                         >
@@ -651,13 +651,18 @@ export function GroupMemberManagement({
                     <FormItem>
                       <FormLabel>Share Percentage</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="100" 
-                          {...field} 
-                          min="1" 
-                          max="100" 
-                        />
+                        <div className="relative">
+                          <Input 
+                            type="number" 
+                            placeholder="100" 
+                            {...field} 
+                            min="1" 
+                            max="100" 
+                          />
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            %
+                          </div>
+                        </div>
                       </FormControl>
                       <FormDescription>
                         Percentage share of this member in the group (1-100)
@@ -693,7 +698,7 @@ export function GroupMemberManagement({
 
       {/* Add Member to Group Dialog */}
       <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Member to Group</DialogTitle>
             <DialogDescription>
@@ -767,8 +772,9 @@ export function GroupMemberManagement({
                     <FormControl>
                       <Textarea
                         placeholder="Optional notes about this member's share"
-                        className="resize-none"
+                        className="resize-none h-20"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />

@@ -381,14 +381,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.user || req.user.role !== "admin") return res.sendStatus(403);
     
     try {
-      console.log("Creating member group with data:", req.body);
+      // Log the raw request body to help debug
+      console.log("Creating member group with data:", JSON.stringify(req.body));
+      
+      // Handle case where body might be a string (JSON parse issue)
+      let parsedBody = req.body;
+      if (typeof req.body === 'string' || req.body.body) {
+        try {
+          parsedBody = typeof req.body === 'string' 
+            ? JSON.parse(req.body) 
+            : JSON.parse(req.body.body);
+          console.log("Parsed request body:", parsedBody);
+        } catch (e) {
+          console.error("Error parsing request body:", e);
+        }
+      }
       
       // Extract initial member data
-      const { initialMember, ...groupDataRaw } = req.body;
+      const { initialMember, ...groupDataRaw } = parsedBody;
       
       // Set the created_by field to current user's ID
       const groupData = {
         ...groupDataRaw,
+        name: groupDataRaw.name, // Ensure name is explicitly included
         createdBy: req.user.id,
         // Convert empty strings to null
         notes: groupDataRaw.notes || null
