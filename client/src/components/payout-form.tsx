@@ -114,12 +114,18 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     enabled: !!userId,
   });
 
-  // Initialize fund amount when fund data is loaded
+  // Initialize fund amount and default commission when fund data is loaded
   useEffect(() => {
     if (fundData && fundData.amount) {
       setFundAmount(fundData.amount.toString());
+      
+      // Set the commission based on the fund amount (5k per lakh = 5% of fund amount)
+      const fundAmountNum = parseFloat(fundData.amount);
+      const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
+      setCommissionAmount(defaultCommission);
+      form.setValue('commission', defaultCommission);
     }
-  }, [fundData]);
+  }, [fundData, form]);
 
   // Calculate months paid and payment amounts from payment history
   useEffect(() => {
