@@ -151,10 +151,20 @@ export function GroupMemberManagement({
     },
   });
 
-  // Query to get all member groups
+  // Query to get all member groups with better error handling
   const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
     queryKey: ["/api/member-groups"],
     select: (data: MemberGroup[]) => data,
+    onError: (error: Error) => {
+      console.error("Error loading member groups:", error);
+      toast({
+        title: "Error loading groups",
+        description: "Unable to load member groups. Please try again.",
+        variant: "destructive",
+      });
+    },
+    // Avoid unnecessary refetches and improve performance
+    staleTime: 30000, // 30 seconds
   });
 
   // Query to get selected group details with members
@@ -162,9 +172,20 @@ export function GroupMemberManagement({
     queryKey: ["/api/member-groups", selectedGroup?.id, "members"],
     queryFn: async () => {
       if (!selectedGroup?.id) return null;
-      const response = await apiRequest("GET", `/api/member-groups/${selectedGroup.id}?includeMembers=true`);
-      const data = await response.json();
-      return data;
+      try {
+        console.log("Fetching group details for ID:", selectedGroup.id);
+        const response = await apiRequest("GET", `/api/member-groups/${selectedGroup.id}?includeMembers=true`);
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error fetching group details:", error);
+        toast({
+          title: "Error loading group details",
+          description: "Unable to load group member details.",
+          variant: "destructive",
+        });
+        throw error;
+      }
     },
     enabled: !!selectedGroup?.id,
   });
@@ -173,6 +194,16 @@ export function GroupMemberManagement({
   const { data: members = [], isLoading: isLoadingMembers } = useQuery({
     queryKey: ["/api/users/members"],
     select: (data: User[]) => data,
+    onError: (error: Error) => {
+      console.error("Error loading users:", error);
+      toast({
+        title: "Error loading members",
+        description: "Unable to load user list.",
+        variant: "destructive",
+      });
+    },
+    // Cache user data longer to improve performance
+    staleTime: 60000, // 1 minute
   });
 
   // Query to get available chitfunds
@@ -180,6 +211,7 @@ export function GroupMemberManagement({
     queryKey: ["/api/chitfunds"],
     select: (data: ChitFund[]) => data,
     enabled: !chitFundId, // Only fetch if we don't already have a chitFundId
+    staleTime: 30000, // 30 seconds
   });
 
   // Mutation to create a new group

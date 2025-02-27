@@ -36,17 +36,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      console.log("Logging in with username:", credentials.username);
+      try {
+        const res = await apiRequest("POST", "/api/login", credentials);
+        const userData = await res.json();
+        console.log("Login successful");
+        return userData;
+      } catch (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
+      console.log("Setting user data in cache");
       queryClient.setQueryData(["/api/user"], user);
-      queryClient.invalidateQueries();
+      // Clear and refetch any relevant queries
+      queryClient.invalidateQueries({queryKey: ["/api/chitfunds"]});
+      queryClient.invalidateQueries({queryKey: ["/api/users"]});
+      queryClient.invalidateQueries({queryKey: ["/api/member-groups"]});
     },
     onError: (error: Error) => {
+      console.error("Login mutation error:", error);
+      let errorMessage = "Username or password incorrect";
+      if (error.message.includes("500")) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (error.message.includes("404")) {
+        errorMessage = "Login service unavailable. Please try again later.";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
