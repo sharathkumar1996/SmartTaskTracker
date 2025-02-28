@@ -60,6 +60,7 @@ export const fundMembers = pgTable("fund_members", {
   totalBonusReceived: decimal("total_bonus_received", { precision: 10, scale: 2 }).default('0'),
   totalCommissionPaid: decimal("total_commission_paid", { precision: 10, scale: 2 }).default('0'),
   isWithdrawn: boolean("is_withdrawn").default(false),
+  notes: text("notes"), // Added notes field for storing metadata
 }, (table) => ({
   pk: primaryKey({ columns: [table.fundId, table.userId] }),
 }));

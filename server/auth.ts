@@ -58,7 +58,8 @@ export function setupAuth(app: Express) {
       secure: false, // For development - change to process.env.NODE_ENV === 'production' for production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax' // Allow cross-site requests in development
+      sameSite: 'lax', // Allow cross-site requests in development
+      path: '/' // Make sure cookies are valid across all paths
     }
   };
 
@@ -192,7 +193,9 @@ export function setupAuth(app: Express) {
         // Set a success cookie to help debug session issues
         res.cookie('auth_success', 'true', { 
           maxAge: 60000, // 1 minute
-          httpOnly: true 
+          httpOnly: true,
+          path: '/',
+          sameSite: 'lax'
         });
         
         res.json(userWithoutPassword);
