@@ -100,8 +100,8 @@ export class DatabaseStorage implements IStorage {
   constructor() {
     this.sessionStore = new MemoryStore({ 
       checkPeriod: 86400000, // Once per day
-      stale: false, // Don't delete stale sessions
-      debug: true // Enable debug mode for session store
+      // Using only supported options from MemoryStore
+      // Logging is handled by our custom middleware
     }); 
   }
 
