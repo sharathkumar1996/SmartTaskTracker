@@ -98,11 +98,15 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
+    // Create session store with standard configuration
     this.sessionStore = new MemoryStore({ 
       checkPeriod: 86400000, // Once per day
-      // Using only supported options from MemoryStore
-      // Logging is handled by our custom middleware
+      ttl: 86400 * 1000, // 24 hours
+      stale: false, // Don't return stale sessions
     }); 
+    
+    // Log when the session store is created
+    console.log("Session store initialized");
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -672,26 +676,33 @@ export class DatabaseStorage implements IStorage {
   // Financial transactions methods
   async createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction> {
     try {
-      // Extract fields from the transaction to match the schema
+      // Convert the date properly
+      const date = transaction.transactionDate ? 
+        new Date(transaction.transactionDate) : 
+        new Date();
+        
+      console.log("Creating financial transaction with date:", date);
+      
+      // Use the transaction_date field name from the schema (snake_case)
       const result = await db
         .insert(financialTransactions)
         .values({
-          transactionDate: new Date(transaction.transactionDate || new Date()),
+          transaction_date: date,
           amount: transaction.amount,
-          transactionType: transaction.transactionType,
-          paymentMethod: transaction.paymentMethod || "cash",
+          transaction_type: transaction.transactionType,
+          payment_method: transaction.paymentMethod || "cash",
           description: transaction.description,
-          interestRate: transaction.interestRate,
-          lenderName: transaction.lenderName,
-          agentId: transaction.agentId,
-          recordedBy: transaction.recordedBy,
-          documentUrl: transaction.documentUrl,
-          gstEligible: transaction.gstEligible || false,
+          interest_rate: transaction.interestRate,
+          lender_name: transaction.lenderName,
+          agent_id: transaction.agentId,
+          recorded_by: transaction.recordedBy,
+          document_url: transaction.documentUrl,
+          gst_eligible: transaction.gstEligible || false,
           hsn: transaction.hsn,
-          gstRate: transaction.gstRate,
-          gstAmount: transaction.gstAmount,
+          gst_rate: transaction.gstRate,
+          gst_amount: transaction.gstAmount,
           notes: transaction.notes
-        })
+        } as any)
         .returning();
       return result[0] as FinancialTransaction;
     } catch (error) {

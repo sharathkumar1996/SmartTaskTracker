@@ -9,7 +9,7 @@ const app = express();
 // Enhanced logging middleware for debugging
 app.use((req, res, next) => {
   // Log all requests including auth-related headers (but sanitize sensitive data)
-  log(`REQUEST: ${req.method} ${req.path}`, "debug");
+  log(`REQUEST: ${req.method} ${req.path}`);
   
   // Log relevant headers for troubleshooting session/cookie issues
   const relevantHeaders = {
