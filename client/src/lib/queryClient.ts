@@ -84,10 +84,19 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     console.log(`getQueryFn fetching: ${queryKey[0]}`);
-    console.log(`Current cookies:`, document.cookie ? JSON.parse(JSON.stringify(document.cookie.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=');
-      return {...acc, [key]: value};
-    }, {}))) : {});
+    
+    // Log cookies in a safer way that won't throw errors
+    const cookieObj = {};
+    if (document.cookie) {
+      document.cookie.split(';').forEach(cookie => {
+        const parts = cookie.trim().split('=');
+        if (parts.length >= 2) {
+          const [key, ...valueParts] = parts;
+          cookieObj[key] = valueParts.join('=');
+        }
+      });
+    }
+    console.log(`Current cookies:`, cookieObj);
     
     try {
       const res = await fetch(queryKey[0] as string, {
