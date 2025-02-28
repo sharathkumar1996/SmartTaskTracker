@@ -91,15 +91,8 @@ export default function AuthPage() {
       return;
     }
     
-    // Provide admin login hint if they're trying to use the admin account
-    if (data.username.toLowerCase() === "admin" && data.password !== "admin123") {
-      console.log("Admin login attempt with incorrect password");
-      // We'll still submit, but show a hint
-      loginForm.setError("password", {
-        type: "manual",
-        message: "Hint: Default admin password is 'admin123'"
-      });
-    }
+    // Log any login attempts for security monitoring
+    console.log("Processing login attempt");
     
     console.log("Submitting login form");
     loginMutation.mutate(data);
@@ -176,9 +169,9 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    {/* Add admin login hint */}
+                    {/* Login guidance */}
                     <div className="p-2 mb-2 bg-blue-50 text-blue-800 rounded-md text-sm">
-                      <p>Admin access: use username <strong>admin</strong> and password <strong>admin123</strong></p>
+                      <p>Contact your system administrator for login credentials</p>
                     </div>
                     
                     <Button

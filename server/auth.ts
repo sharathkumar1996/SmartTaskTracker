@@ -101,9 +101,6 @@ export function setupAuth(app: Express) {
         const isValid = await comparePasswords(password, user.password);
         if (!isValid) {
           console.log(`Invalid password for user: ${username}`);
-          if (username === 'admin') {
-            console.log('Admin login failed. Hint: Default password is "admin123"');
-          }
           return done(null, false, { message: 'Invalid username or password' });
         }
 
@@ -188,11 +185,7 @@ export function setupAuth(app: Express) {
       
       if (!user) {
         console.log(`Authentication failed for ${req.body.username}: ${info?.message}`);
-        // Provide a hint for admin login
-        let message = info?.message || "Authentication failed";
-        if (req.body.username === 'admin') {
-          message += ". For admin account, use password 'admin123'";
-        }
+        const message = info?.message || "Authentication failed";
         return res.status(401).json({ message });
       }
       
