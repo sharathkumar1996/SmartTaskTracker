@@ -67,9 +67,22 @@ export default function AuthPage() {
     mode: "onSubmit",
   });
   
+  useEffect(() => {
+    // Check and log session status
+    console.log("Auth page loaded, checking session status");
+    console.log("Current user:", user);
+    // Get and log cookies to help with debugging
+    const cookies = document.cookie.split('; ').reduce((prev, current) => {
+      const [name, value] = current.split('=');
+      prev[name] = value;
+      return prev;
+    }, {} as Record<string, string>);
+    console.log("Current cookies:", cookies);
+  }, [user]);
+  
   // Add admin login hint
   const handleLoginSubmit = (data: { username: string; password: string }) => {
-    console.log("Login attempt with:", data.username);
+    console.log("Login attempt with:", data.username, "and password length:", data.password.length);
     
     // Clear any previous errors
     loginForm.clearErrors();
@@ -94,8 +107,16 @@ export default function AuthPage() {
     // Log any login attempts for security monitoring
     console.log("Processing login attempt");
     
-    console.log("Submitting login form");
-    loginMutation.mutate(data);
+    try {
+      console.log("Submitting login form to /api/login");
+      loginMutation.mutate(data);
+    } catch (error) {
+      console.error("Login submission error:", error);
+      loginForm.setError("root", {
+        type: "manual",
+        message: "Login failed: " + (error instanceof Error ? error.message : String(error))
+      });
+    }
   };
 
   const registerForm = useForm({
