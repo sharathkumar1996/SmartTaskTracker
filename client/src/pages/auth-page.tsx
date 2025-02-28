@@ -21,12 +21,41 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 //import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; //Removed as per edit
 
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  
+  // Debug: Check session cookies and auth status
+  useEffect(() => {
+    console.log("Auth page loaded, checking session status");
+    
+    // Log current user state
+    console.log("Current user:", user);
+    
+    // Check cookies
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    console.log("Current cookies:", cookies);
+    
+    // Notify if there are session issues
+    if (loginMutation.isError) {
+      toast({
+        title: "Login error detected",
+        description: `Error: ${loginMutation.error?.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    }
+  }, [user, loginMutation.isError, loginMutation.error]);
 
   // Improved login form with better error handling
   const loginForm = useForm({
@@ -37,6 +66,44 @@ export default function AuthPage() {
     // Prevent excessive rerendering
     mode: "onSubmit",
   });
+  
+  // Add admin login hint
+  const handleLoginSubmit = (data: { username: string; password: string }) => {
+    console.log("Login attempt with:", data.username);
+    
+    // Clear any previous errors
+    loginForm.clearErrors();
+    
+    // Basic validation
+    if (!data.username.trim()) {
+      loginForm.setError("username", { 
+        type: "manual", 
+        message: "Username is required" 
+      });
+      return;
+    }
+    
+    if (!data.password) {
+      loginForm.setError("password", { 
+        type: "manual", 
+        message: "Password is required" 
+      });
+      return;
+    }
+    
+    // Provide admin login hint if they're trying to use the admin account
+    if (data.username.toLowerCase() === "admin" && data.password !== "admin123") {
+      console.log("Admin login attempt with incorrect password");
+      // We'll still submit, but show a hint
+      loginForm.setError("password", {
+        type: "manual",
+        message: "Hint: Default admin password is 'admin123'"
+      });
+    }
+    
+    console.log("Submitting login form");
+    loginMutation.mutate(data);
+  };
 
   const registerForm = useForm({
     resolver: zodResolver(insertUserSchema),
@@ -80,9 +147,7 @@ export default function AuthPage() {
               <TabsContent value="login">
                 <Form {...loginForm}>
                   <form
-                    onSubmit={loginForm.handleSubmit((data) =>
-                      loginMutation.mutate(data)
-                    )}
+                    onSubmit={loginForm.handleSubmit(handleLoginSubmit)}
                     className="space-y-4"
                   >
                     <FormField
@@ -111,6 +176,11 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    {/* Add admin login hint */}
+                    <div className="p-2 mb-2 bg-blue-50 text-blue-800 rounded-md text-sm">
+                      <p>Admin access: use username <strong>admin</strong> and password <strong>admin123</strong></p>
+                    </div>
+                    
                     <Button
                       type="submit"
                       className="w-full"
