@@ -18,7 +18,7 @@ export const users = pgTable("users", {
   pincode: text("pincode"),
   fundPreferences: text("fund_preferences"),
   agentId: integer("agent_id").references((): any => users.id, { onDelete: 'set null' }),
-  agentCommission: decimal("agent_commission", { precision: 5, scale: 2 }),
+  agentCommission: decimal("agent_commission"),
   status: text("status").$type<"active" | "inactive">().default("active").notNull(),
 });
 
@@ -48,8 +48,8 @@ export const payments = pgTable("payments", {
   paymentMethod: text("payment_method").$type<"cash" | "google_pay" | "phone_pay" | "online_portal">().notNull(),
   recordedBy: integer("recorded_by").notNull().references(() => users.id),
   notes: text("notes"),
-  paymentDate: timestamp("payment_date").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  paymentDate: timestamp("payment_date"),
+  createdAt: timestamp("created_at", { withTimezone: true }),
 });
 
 export const fundMembers = pgTable("fund_members", {
@@ -206,7 +206,7 @@ export const accountsPayable = pgTable("accounts_payable", {
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  paidDate: timestamp("paid_date", { mode: 'date' }),
+  paidDate: timestamp("paid_date", { withTimezone: true }),
   recorderId: integer("recorder_id").references(() => users.id),
   commission: decimal("commission", { precision: 10, scale: 2 }),
   paymentMethod: text("payment_method").$type<"cash" | "bank_transfer" | "google_pay" | "phone_pay" | "online_portal">().default("cash"),
