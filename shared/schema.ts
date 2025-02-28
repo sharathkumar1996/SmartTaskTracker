@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, decimal, timestamp, primaryKey, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -53,6 +53,7 @@ export const payments = pgTable("payments", {
 });
 
 export const fundMembers = pgTable("fund_members", {
+  id: serial("id").primaryKey(),
   fundId: integer("fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   earlyWithdrawalMonth: integer("early_withdrawal_month"),
@@ -62,7 +63,7 @@ export const fundMembers = pgTable("fund_members", {
   isWithdrawn: boolean("is_withdrawn").default(false),
   notes: text("notes"), // Added notes field for storing metadata
 }, (table) => ({
-  pk: primaryKey({ columns: [table.fundId, table.userId] }),
+  fundUserIdx: index().on(table.fundId, table.userId),
 }));
 
 // Maintain relationships
