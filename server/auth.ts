@@ -168,6 +168,9 @@ export function setupAuth(app: Express) {
     }
 
     console.log(`Login request received for username: ${req.body.username}`);
+    console.log('Session ID at login start:', req.sessionID);
+    console.log('Request cookies:', req.cookies);
+    console.log('Request headers:', req.headers);
     
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
@@ -188,12 +191,23 @@ export function setupAuth(app: Express) {
         }
         
         console.log('Login successful for user:', user.id, user.username);
+        console.log('Session ID after login:', req.sessionID);
+        console.log('Is authenticated:', req.isAuthenticated());
+        
         const { password, ...userWithoutPassword } = user;
         
         // Set a success cookie to help debug session issues
         res.cookie('auth_success', 'true', { 
           maxAge: 60000, // 1 minute
           httpOnly: true,
+          path: '/',
+          sameSite: 'lax'
+        });
+        
+        // Set another non-httpOnly cookie to verify in the browser
+        res.cookie('visible_auth_success', 'true', { 
+          maxAge: 60000, // 1 minute
+          httpOnly: false,
           path: '/',
           sameSite: 'lax'
         });
@@ -214,9 +228,20 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     console.log('GET /api/user - isAuthenticated:', req.isAuthenticated());
+    console.log('GET /api/user - Session ID:', req.sessionID);
+    console.log('GET /api/user - Request cookies:', req.cookies);
+    console.log('GET /api/user - Request headers:', {
+      cookie: req.headers.cookie,
+      referer: req.headers.referer,
+      origin: req.headers.origin
+    });
+    
     if (!req.user) {
+      console.log('GET /api/user - No user found in session');
       return res.sendStatus(401);
     }
+    
+    console.log('GET /api/user - User found:', req.user.id, req.user.username);
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });

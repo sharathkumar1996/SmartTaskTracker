@@ -39,7 +39,7 @@ export interface IStorage {
   getUserFundPayments(userId: number, fundId: number): Promise<Payment[]>;  // Get payments for a specific user and fund
   getPaymentsByFund(fundId: number): Promise<Payment[]>;  // Get all payments for a fund
 
-  addMemberToFund(fundId: number, userId: number, isGroup?: boolean, groupId?: number): Promise<boolean>;
+  addMemberToFund(fundId: number, userId: number, isGroup?: boolean, groupId?: number, metadataString?: string): Promise<boolean>;
   removeMemberFromFund(fundId: number, userId: number): Promise<boolean>;
   getFundMembers(fundId: number): Promise<Omit<User, "password">[]>;
   getFundMemberDetails(fundId: number, userId: number): Promise<FundMember | undefined>; 
@@ -215,7 +215,7 @@ export class DatabaseStorage implements IStorage {
           agentCommission: users.agentCommission,
         })
         .from(users)
-        .where(eq(users.role, role));
+        .where(sql`${users.role} = ${role}`);
     } catch (error) {
       console.error("Error in getUsersByRole:", error);
       return [];
@@ -672,25 +672,19 @@ export class DatabaseStorage implements IStorage {
   // Financial transactions methods
   async createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction> {
     try {
+      // Create a copy of the transaction and ensure the date is set properly
+      const transactionData = {
+        ...transaction,
+        // Ensure a valid date is used
+        transactionDate: transaction.transactionDate || new Date()
+      };
+      
+      console.log("Creating financial transaction with data:", transactionData);
+      
+      // Let Drizzle handle the inserts with typing
       const result = await db
         .insert(financialTransactions)
-        .values({
-          transactionDate: transaction.transactionDate || new Date(),
-          amount: transaction.amount,
-          transactionType: transaction.transactionType,
-          paymentMethod: transaction.paymentMethod || "cash",
-          description: transaction.description,
-          interestRate: transaction.interestRate,
-          lenderName: transaction.lenderName,
-          agentId: transaction.agentId,
-          recordedBy: transaction.recordedBy,
-          documentUrl: transaction.documentUrl,
-          gstEligible: transaction.gstEligible || false,
-          hsn: transaction.hsn,
-          gstRate: transaction.gstRate,
-          gstAmount: transaction.gstAmount,
-          notes: transaction.notes
-        })
+        .values(transactionData as any)
         .returning();
       return result[0] as FinancialTransaction;
     } catch (error) {
