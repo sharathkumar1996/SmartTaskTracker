@@ -9,7 +9,7 @@ import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
-  user: SelectUser | null;
+  user: SelectUser | null; // User is either a valid user object or null (when not authenticated)
   isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
@@ -116,10 +116,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Ensure user is always correctly typed as SelectUser | null
+  const safeUser: SelectUser | null = user || null;
+
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: safeUser,
         isLoading,
         error,
         loginMutation,

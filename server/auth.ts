@@ -90,16 +90,24 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username: string, password: string, done) => {
       try {
+        console.log(`Login attempt: username=${username}`);
+        
         const user = await storage.getUserByUsername(username);
         if (!user) {
+          console.log(`User not found: ${username}`);
           return done(null, false, { message: 'Invalid username or password' });
         }
 
         const isValid = await comparePasswords(password, user.password);
         if (!isValid) {
+          console.log(`Invalid password for user: ${username}`);
+          if (username === 'admin') {
+            console.log('Admin login failed. Hint: Default password is "admin123"');
+          }
           return done(null, false, { message: 'Invalid username or password' });
         }
 
+        console.log(`Successful authentication for user: ${username} (ID: ${user.id})`);
         return done(null, user);
       } catch (error) {
         console.error("Auth error:", error);
@@ -162,15 +170,47 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    // Validate that required fields exist
+    if (!req.body.username || !req.body.password) {
+      return res.status(400).json({ 
+        message: "Missing required fields", 
+        details: "Both username and password are required"
+      });
+    }
+
+    console.log(`Login request received for username: ${req.body.username}`);
+    
     passport.authenticate("local", (err: any, user: any, info: any) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: info?.message || "Authentication failed" });
+      if (err) {
+        console.error("Authentication error:", err);
+        return next(err);
       }
+      
+      if (!user) {
+        console.log(`Authentication failed for ${req.body.username}: ${info?.message}`);
+        // Provide a hint for admin login
+        let message = info?.message || "Authentication failed";
+        if (req.body.username === 'admin') {
+          message += ". For admin account, use password 'admin123'";
+        }
+        return res.status(401).json({ message });
+      }
+      
       req.login(user, (err) => {
-        if (err) return next(err);
-        console.log('Login successful:', user.id);
+        if (err) {
+          console.error("Session creation error:", err);
+          return next(err);
+        }
+        
+        console.log('Login successful for user:', user.id, user.username);
         const { password, ...userWithoutPassword } = user;
+        
+        // Set a success cookie to help debug session issues
+        res.cookie('auth_success', 'true', { 
+          maxAge: 60000, // 1 minute
+          httpOnly: true 
+        });
+        
         res.json(userWithoutPassword);
       });
     })(req, res, next);

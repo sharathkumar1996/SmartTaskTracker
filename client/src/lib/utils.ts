@@ -15,7 +15,36 @@ export const PAYMENT_METHODS = {
   ONLINE_PORTAL: 'online_portal'
 };
 
+// Human-friendly display names for payment methods
+export const PAYMENT_METHOD_LABELS = {
+  [PAYMENT_METHODS.CASH]: 'Cash',
+  [PAYMENT_METHODS.BANK_TRANSFER]: 'Bank Transfer',
+  [PAYMENT_METHODS.GOOGLE_PAY]: 'Google Pay',
+  [PAYMENT_METHODS.PHONE_PAY]: 'Phone Pay',
+  [PAYMENT_METHODS.ONLINE_PORTAL]: 'Online Portal'
+};
+
 export type PaymentMethod = 'cash' | 'bank_transfer' | 'google_pay' | 'phone_pay' | 'online_portal';
+
+/**
+ * Normalize payment method string to ensure consistent handling
+ * This helps fix issues where different casing causes payment method mismatches
+ */
+export function normalizePaymentMethod(method: string | null | undefined): string | null {
+  if (!method) return null;
+  return method.toLowerCase().trim();
+}
+
+/**
+ * Get the display name for a payment method
+ */
+export function getPaymentMethodDisplayName(method: string | null | undefined): string {
+  const normalizedMethod = normalizePaymentMethod(method);
+  if (!normalizedMethod) return 'Unknown';
+  
+  // @ts-ignore - We're checking if the key exists in PAYMENT_METHOD_LABELS
+  return PAYMENT_METHOD_LABELS[normalizedMethod] || 'Unknown';
+}
 
 /**
  * Determine if a payment method is a digital payment method
@@ -25,13 +54,13 @@ export function isDigitalPaymentMethod(method: string | null | undefined): boole
     return false;
   }
   
-  const normalizedMethod = method.toLowerCase();
+  const normalizedMethod = normalizePaymentMethod(method);
   return [
     PAYMENT_METHODS.BANK_TRANSFER,
     PAYMENT_METHODS.GOOGLE_PAY,
     PAYMENT_METHODS.PHONE_PAY, 
     PAYMENT_METHODS.ONLINE_PORTAL
-  ].indexOf(normalizedMethod) >= 0;
+  ].indexOf(normalizedMethod!) >= 0;
 }
 
 /**
@@ -42,7 +71,33 @@ export function isCashPaymentMethod(method: string | null | undefined): boolean 
     return false;
   }
   
-  return method.toLowerCase() === PAYMENT_METHODS.CASH;
+  return normalizePaymentMethod(method) === PAYMENT_METHODS.CASH;
+}
+
+/**
+ * Group payments by method type (cash vs digital)
+ */
+export function groupPaymentsByMethodType(payments: Array<{ paymentMethod?: string | null }>): {
+  cashPayments: number;
+  digitalPayments: number;
+  total: number;
+} {
+  let cashPayments = 0;
+  let digitalPayments = 0;
+  
+  payments.forEach(payment => {
+    if (isCashPaymentMethod(payment.paymentMethod)) {
+      cashPayments++;
+    } else if (isDigitalPaymentMethod(payment.paymentMethod)) {
+      digitalPayments++;
+    }
+  });
+  
+  return { 
+    cashPayments, 
+    digitalPayments, 
+    total: cashPayments + digitalPayments 
+  };
 }
 
 /**
