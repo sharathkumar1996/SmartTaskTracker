@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/queryClient";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, RefreshCw } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, isDigitalPaymentMethod, isCashPaymentMethod, parseAmount } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // Define types for accounts receivable and payable
@@ -92,18 +92,13 @@ export const AccountsManagement = () => {
       let bankTotal = 0;
 
       paymentsData.forEach((payment: any) => {
-        const amount = parseFloat(payment.amount || '0');
+        const amount = parseAmount(payment.amount);
         
-        // For withdrawals and monthly payments, consider the payment method
-        if (payment.paymentMethod === 'cash') {
+        // Use utility functions for consistent payment method handling
+        if (isCashPaymentMethod(payment.paymentMethod)) {
           console.log(`Found cash payment: ${amount}`);
           cashTotal += amount;
-        } else if (
-          payment.paymentMethod === 'bank_transfer' || 
-          payment.paymentMethod === 'google_pay' || 
-          payment.paymentMethod === 'phone_pay' || 
-          payment.paymentMethod === 'online_portal'
-        ) {
+        } else if (isDigitalPaymentMethod(payment.paymentMethod)) {
           console.log(`Found digital payment (${payment.paymentMethod}): ${amount}`);
           bankTotal += amount;
         }
