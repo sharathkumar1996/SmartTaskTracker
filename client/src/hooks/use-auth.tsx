@@ -29,8 +29,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-    staleTime: Infinity,
+    queryFn: async () => {
+      console.log('Fetching current user session');
+      try {
+        const response = await fetch('/api/user', {
+          credentials: 'include', // Important: include cookies with the request
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        
+        console.log('Session check response status:', response.status);
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log('Session not authenticated (401)');
+            return null;
+          }
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        
+        const userData = await response.json();
+        console.log('User session data received:', userData.id, userData.username);
+        return userData;
+      } catch (err) {
+        console.error('Error fetching user session:', err);
+        return null;
+      }
+    },
+    staleTime: 60000, // 1 minute
     gcTime: Infinity,
     // Explicitly initialize to null to fix type issue
     initialData: null,

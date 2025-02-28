@@ -83,19 +83,34 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-      headers: {
-        "Accept": "application/json",
-      },
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    console.log(`getQueryFn fetching: ${queryKey[0]}`);
+    console.log(`Current cookies:`, document.cookie ? JSON.parse(JSON.stringify(document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      return {...acc, [key]: value};
+    }, {}))) : {});
+    
+    try {
+      const res = await fetch(queryKey[0] as string, {
+        credentials: "include", // Essential for session cookies
+        headers: {
+          "Accept": "application/json",
+        },
+      });
+      
+      console.log(`getQueryFn response: ${queryKey[0]} - status ${res.status}`);
+      
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        console.log(`getQueryFn: Unauthorized access to ${queryKey[0]}, returning null as configured`);
+        return null;
+      }
+      
+      await throwIfResNotOk(res);
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error(`getQueryFn error for ${queryKey[0]}:`, error);
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

@@ -50,18 +50,18 @@ export function setupAuth(app: Express) {
     process.env.SESSION_SECRET = 'chitfund-dev-session-secret-' + Date.now();
   }
 
+  // Simple session configuration with minimal options
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
-    resave: true, // Changed to true to ensure session is saved on each request
-    saveUninitialized: true, // Allow sessions for non-logged in users
+    resave: true, // Always save session even if not modified
+    saveUninitialized: true, // Save new sessions even if they haven't been modified
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: false, // For development - change to process.env.NODE_ENV === 'production' for production
+      secure: false, // Must be false in development environment
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax', // Allow cross-site requests in development
-      path: '/' // Make sure cookies are valid across all paths
+      path: '/'
     }
   };
 

@@ -20,7 +20,7 @@ app.use((req, res, next) => {
     accept: req.headers.accept
   };
   
-  log(`Headers: ${JSON.stringify(relevantHeaders)}`, "debug");
+  log(`Headers: ${JSON.stringify(relevantHeaders)}`);
   
   next();
 });
@@ -71,7 +71,7 @@ app.use((req, res, next) => {
       
       // Log response headers for auth-related endpoints
       if (path.includes("login") || path.includes("logout") || path.includes("/api/user")) {
-        log(`Response headers: ${JSON.stringify(res.getHeaders())}`, "debug");
+        log(`Response headers: ${JSON.stringify(res.getHeaders())}`);
       }
     }
   });
@@ -96,7 +96,7 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    const port = process.env.PORT || 5000;
+    const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5000;
     server.listen(port, "0.0.0.0", () => {
       log(`Server started successfully on port ${port}`);
     });
