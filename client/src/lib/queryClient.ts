@@ -86,7 +86,7 @@ export const getQueryFn: <T>(options: {
     console.log(`getQueryFn fetching: ${queryKey[0]}`);
     
     // Log cookies in a safer way that won't throw errors
-    const cookieObj = {};
+    const cookieObj: Record<string, string> = {};
     if (document.cookie) {
       document.cookie.split(';').forEach(cookie => {
         const parts = cookie.trim().split('=');
@@ -96,7 +96,8 @@ export const getQueryFn: <T>(options: {
         }
       });
     }
-    console.log(`Current cookies:`, cookieObj);
+    // Type assertion to fix TypeScript error
+    console.log(`Current cookies:`, cookieObj as Record<string, string>);
     
     try {
       const res = await fetch(queryKey[0] as string, {

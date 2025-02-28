@@ -67,7 +67,7 @@ export default function AuthPage() {
     mode: "onSubmit",
   });
   
-  // Add admin login hint
+  // Improved login handling with better error reporting
   const handleLoginSubmit = (data: { username: string; password: string }) => {
     console.log("Login attempt with:", data.username, "and password length:", data.password.length);
     
@@ -91,14 +91,37 @@ export default function AuthPage() {
       return;
     }
     
+    // Add default login hint for testing
+    if (data.username === "admin" && data.password === "admin123") {
+      console.log("Using default admin credentials");
+    }
+    
     // Log any login attempts for security monitoring
     console.log("Processing login attempt");
     
     try {
       console.log("Submitting login form to /api/login");
-      loginMutation.mutate(data);
+      
+      // Set a visible cookie to track login attempts for debugging
+      document.cookie = `login_attempt=${new Date().toISOString()}; path=/; max-age=60`;
+      
+      loginMutation.mutate(data, {
+        onSuccess: () => {
+          console.log("Login mutation reported success");
+          document.cookie = `login_success=true; path=/; max-age=60`;
+        },
+        onError: (error) => {
+          console.error("Login error in mutation:", error);
+          document.cookie = `login_error=${error.message}; path=/; max-age=60`;
+          loginForm.setError("root", {
+            type: "manual",
+            message: "Login failed: " + error.message
+          });
+        }
+      });
     } catch (error) {
       console.error("Login submission error:", error);
+      document.cookie = `login_exception=${error instanceof Error ? error.message : 'Unknown error'}; path=/; max-age=60`;
       loginForm.setError("root", {
         type: "manual",
         message: "Login failed: " + (error instanceof Error ? error.message : String(error))
@@ -177,9 +200,10 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    {/* Login guidance */}
+                    {/* Login guidance with default admin credentials for development */}
                     <div className="p-2 mb-2 bg-blue-50 text-blue-800 rounded-md text-sm">
-                      <p>Contact your system administrator for login credentials</p>
+                      <p><strong>Default Admin:</strong> username: admin, password: admin123</p>
+                      <p className="mt-1 text-xs">For other accounts, contact your system administrator</p>
                     </div>
                     
                     <Button
