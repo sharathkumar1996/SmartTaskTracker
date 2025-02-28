@@ -672,19 +672,26 @@ export class DatabaseStorage implements IStorage {
   // Financial transactions methods
   async createFinancialTransaction(transaction: InsertFinancialTransaction): Promise<FinancialTransaction> {
     try {
-      // Create a copy of the transaction and ensure the date is set properly
-      const transactionData = {
-        ...transaction,
-        // Ensure a valid date is used
-        transactionDate: transaction.transactionDate || new Date()
-      };
-      
-      console.log("Creating financial transaction with data:", transactionData);
-      
-      // Let Drizzle handle the inserts with typing
+      // Extract fields from the transaction to match the schema
       const result = await db
         .insert(financialTransactions)
-        .values(transactionData as any)
+        .values({
+          transactionDate: new Date(transaction.transactionDate || new Date()),
+          amount: transaction.amount,
+          transactionType: transaction.transactionType,
+          paymentMethod: transaction.paymentMethod || "cash",
+          description: transaction.description,
+          interestRate: transaction.interestRate,
+          lenderName: transaction.lenderName,
+          agentId: transaction.agentId,
+          recordedBy: transaction.recordedBy,
+          documentUrl: transaction.documentUrl,
+          gstEligible: transaction.gstEligible || false,
+          hsn: transaction.hsn,
+          gstRate: transaction.gstRate,
+          gstAmount: transaction.gstAmount,
+          notes: transaction.notes
+        })
         .returning();
       return result[0] as FinancialTransaction;
     } catch (error) {

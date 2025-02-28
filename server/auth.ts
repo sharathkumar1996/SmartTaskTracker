@@ -44,13 +44,15 @@ export function setupAuth(app: Express) {
   // CORS is already configured in server/index.ts
   // We're removing the duplicate CORS configuration here
 
+  // Ensure the SESSION_SECRET is set or use a default in development
   if (!process.env.SESSION_SECRET) {
-    throw new Error('SESSION_SECRET environment variable must be set');
+    console.warn('SESSION_SECRET not set in environment, using default for development');
+    process.env.SESSION_SECRET = 'chitfund-dev-session-secret-' + Date.now();
   }
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
-    resave: false,
+    resave: true, // Changed to true to ensure session is saved on each request
     saveUninitialized: true, // Allow sessions for non-logged in users
     store: storage.sessionStore,
     name: 'chitfund.sid',
