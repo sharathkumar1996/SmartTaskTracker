@@ -41,17 +41,8 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // Only allow specific origins in production
-  const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-      ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://your-domain.com']
-      : true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  };
-
-  app.use(cors(corsOptions));
+  // CORS is already configured in server/index.ts
+  // We're removing the duplicate CORS configuration here
 
   if (!process.env.SESSION_SECRET) {
     throw new Error('SESSION_SECRET environment variable must be set');

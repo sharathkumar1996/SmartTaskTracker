@@ -55,7 +55,7 @@ export default function AuthPage() {
         variant: "destructive",
       });
     }
-  }, [user, loginMutation.isError, loginMutation.error]);
+  }, [user, loginMutation.isError, loginMutation.error, toast]);
 
   // Improved login form with better error handling
   const loginForm = useForm({
@@ -66,19 +66,6 @@ export default function AuthPage() {
     // Prevent excessive rerendering
     mode: "onSubmit",
   });
-  
-  useEffect(() => {
-    // Check and log session status
-    console.log("Auth page loaded, checking session status");
-    console.log("Current user:", user);
-    // Get and log cookies to help with debugging
-    const cookies = document.cookie.split('; ').reduce((prev, current) => {
-      const [name, value] = current.split('=');
-      prev[name] = value;
-      return prev;
-    }, {} as Record<string, string>);
-    console.log("Current cookies:", cookies);
-  }, [user]);
   
   // Add admin login hint
   const handleLoginSubmit = (data: { username: string; password: string }) => {

@@ -152,7 +152,8 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     try {
-      const result = await db.insert(users).values(user).returning();
+      // Using [] to wrap the user object as drizzle expects an array for batch inserts
+      const result = await db.insert(users).values([user as any]).returning();
       const resultArray = Array.isArray(result) ? result : [result];
       return resultArray[0] as User;
     } catch (error) {
