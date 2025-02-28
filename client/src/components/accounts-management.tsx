@@ -9,6 +9,36 @@ import { Loader2, RefreshCw } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
+// Define types for accounts receivable and payable
+interface AccountsReceivable {
+  id: number;
+  userId: number;
+  userName?: string;
+  chitFundId: number;
+  fundName?: string;
+  monthNumber: number;
+  expectedAmount: string;
+  paidAmount: string;
+  status: 'paid' | 'partial' | 'overdue' | 'pending';
+  dueDate?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+interface AccountsPayable {
+  id: number;
+  userId: number;
+  userName?: string;
+  chitFundId: number;
+  fundName?: string;
+  paymentType: 'withdrawal' | 'bonus' | 'other';
+  amount: string;
+  commission?: string;
+  paidDate: string;
+  paymentMethod: 'cash' | 'bank_transfer' | 'google_pay' | 'phone_pay' | 'online_portal' | 'other';
+  notes?: string;
+}
+
 export const AccountsManagement = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -17,46 +47,67 @@ export const AccountsManagement = () => {
   const [bankBalance, setBankBalance] = useState(0);
 
   // Query for received payments (accounts receivable)
-  const receivablesQuery = useQuery({
+  const receivablesQuery = useQuery<AccountsReceivable[]>({
     queryKey: ['/api/accounts/receivables'],
+    queryFn: async () => {
+      const response = await fetch('/api/accounts/receivables');
+      if (!response.ok) {
+        throw new Error('Failed to load receivables data');
+      }
+      return response.json();
+    },
     retry: 1,
   });
 
   // Query for paid amounts (accounts payable)
-  const payablesQuery = useQuery({
+  const payablesQuery = useQuery<AccountsPayable[]>({
     queryKey: ['/api/accounts/payables'],
-    retry: 1,
-    onSuccess: (data) => {
-      if (data && Array.isArray(data)) {
-        // Calculate cash and bank balances from payables
-        let cashTotal = 0;
-        let bankTotal = 0;
-
-        data.forEach((payable: any) => {
-          const amount = parseFloat(payable.amount || '0');
-          
-          if (payable.paymentMethod === 'cash') {
-            cashTotal += amount;
-          } else if (
-            payable.paymentMethod === 'bank_transfer' || 
-            payable.paymentMethod === 'google_pay' || 
-            payable.paymentMethod === 'phone_pay' || 
-            payable.paymentMethod === 'online_portal'
-          ) {
-            bankTotal += amount;
-          }
-        });
-
-        setCashBalance(cashTotal);
-        setBankBalance(bankTotal);
+    queryFn: async () => {
+      const response = await fetch('/api/accounts/payables');
+      if (!response.ok) {
+        throw new Error('Failed to load payables data');
       }
-    }
+      return response.json();
+    },
+    retry: 1,
   });
+  
+  // Calculate balances when payables data changes
+  React.useEffect(() => {
+    if (payablesQuery.data && Array.isArray(payablesQuery.data)) {
+      // Calculate cash and bank balances from payables
+      let cashTotal = 0;
+      let bankTotal = 0;
+
+      payablesQuery.data.forEach((payable) => {
+        const amount = parseFloat(payable.amount || '0');
+        
+        if (payable.paymentMethod === 'cash') {
+          cashTotal += amount;
+        } else if (
+          payable.paymentMethod === 'bank_transfer' || 
+          payable.paymentMethod === 'google_pay' || 
+          payable.paymentMethod === 'phone_pay' || 
+          payable.paymentMethod === 'online_portal'
+        ) {
+          bankTotal += amount;
+        }
+      });
+
+      setCashBalance(cashTotal);
+      setBankBalance(bankTotal);
+    }
+  }, [payablesQuery.data]);
 
   // Mutation to sync payments to receivables
   const syncMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/sync-payments-to-receivables");
+      const response = await apiRequest("POST", "/api/sync-payments-to-receivables");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to sync payments");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -271,5 +322,3 @@ export const AccountsManagement = () => {
     </div>
   );
 };
-
-export default AccountsManagement;
