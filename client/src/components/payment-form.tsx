@@ -227,7 +227,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2 pb-4">
           {expectedAmount && (
             <Card>
               <CardContent className="pt-4">
