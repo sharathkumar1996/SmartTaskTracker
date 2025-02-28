@@ -98,14 +98,10 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    // Create session store with standard configuration
-    this.sessionStore = new MemoryStore({ 
-      checkPeriod: 86400000, // Once per day
-      ttl: 86400 * 1000, // 24 hours
-      stale: false, // Don't return stale sessions
-    }); 
-    
-    // Log when the session store is created
+    // Create a standard memory store with minimal configuration
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // Prune expired entries every 24h
+    });
     console.log("Session store initialized");
   }
 

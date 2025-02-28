@@ -41,6 +41,17 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Special testing cookie for debugging session issues
+  app.use((req, res, next) => {
+    res.cookie('server_online', 'true', { 
+      httpOnly: false, 
+      maxAge: 60000,
+      path: '/',
+      sameSite: 'lax'
+    });
+    next();
+  });
+  
   // CORS is already configured in server/index.ts
   // We're removing the duplicate CORS configuration here
 

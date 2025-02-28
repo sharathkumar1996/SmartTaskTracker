@@ -94,8 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (error.message.includes("404")) {
         errorMessage = "Login service unavailable. Please try again later.";
       } else if (error.message.includes("401")) {
-        console.log("Login credentials incorrect. Please make sure you're using admin/admin123 for the admin account.");
-        errorMessage = "Username or password incorrect. For admin account, use username 'admin' and password 'admin123'.";
+        console.log("Login credentials incorrect.");
+        errorMessage = "Username or password incorrect. Please contact your administrator if you need access.";
       } else if (error.message.includes("Network Error") || error.message.includes("Failed to fetch")) {
         errorMessage = "Network error. Please check your connection and try again.";
       }

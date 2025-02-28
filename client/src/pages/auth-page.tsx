@@ -57,11 +57,11 @@ export default function AuthPage() {
     }
   }, [user, loginMutation.isError, loginMutation.error, toast]);
 
-  // Improved login form with better error handling
+  // Login form with no default credentials for security
   const loginForm = useForm({
     defaultValues: {
-      username: "admin",
-      password: "admin123",
+      username: "",
+      password: "",
     },
     // Prevent excessive rerendering
     mode: "onSubmit",
