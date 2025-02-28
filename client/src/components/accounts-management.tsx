@@ -72,32 +72,50 @@ export const AccountsManagement = () => {
     retry: 1,
   });
   
-  // Calculate balances when payables data changes
+  // Fetch additional dashboard data for payment summaries 
+  // to make sure we're consistent with the dashboard
+  const { data: paymentsData } = useQuery({
+    queryKey: ['/api/payments'],
+    queryFn: async () => {
+      const res = await fetch('/api/payments');
+      if (!res.ok) throw new Error('Failed to load payments');
+      return res.json();
+    },
+  });
+
+  // Calculate balances when payment data changes
   React.useEffect(() => {
-    if (payablesQuery.data && Array.isArray(payablesQuery.data)) {
-      // Calculate cash and bank balances from payables
+    if (paymentsData && Array.isArray(paymentsData)) {
+      console.log("Calculating balances from payments data:", paymentsData.length);
+      // Calculate cash and bank balances from all payments
       let cashTotal = 0;
       let bankTotal = 0;
 
-      payablesQuery.data.forEach((payable) => {
-        const amount = parseFloat(payable.amount || '0');
+      paymentsData.forEach((payment: any) => {
+        const amount = parseFloat(payment.amount || '0');
         
-        if (payable.paymentMethod === 'cash') {
+        // For withdrawals and monthly payments, consider the payment method
+        if (payment.paymentMethod === 'cash') {
+          console.log(`Found cash payment: ${amount}`);
           cashTotal += amount;
         } else if (
-          payable.paymentMethod === 'bank_transfer' || 
-          payable.paymentMethod === 'google_pay' || 
-          payable.paymentMethod === 'phone_pay' || 
-          payable.paymentMethod === 'online_portal'
+          payment.paymentMethod === 'bank_transfer' || 
+          payment.paymentMethod === 'google_pay' || 
+          payment.paymentMethod === 'phone_pay' || 
+          payment.paymentMethod === 'online_portal'
         ) {
+          console.log(`Found digital payment (${payment.paymentMethod}): ${amount}`);
           bankTotal += amount;
         }
       });
 
+      console.log(`Total cash amount: ${cashTotal}`);
+      console.log(`Total digital amount: ${bankTotal}`);
+      
       setCashBalance(cashTotal);
       setBankBalance(bankTotal);
     }
-  }, [payablesQuery.data]);
+  }, [paymentsData]);
 
   // Mutation to sync payments to receivables
   const syncMutation = useMutation({
@@ -117,6 +135,7 @@ export const AccountsManagement = () => {
       // Invalidate the queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/accounts/receivables'] });
       queryClient.invalidateQueries({ queryKey: ['/api/accounts/payables'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/payments'] });
       setIsSyncing(false);
     },
     onError: (error) => {
