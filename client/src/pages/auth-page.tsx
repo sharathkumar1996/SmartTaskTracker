@@ -60,8 +60,8 @@ export default function AuthPage() {
   // Improved login form with better error handling
   const loginForm = useForm({
     defaultValues: {
-      username: "",
-      password: "",
+      username: "admin",
+      password: "admin123",
     },
     // Prevent excessive rerendering
     mode: "onSubmit",

@@ -98,7 +98,11 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new MemoryStore({ checkPeriod: 86400000 }); 
+    this.sessionStore = new MemoryStore({ 
+      checkPeriod: 86400000, // Once per day
+      stale: false, // Don't delete stale sessions
+      debug: true // Enable debug mode for session store
+    }); 
   }
 
   async getUser(id: number): Promise<User | undefined> {

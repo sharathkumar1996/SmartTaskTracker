@@ -60,14 +60,14 @@ export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Allow sessions for non-logged in users
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // For development - change to process.env.NODE_ENV === 'production' for production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+      sameSite: 'lax' // Allow cross-site requests in development
     }
   };
 
