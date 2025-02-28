@@ -19,7 +19,16 @@ async function throwIfResNotOk(res: Response) {
       errorMessage = res.statusText;
     }
     
-    console.error(`API Error: ${res.status} - ${errorMessage}`);
+    // More detailed logging for auth-related errors
+    if (res.status === 401) {
+      console.error(`Authentication error (401): ${errorMessage}. Make sure you're using the correct credentials.`);
+      console.error(`For admin access use username: 'admin' and password: 'admin123'`);
+    } else if (res.status === 403) {
+      console.error(`Authorization error (403): ${errorMessage}. You don't have permission to access this resource.`);
+    } else {
+      console.error(`API Error: ${res.status} - ${errorMessage}`);
+    }
+    
     throw new Error(`${res.status}: ${errorMessage}`);
   }
 }

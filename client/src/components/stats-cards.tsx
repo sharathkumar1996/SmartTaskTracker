@@ -17,56 +17,46 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Calculate active members safely
   const activeMembers = users?.filter(u => u.role === "member" && u.status === "active").length ?? 0;
 
-  // Calculate total cash payments (payment_method === 'cash')
+  // Calculate total cash payments using standardized utility function
   const totalCashAmount = payments?.reduce((sum, payment) => {
     try {
-      // Only include cash payments - make sure we check for case issues too
-      const method = String(payment.paymentMethod || '').toLowerCase();
-      if (method !== 'cash') {
+      // Only include cash payments using shared utility function
+      if (!isCashPaymentMethod(payment.paymentMethod)) {
         return sum;
       }
       
-      // Handle both string and number types for amount
-      const numAmount = typeof payment.amount === 'string' 
-        ? parseFloat(payment.amount) 
-        : Number(payment.amount);
+      // Use shared parseAmount utility to safely convert amount
+      const amount = parseAmount(payment.amount);
       
       // Add debugging
-      if (!isNaN(numAmount) && numAmount > 0) {
-        console.log(`Found cash payment: ${numAmount}`);
+      if (amount > 0) {
+        console.log(`Found cash payment: ${amount}`);
       }
       
-      return sum + (isNaN(numAmount) ? 0 : numAmount);
+      return sum + amount;
     } catch (e) {
       console.error('Error processing cash payment amount:', e);
       return sum;
     }
   }, 0) ?? 0;
 
-  // Calculate total digital payments (payment_method === 'google_pay', 'phone_pay', 'online_portal')
+  // Calculate total digital payments using standardized utility function
   const totalDigitalAmount = payments?.reduce((sum, payment) => {
     try {
-      // Normalize the payment method to handle case differences
-      const method = String(payment.paymentMethod || '').toLowerCase();
-      
-      // Only include digital payment methods
-      if (method !== 'google_pay' && 
-          method !== 'phone_pay' && 
-          method !== 'online_portal') {
+      // Use shared utility function for consistent digital payment detection
+      if (!isDigitalPaymentMethod(payment.paymentMethod)) {
         return sum;
       }
       
-      // Handle both string and number types for amount
-      const numAmount = typeof payment.amount === 'string' 
-        ? parseFloat(payment.amount) 
-        : Number(payment.amount);
+      // Use shared parseAmount utility to safely convert amount
+      const amount = parseAmount(payment.amount);
       
       // Add debugging
-      if (!isNaN(numAmount) && numAmount > 0) {
-        console.log(`Found digital payment (${method}): ${numAmount}`);
+      if (amount > 0) {
+        console.log(`Found digital payment (${payment.paymentMethod}): ${amount}`);
       }
       
-      return sum + (isNaN(numAmount) ? 0 : numAmount);
+      return sum + amount;
     } catch (e) {
       console.error('Error processing digital payment amount:', e);
       return sum;
@@ -76,14 +66,6 @@ export function StatsCards({ chitFunds, payments, role, users }: StatsCardsProps
   // Log totals for debugging
   console.log(`Total cash amount: ${totalCashAmount}`);
   console.log(`Total digital amount: ${totalDigitalAmount}`);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

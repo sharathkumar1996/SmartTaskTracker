@@ -32,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
     staleTime: Infinity,
     gcTime: Infinity,
+    // Explicitly initialize to null to fix type issue
+    initialData: null,
   });
 
   const loginMutation = useMutation({
@@ -40,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const res = await apiRequest("POST", "/api/login", credentials);
         const userData = await res.json();
-        console.log("Login successful");
+        console.log("Login successful:", userData);
         return userData;
       } catch (error) {
         console.error("Login error:", error);
@@ -58,10 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       console.error("Login mutation error:", error);
       let errorMessage = "Username or password incorrect";
+      
+      // More detailed error handling
       if (error.message.includes("500")) {
         errorMessage = "Server error. Please try again later.";
       } else if (error.message.includes("404")) {
         errorMessage = "Login service unavailable. Please try again later.";
+      } else if (error.message.includes("401")) {
+        console.log("Login credentials incorrect. Please make sure you're using admin/admin123 for the admin account.");
+        errorMessage = "Username or password incorrect. For admin account, use username 'admin' and password 'admin123'.";
+      } else if (error.message.includes("Network Error") || error.message.includes("Failed to fetch")) {
+        errorMessage = "Network error. Please check your connection and try again.";
       }
       
       toast({
