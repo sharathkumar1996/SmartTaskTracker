@@ -1,5 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// For session backup in case cookies fail
+const SESSION_STORAGE_KEY = 'chitfund_user_session';
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorMessage = res.statusText;
@@ -129,9 +132,29 @@ export const getQueryFn: <T>(options: {
     // Check for auth cookie but don't be strict about the format
     // In some environments 'auth_success=true' might be stored differently
     const hasAuthCookie = document.cookie.includes('auth_success');
-    if (endpoint === '/api/user' && !hasAuthCookie) {
-      console.log('No auth cookie found when fetching user data, skipping request');
-      return null;
+    const hasManualAuthCookie = document.cookie.includes('manual_auth_success');
+    
+    // Check for a sessionStorage fallback if cookies aren't working
+    let sessionUser = null;
+    try {
+      const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedSession && (hasManualAuthCookie || hasAuthCookie)) {
+        sessionUser = JSON.parse(savedSession);
+        console.log('Found backup user session in sessionStorage:', sessionUser?.username);
+      }
+    } catch (err) {
+      console.error('Error reading from sessionStorage:', err);
+    }
+    
+    // If user endpoint: use sessionStorage fallback if available, otherwise require cookies
+    if (endpoint === '/api/user') {
+      if (sessionUser) {
+        console.log('Using sessionStorage user data instead of fetching');
+        return sessionUser;
+      } else if (!hasAuthCookie && !hasManualAuthCookie) {
+        console.log('No auth cookie found when fetching user data, skipping request');
+        return null;
+      }
     }
     
     try {

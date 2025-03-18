@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -7,6 +7,9 @@ import {
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// For session backup in case cookies fail
+const SESSION_STORAGE_KEY = 'chitfund_user_session';
 
 type AuthContextType = {
   user: SelectUser | null; // User is either a valid user object or null (when not authenticated)
@@ -23,6 +26,23 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [sessionStorageUser, setSessionStorageUser] = useState<SelectUser | null>(null);
+  
+  // Load user from sessionStorage on initial render
+  useEffect(() => {
+    try {
+      const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedSession) {
+        const userData = JSON.parse(savedSession);
+        setSessionStorageUser(userData);
+        // Prime the query cache with this data
+        queryClient.setQueryData(["/api/user"], userData);
+        console.log("Loaded user session from sessionStorage:", userData?.username);
+      }
+    } catch (err) {
+      console.error("Error loading session from sessionStorage:", err);
+    }
+  }, []);
   const {
     data: user,
     error,
@@ -36,9 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check for local cookie confirmation first
       // Be less strict about the exact format as different environments may store cookies differently
       const hasAuthCookie = document.cookie.includes('auth_success');
+      const hasManualAuthCookie = document.cookie.includes('manual_auth_success');
       const hasUserInfoCookie = document.cookie.includes('user_info=');
       
-      if (!hasAuthCookie) {
+      // Check if we have a session in storage as fallback
+      if (sessionStorageUser && (hasManualAuthCookie || hasAuthCookie)) {
+        console.log('Using session from sessionStorage:', sessionStorageUser.username);
+        return sessionStorageUser;
+      }
+      
+      if (!hasAuthCookie && !hasManualAuthCookie) {
         console.log('No auth cookie found, assuming not logged in');
         return null;
       }
@@ -113,6 +140,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       console.log("Setting user data in cache");
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Store session in sessionStorage as a fallback
+      try {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+        console.log("Saved user session to sessionStorage");
+        
+        // Set a manual client-side cookie since the server one might not work
+        const cookieExpiration = new Date();
+        cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+        document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+        console.log("Set manual auth cookie for fallback");
+        
+        // Update local state
+        setSessionStorageUser(user);
+      } catch (err) {
+        console.error("Failed to save session to storage:", err);
+      }
+      
       // Clear and refetch any relevant queries
       queryClient.invalidateQueries({queryKey: ["/api/chitfunds"]});
       queryClient.invalidateQueries({queryKey: ["/api/users"]});
@@ -167,6 +212,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
       queryClient.clear();
+      
+      // Clear sessionStorage
+      try {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        console.log("Cleared user session from sessionStorage");
+        
+        // Clear all cookies
+        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
+        document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
+        document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
+        document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
+        
+        // Update local state
+        setSessionStorageUser(null);
+      } catch (err) {
+        console.error("Failed to clear session storage:", err);
+      }
     },
     onError: (error: Error) => {
       toast({
