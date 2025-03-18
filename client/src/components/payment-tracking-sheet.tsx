@@ -40,6 +40,18 @@ interface PaymentTrackingSheetProps {
 
 export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetProps) {
   const { toast } = useToast();
+  
+  // Fetch fund details to get the start date for month calculations
+  const { data: fundDetails } = useQuery({
+    queryKey: ["/api/chitfunds", fundId],
+    queryFn: async () => {
+      const res = await fetch(`/api/chitfunds/${fundId}`);
+      if (!res.ok) throw new Error("Failed to fetch fund details");
+      return res.json();
+    },
+  });
+  
+  // Fetch payment data for members
   const { data, isLoading, error, refetch } = useQuery<PaymentData>({
     queryKey: ["/api/chitfunds", fundId, "payments"],
     queryFn: async () => {
@@ -77,10 +89,36 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       // Member number column and name column
       const mainHeaders = ["S.No", "Member Name"];
       
-      // Add month columns (1-20)
-      for (let i = 1; i <= 20; i++) {
-        mainHeaders.push(`Month ${i}`);
-      }
+      // Calculate month labels (Jul-24 format) based on fund start date
+      const getMonthLabels = () => {
+        const labels = [];
+        
+        // Default to current date if start date not available
+        const startDate = fundDetails?.startDate 
+          ? new Date(fundDetails.startDate) 
+          : new Date();
+        
+        // Create month labels for each month (1-20)
+        for (let i = 0; i < 20; i++) {
+          const monthDate = new Date(startDate);
+          monthDate.setMonth(monthDate.getMonth() + i);
+          
+          // Format as "MMM-YY" (e.g., "Jul-24")
+          const monthName = monthDate.toLocaleString('en-US', { month: 'short' });
+          const year = monthDate.getFullYear().toString().slice(2);
+          labels.push(`${monthName}-${year}`);
+        }
+        
+        return labels;
+      };
+      
+      // Get month labels based on fund start date
+      const monthLabels = fundDetails ? getMonthLabels() : Array(20).fill("").map((_, i) => `Month ${i+1}`);
+      
+      // Add month columns with proper labels
+      monthLabels.forEach(label => {
+        mainHeaders.push(label);
+      });
       
       // Add signature column at the end
       mainHeaders.push("Signature");
@@ -264,11 +302,26 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 z-20 bg-background min-w-[180px]">Member</TableHead>
-                    {Array.from({ length: 20 }, (_, i) => (
-                      <TableHead key={i} className="text-right min-w-[100px]">
-                        Month {i + 1}
-                      </TableHead>
-                    ))}
+                    {Array.from({ length: 20 }, (_, i) => {
+                      // Get month name in "MMM-YY" format if fund details are available
+                      let monthLabel = `Month ${i + 1}`;
+                      
+                      if (fundDetails?.startDate) {
+                        const startDate = new Date(fundDetails.startDate);
+                        const monthDate = new Date(startDate);
+                        monthDate.setMonth(monthDate.getMonth() + i);
+                        
+                        const monthName = monthDate.toLocaleString('en-US', { month: 'short' });
+                        const year = monthDate.getFullYear().toString().slice(2);
+                        monthLabel = `${monthName}-${year}`;
+                      }
+                      
+                      return (
+                        <TableHead key={i} className="text-right min-w-[100px]">
+                          {monthLabel}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
