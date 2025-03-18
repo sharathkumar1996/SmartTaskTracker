@@ -46,12 +46,29 @@ export async function apiRequest<T>({
 }): Promise<T> {
   console.log(`API Request: ${method} ${url}`, body ? 'with data' : 'no data');
   
+  // Check for session in local storage - this is our alternative auth mechanism
+  const sessionStorageKey = 'chitfund_user_session';
+  const userSession = sessionStorage.getItem(sessionStorageKey);
+  let userObject = null;
+  
+  if (userSession) {
+    try {
+      const sessionData = JSON.parse(userSession);
+      userObject = sessionData;
+      console.log("Using backup session for API request:", { userId: userObject?.id, role: userObject?.role });
+    } catch (e) {
+      console.error("Error parsing session data:", e);
+    }
+  }
+  
   try {
     const response = await fetch(url, {
       method,
       headers: {
         ...(body ? { "Content-Type": "application/json" } : {}),
         "Accept": "application/json",
+        // Add our local authentication if available
+        ...(userObject ? { "X-User-ID": userObject.id.toString(), "X-User-Role": userObject.role } : {})
       },
       body: body ? JSON.stringify(body) : undefined,
       credentials: "include", // Always include cookies
