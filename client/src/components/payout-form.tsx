@@ -332,18 +332,17 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       }
 
       // First, update the member's withdrawal status
-      const withdrawalResponse = await apiRequest(
-        "PATCH",
-        `/api/chitfunds/${chitFundId}/members/${userId}/withdraw`,
-        {
-          isWithdrawn: true,
-          withdrawalMonth: values.withdrawalMonth,
-        }
-      );
-
-      if (!withdrawalResponse.ok) {
-        const error = await withdrawalResponse.json();
-        throw new Error(error.message || "Failed to update withdrawal status");
+      try {
+        await apiRequest({
+          method: "PATCH",
+          url: `/api/chitfunds/${chitFundId}/members/${userId}/withdraw`,
+          body: {
+            isWithdrawn: true,
+            withdrawalMonth: values.withdrawalMonth,
+          }
+        });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Failed to update withdrawal status");
       }
 
       // Then record the payout

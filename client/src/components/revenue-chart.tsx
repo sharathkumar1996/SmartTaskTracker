@@ -68,16 +68,43 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
   const { data: payments, isLoading, error, refetch } = useQuery({
     queryKey: ["api/payments", fundId, selectedYear],
     queryFn: async () => {
-      let url = '/api/payments';
-      if (fundId) {
-        url = `/api/payments/fund/${fundId}`;
+      try {
+        // First, check if we have a user session
+        const sessionStorageKey = 'chitfund_user_session';
+        const userSession = sessionStorage.getItem(sessionStorageKey);
+        if (!userSession) {
+          console.error("No user session found when trying to load chart data");
+          return []; // Return empty array if no session
+        }
+        
+        let url = '/api/payments';
+        if (fundId) {
+          url = `/api/payments/fund/${fundId}`;
+        }
+        
+        // Add credentials and headers to help with authentication
+        const response = await fetch(url, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch payment data: ${response.status} ${response.statusText}`);
+          // Return empty array instead of throwing
+          return [];
+        }
+        
+        return response.json() as Promise<ChartPayment[]>;
+      } catch (err) {
+        console.error("Error fetching chart data:", err);
+        return []; // Return empty array on any error
       }
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to fetch payment data");
-      }
-      return response.json() as Promise<ChartPayment[]>;
     },
+    retry: 1, // Only retry once
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
   // Create chart data from payments, grouped by month
