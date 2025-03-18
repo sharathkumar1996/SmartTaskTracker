@@ -53,6 +53,9 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
   // Add month range selection
   const [monthRange, setMonthRange] = useState<string>("all");
   
+  // Add month selection for individual month filtering
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  
   // Create an array of years (current year and 3 years back)
   const availableYears = useMemo(() => {
     const years = [];
@@ -163,6 +166,17 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
     }));
   }, [payments, selectedYear]);
 
+  // Create an array of all months for dropdown
+  const availableMonths = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthDate = new Date(2000, i, 1); // Using a fixed year just for month names
+      return {
+        value: i.toString(),
+        label: monthDate.toLocaleDateString('en-US', { month: 'long' })
+      };
+    });
+  }, []);
+
   // Apply month range filter and display the appropriate months
   const recentData = useMemo(() => {
     // Create array for all 12 months of the year to ensure all months are shown
@@ -185,66 +199,83 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
         const existingMonthIndex = allMonths.findIndex(m => m.month === monthName);
         
         if (existingMonthIndex >= 0) {
-          // Update with actual data
+          // Update with actual data - ensure commission doesn't exceed revenue
           allMonths[existingMonthIndex].revenue = dataPoint.revenue;
-          allMonths[existingMonthIndex].commission = dataPoint.commission;
+          
+          // Make sure commission is at most 10% of revenue to avoid it being higher in charts
+          const maxCommission = dataPoint.revenue * 0.1;
+          allMonths[existingMonthIndex].commission = Math.min(dataPoint.commission, maxCommission);
         }
       });
     }
     
-    // Apply filter based on selected month range
+    // Apply filter based on selected month range or specific month
     let filteredMonths = [...allMonths];
     
-    // Get current month (0-11)
-    const currentMonth = new Date().getMonth();
-    
-    switch (monthRange) {
-      case "3m": // Last 3 months
-        if (selectedYear === new Date().getFullYear().toString()) {
-          // If we're viewing the current year, filter relative to current month
-          const startMonth = Math.max(0, currentMonth - 2); // Ensure we don't go below 0
-          filteredMonths = allMonths.filter(m => 
-            m.monthIndex >= startMonth && m.monthIndex <= currentMonth
-          );
-        } else {
-          // For past years, show the last 3 months of the year
-          filteredMonths = allMonths.slice(9, 12);
-        }
-        break;
+    // If a specific month is selected
+    if (selectedMonth !== null) {
+      const monthIndex = parseInt(selectedMonth);
+      filteredMonths = allMonths.filter(m => m.monthIndex === monthIndex);
+      // Reset month range when a specific month is selected
+      if (monthRange !== "monthly") {
+        setMonthRange("monthly");
+      }
+    } else {
+      // Get current month (0-11)
+      const currentMonth = new Date().getMonth();
       
-      case "6m": // Last 6 months
-        if (selectedYear === new Date().getFullYear().toString()) {
-          // If we're viewing the current year, filter relative to current month
-          const startMonth = Math.max(0, currentMonth - 5); // Ensure we don't go below 0
-          filteredMonths = allMonths.filter(m => 
-            m.monthIndex >= startMonth && m.monthIndex <= currentMonth
-          );
-        } else {
-          // For past years, show the last 6 months of the year
-          filteredMonths = allMonths.slice(6, 12);
-        }
-        break;
+      switch (monthRange) {
+        case "monthly":
+          // If monthly is selected but no specific month, keep all months
+          break;
+      
+        case "3m": // Last 3 months
+          if (selectedYear === new Date().getFullYear().toString()) {
+            // If we're viewing the current year, filter relative to current month
+            const startMonth = Math.max(0, currentMonth - 2); // Ensure we don't go below 0
+            filteredMonths = allMonths.filter(m => 
+              m.monthIndex >= startMonth && m.monthIndex <= currentMonth
+            );
+          } else {
+            // For past years, show the last 3 months of the year
+            filteredMonths = allMonths.slice(9, 12);
+          }
+          break;
         
-      case "q1": // First quarter (Jan-Mar)
-        filteredMonths = allMonths.slice(0, 3);
-        break;
-        
-      case "q2": // Second quarter (Apr-Jun)
-        filteredMonths = allMonths.slice(3, 6);
-        break;
-        
-      case "q3": // Third quarter (Jul-Sep)
-        filteredMonths = allMonths.slice(6, 9);
-        break;
-        
-      case "q4": // Fourth quarter (Oct-Dec)
-        filteredMonths = allMonths.slice(9, 12);
-        break;
-        
-      case "all":
-      default:
-        // All months - no filtering needed
-        break;
+        case "6m": // Last 6 months
+          if (selectedYear === new Date().getFullYear().toString()) {
+            // If we're viewing the current year, filter relative to current month
+            const startMonth = Math.max(0, currentMonth - 5); // Ensure we don't go below 0
+            filteredMonths = allMonths.filter(m => 
+              m.monthIndex >= startMonth && m.monthIndex <= currentMonth
+            );
+          } else {
+            // For past years, show the last 6 months of the year
+            filteredMonths = allMonths.slice(6, 12);
+          }
+          break;
+          
+        case "q1": // First quarter (Jan-Mar)
+          filteredMonths = allMonths.slice(0, 3);
+          break;
+          
+        case "q2": // Second quarter (Apr-Jun)
+          filteredMonths = allMonths.slice(3, 6);
+          break;
+          
+        case "q3": // Third quarter (Jul-Sep)
+          filteredMonths = allMonths.slice(6, 9);
+          break;
+          
+        case "q4": // Fourth quarter (Oct-Dec)
+          filteredMonths = allMonths.slice(9, 12);
+          break;
+          
+        case "all":
+        default:
+          // All months - no filtering needed
+          break;
+      }
     }
     
     // Ensure we have at least one data point
@@ -256,7 +287,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
     filteredMonths.sort((a, b) => a.monthIndex - b.monthIndex);
     
     return filteredMonths;
-  }, [chartData, selectedYear, monthRange]);
+  }, [chartData, selectedYear, monthRange, selectedMonth]);
 
   if (isLoading) {
     return (
@@ -323,8 +354,14 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
             <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Month Range:</span>
           </div>
-          <Tabs value={monthRange} onValueChange={setMonthRange} className="w-full">
-            <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 w-full">
+          <Tabs value={monthRange} onValueChange={(value) => {
+            setMonthRange(value);
+            // Clear selected month when changing tabs unless switching to monthly
+            if (value !== "monthly") {
+              setSelectedMonth(null);
+            }
+          }} className="w-full">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 w-full">
               <TabsTrigger value="all" className="text-xs md:text-sm">All</TabsTrigger>
               <TabsTrigger value="3m" className="text-xs md:text-sm">3 Months</TabsTrigger>
               <TabsTrigger value="6m" className="text-xs md:text-sm">6 Months</TabsTrigger>
@@ -332,8 +369,26 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
               <TabsTrigger value="q2" className="text-xs md:text-sm">Q2 (Apr-Jun)</TabsTrigger>
               <TabsTrigger value="q3" className="text-xs md:text-sm">Q3 (Jul-Sep)</TabsTrigger>
               <TabsTrigger value="q4" className="text-xs md:text-sm">Q4 (Oct-Dec)</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-xs md:text-sm">Monthly</TabsTrigger>
             </TabsList>
           </Tabs>
+          
+          {/* Show month selector only when monthly tab is active */}
+          {monthRange === "monthly" && (
+            <div className="mt-2">
+              <Select value={selectedMonth || ""} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a specific month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Months</SelectItem>
+                  {availableMonths.map(month => (
+                    <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
@@ -352,8 +407,12 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
               <>Showing Q2 (Apr-Jun) of {selectedYear}</>
             ) : monthRange === "q3" ? (
               <>Showing Q3 (Jul-Sep) of {selectedYear}</>
-            ) : (
+            ) : monthRange === "q4" ? (
               <>Showing Q4 (Oct-Dec) of {selectedYear}</>
+            ) : monthRange === "monthly" && selectedMonth ? (
+              <>Showing data for {availableMonths[parseInt(selectedMonth)].label} {selectedYear}</>
+            ) : (
+              <>Select a specific month from the dropdown above</>
             )}
           </p>
           
@@ -379,15 +438,15 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
             revenue: {
               label: "Revenue",
               theme: {
-                light: "hsl(var(--primary))",
-                dark: "hsl(var(--primary))",
+                light: "#2563eb", // Blue
+                dark: "#3b82f6",
               },
             },
             commission: {
               label: "Commission",
               theme: {
-                light: "hsl(var(--secondary))",
-                dark: "hsl(var(--secondary))",
+                light: "#16a34a", // Green
+                dark: "#22c55e",
               },
             },
           }}
@@ -420,16 +479,23 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
               type="monotone"
               dataKey="revenue"
               stroke="var(--color-revenue)"
-              strokeWidth={2}
+              strokeWidth={3}
               activeDot={{ r: 6 }}
+              dot={{ stroke: 'var(--color-revenue)', strokeWidth: 2, r: 4 }}
             />
             <Line
               type="monotone"
               dataKey="commission"
               stroke="var(--color-commission)"
-              strokeWidth={2}
+              strokeWidth={3}
+              dot={{ stroke: 'var(--color-commission)', strokeWidth: 2, r: 4 }}
             />
-            <Legend />
+            <Legend 
+              wrapperStyle={{ 
+                paddingTop: '10px',
+                fontSize: '13px'
+              }}
+            />
           </LineChart>
         </ChartContainer>
       </CardContent>
