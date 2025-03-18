@@ -221,12 +221,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const baseRate = 0.05; // 5% of fund amount per month
           const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
           
-          // Check if member has a custom contribution amount set
+          // Check if member has a custom contribution amount or custom fund amount set
           let memberContributionAmount = null;
+          
           if (memberDetails?.increasedMonthlyAmount) {
+            // If member has a directly specified monthly amount, use that
             memberContributionAmount = parseFloat(memberDetails.increasedMonthlyAmount.toString());
+          } else if (memberDetails?.customFundAmount) {
+            // If member has a custom fund amount (e.g., 2 lakhs in a 1 lakh fund), calculate 5% of that
+            const customFundAmount = parseFloat(memberDetails.customFundAmount.toString());
+            memberContributionAmount = customFundAmount * baseRate;
           } else {
-            memberContributionAmount = fundAmount * baseRate; // Default to 5% of fund amount
+            // Default to 5% of standard fund amount
+            memberContributionAmount = fundAmount * baseRate;
           }
           
           if (memberDetails?.isWithdrawn) {
@@ -965,13 +972,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const fundId = parseInt(req.params.fundId);
       const userId = parseInt(req.params.userId);
-      const { increasedMonthlyAmount, shareIdentifier } = req.body;
+      const { increasedMonthlyAmount, shareIdentifier, customFundAmount } = req.body;
 
       // Only update fields that are explicitly provided
       const updateData: Partial<FundMember> = {};
       
       if (increasedMonthlyAmount !== undefined) {
         updateData.increasedMonthlyAmount = increasedMonthlyAmount;
+        
+        // If we're setting a custom monthly amount, clear any custom fund amount
+        if (increasedMonthlyAmount) {
+          updateData.customFundAmount = null;
+        }
+      }
+      
+      if (customFundAmount !== undefined) {
+        updateData.customFundAmount = customFundAmount;
+        
+        // If we're setting a custom fund amount, clear any custom monthly amount
+        if (customFundAmount) {
+          updateData.increasedMonthlyAmount = null;
+        }
       }
       
       if (shareIdentifier !== undefined) {

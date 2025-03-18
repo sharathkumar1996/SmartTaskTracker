@@ -59,6 +59,7 @@ export const fundMembers = pgTable("fund_members", {
   shareIdentifier: text("share_identifier"), // Optional identifier for each share (e.g., "Main", "Second", etc.)
   earlyWithdrawalMonth: integer("early_withdrawal_month"),
   increasedMonthlyAmount: decimal("increased_monthly_amount", { precision: 10, scale: 2 }),
+  customFundAmount: decimal("custom_fund_amount", { precision: 10, scale: 2 }), // Custom fund amount (e.g., 2 lakhs in a 1 lakh fund)
   totalBonusReceived: decimal("total_bonus_received", { precision: 10, scale: 2 }).default('0'),
   totalCommissionPaid: decimal("total_commission_paid", { precision: 10, scale: 2 }).default('0'),
   isWithdrawn: boolean("is_withdrawn").default(false),
@@ -155,6 +156,7 @@ export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({
   shareIdentifier: z.string().optional().nullable(),
   earlyWithdrawalMonth: z.number().min(1).max(20).optional(),
   increasedMonthlyAmount: z.string().or(z.number()).optional().transform(String),
+  customFundAmount: z.string().or(z.number()).optional().transform(String),
   isGroup: z.boolean().optional(),
   groupId: z.number().optional(),
 });
