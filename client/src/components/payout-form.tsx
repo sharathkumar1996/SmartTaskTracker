@@ -117,18 +117,41 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   // Initialize fund amount and default commission when fund data is loaded
   useEffect(() => {
     if (fundData && fundData.amount) {
-      setFundAmount(fundData.amount.toString());
+      // Use the member's custom fund amount if available, otherwise use the standard fund amount
+      const baseAmount = fundData.amount.toString();
       
-      // Set the commission based on the fund amount (5k per lakh = 5% of fund amount)
-      const fundAmountNum = parseFloat(fundData.amount);
-      const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
-      
-      console.log(`Fund amount: ${fundAmountNum}, Calculated commission: ${defaultCommission}`);
-      
-      setCommissionAmount(defaultCommission);
-      form.setValue('commission', defaultCommission);
+      // Update when memberDetails is loaded
+      if (memberDetails) {
+        if (memberDetails.customFundAmount) {
+          setFundAmount(memberDetails.customFundAmount);
+          
+          // Set the commission based on the custom fund amount (5k per lakh = 5% of fund amount)
+          const customFundAmount = parseFloat(memberDetails.customFundAmount);
+          const defaultCommission = Math.round(customFundAmount * 0.05).toString();
+          
+          console.log(`Custom fund amount: ${customFundAmount}, Calculated commission: ${defaultCommission}`);
+          
+          setCommissionAmount(defaultCommission);
+          form.setValue('commission', defaultCommission);
+        } else {
+          // Use standard fund amount if no custom amount
+          setFundAmount(baseAmount);
+          
+          // Set the commission based on the fund amount (5k per lakh = 5% of fund amount)
+          const fundAmountNum = parseFloat(baseAmount);
+          const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
+          
+          console.log(`Fund amount: ${fundAmountNum}, Calculated commission: ${defaultCommission}`);
+          
+          setCommissionAmount(defaultCommission);
+          form.setValue('commission', defaultCommission);
+        }
+      } else {
+        // Default to standard fund amount while member details are loading
+        setFundAmount(baseAmount);
+      }
     }
-  }, [fundData, form]);
+  }, [fundData, memberDetails, form]);
 
   // Calculate months paid and payment amounts from payment history
   useEffect(() => {
@@ -356,7 +379,12 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       let defaultCommission = "5000";
       if (fundData?.baseCommission) {
         defaultCommission = fundData.baseCommission;
+      } else if (memberDetails?.customFundAmount) {
+        // Use custom fund amount if available
+        const customFundAmount = parseFloat(memberDetails.customFundAmount);
+        defaultCommission = Math.round(customFundAmount * 0.05).toString();
       } else if (fundData?.amount) {
+        // Fallback to standard fund amount
         const fundAmountNum = parseFloat(fundData.amount);
         defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
       }
@@ -394,6 +422,11 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                     <InfoIcon className="h-4 w-4 text-blue-500" />
                     <span>
                       Fund amount: {formatCurrency(fundAmount)}
+                      {memberDetails?.customFundAmount && fundData?.amount && memberDetails.customFundAmount !== fundData.amount && (
+                        <span className="ml-1 text-xs font-medium text-blue-600">
+                          (Custom amount)
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-sm">
@@ -412,6 +445,11 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                     <InfoIcon className="h-4 w-4 text-green-500" />
                     <span>
                       Bonus earned: {formatCurrency(bonusAmount)}
+                      {memberDetails?.customFundAmount && fundData?.amount && memberDetails.customFundAmount !== fundData.amount && (
+                        <span className="ml-1 text-xs font-medium text-green-600">
+                          (Proportional to custom fund amount)
+                        </span>
+                      )}
                     </span>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-sm">
@@ -550,7 +588,12 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                           let baseCommission = "5000";
                           if (fundData?.baseCommission) {
                             baseCommission = fundData.baseCommission;
+                          } else if (memberDetails?.customFundAmount) {
+                            // Use custom fund amount if available
+                            const customFundAmount = parseFloat(memberDetails.customFundAmount);
+                            baseCommission = Math.round(customFundAmount * 0.05).toString();
                           } else if (fundData?.amount) {
+                            // Fallback to standard fund amount
                             const fundAmountNum = parseFloat(fundData.amount);
                             baseCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh (5% of fund amount)
                           }
@@ -565,9 +608,11 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                   <FormDescription>
                     Commission to be deducted from the fund amount (in rupees, not percentage).
                     The default commission is calculated at 5k per lakh (5% of fund amount).
-                    For this fund, it is {fundData?.baseCommission 
-                      ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
-                      : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}, 
+                    For this member, it is {memberDetails?.customFundAmount 
+                      ? ` ₹${Math.round(parseFloat(memberDetails.customFundAmount) * 0.05).toLocaleString()} (based on custom fund amount)` 
+                      : fundData?.baseCommission 
+                        ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
+                        : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}, 
                     but can be adjusted by an admin as needed.
                   </FormDescription>
                   <FormMessage />
