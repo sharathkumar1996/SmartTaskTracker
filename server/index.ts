@@ -28,10 +28,7 @@ app.use((req, res, next) => {
 // Enhanced CORS configuration for development
 // This exact configuration is crucial for cookie-based authentication
 app.use(cors({
-  origin: function (origin, callback) {
-    // In development, allow all origins
-    callback(null, true);
-  },
+  origin: true, // Allow all origins in development
   credentials: true, // Allow credentials (cookies)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],

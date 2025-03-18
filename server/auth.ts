@@ -47,7 +47,8 @@ export function setupAuth(app: Express) {
       httpOnly: false, 
       maxAge: 60000,
       path: '/',
-      sameSite: 'lax'
+      sameSite: 'none',
+      secure: false
     });
     next();
   });
@@ -70,11 +71,11 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: false, // Must be false in development environment (Replit uses HTTP)
+      secure: false, // Must be false in development environment without HTTPS
       httpOnly: true, 
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/',
-      sameSite: 'lax' // Use lax instead of none since we can't set secure=true without HTTPS
+      sameSite: 'none' // Using 'none' with secure:false for Replit environment
     }
   };
 
@@ -224,7 +225,8 @@ export function setupAuth(app: Express) {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             httpOnly: false, // Allow JavaScript access for auth status check
             path: '/',
-            sameSite: 'lax' // Match session cookie settings
+            sameSite: 'none', // Match session cookie settings
+            secure: false
           });
           
           // Cookie with user info for improved client-side experience
@@ -236,7 +238,8 @@ export function setupAuth(app: Express) {
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             httpOnly: false, // Client needs access
             path: '/',
-            sameSite: 'lax' // Match session cookie settings
+            sameSite: 'none', // Match session cookie settings
+            secure: false
           });
           
           console.log('Session saved, sending response');
@@ -264,9 +267,9 @@ export function setupAuth(app: Express) {
         }
         
         // Clear all authentication cookies with matching settings
-        res.clearCookie('auth_success', { path: '/' });
-        res.clearCookie('user_info', { path: '/' });
-        res.clearCookie('chitfund.sid', { path: '/' });
+        res.clearCookie('auth_success', { path: '/', sameSite: 'none', secure: false });
+        res.clearCookie('user_info', { path: '/', sameSite: 'none', secure: false });
+        res.clearCookie('chitfund.sid', { path: '/', sameSite: 'none', secure: false });
         
         console.log('All cookies cleared, user logged out');
         res.status(200).json({ success: true, message: "Logout successful" });
@@ -293,8 +296,8 @@ export function setupAuth(app: Express) {
       if (req.cookies.auth_success) {
         console.log('Authentication cookie found but no valid session - possible session expiration');
         // Clear stale cookies to force fresh login
-        res.clearCookie('auth_success', { path: '/' });
-        res.clearCookie('user_info', { path: '/' });
+        res.clearCookie('auth_success', { path: '/', sameSite: 'none', secure: false });
+        res.clearCookie('user_info', { path: '/', sameSite: 'none', secure: false });
         
         return res.status(401).json({ 
           authenticated: false,
