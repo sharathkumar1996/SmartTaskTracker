@@ -188,14 +188,21 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
           // Scale bonus proportionally to custom fund amount
           // e.g., if standard is 1 lakh with 1k bonus, and custom is 2 lakh, bonus should be 2k
           monthlyBonus = defaultBonus * (customFundAmount / standardFundAmount);
+          
+          console.log(`Bonus calculation: Standard amount = ${standardFundAmount}, Custom amount = ${customFundAmount}`);
+          console.log(`Default monthly bonus = ${defaultBonus}, Calculated monthly bonus = ${monthlyBonus}`);
         }
         
         const calculatedBonus = monthsPaid * monthlyBonus;
+        console.log(`Total bonus calculation: ${monthsPaid} months × ${monthlyBonus} = ${calculatedBonus}`);
         setBonusAmount(calculatedBonus.toString());
       } catch (error) {
         console.error("Error calculating bonus amount:", error);
         setBonusAmount("0");
       }
+    } else {
+      // Reset bonus if no months paid or no fund data
+      setBonusAmount("0");
     }
   }, [fundData, monthsPaid, memberDetails]);
 
@@ -413,8 +420,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <ScrollArea className="h-[60vh] pr-4">
-          <div className="space-y-4">
+        <div className="space-y-4 mb-16">
             {fundAmount && (
               <Card>
                 <CardContent className="pt-4">
@@ -681,8 +687,29 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                 'Process Payout'
               )}
             </Button>
+
+            {/* Fixed position submit button at the bottom */}
+            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting || !!(memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing Payout...
+                  </>
+                ) : (memberDetails?.isWithdrawn && memberDetails?.hasPayable) ? (
+                  'Member Has Already Withdrawn and Received Payout'
+                ) : memberDetails?.isWithdrawn ? (
+                  'Retry Processing Incomplete Payout'
+                ) : (
+                  'Process Payout'
+                )}
+              </Button>
+            </div>
           </div>
-        </ScrollArea>
       </form>
     </Form>
   );
