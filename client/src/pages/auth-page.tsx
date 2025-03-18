@@ -95,8 +95,9 @@ export default function AuthPage() {
     // This helps prevent cookie conflicts that might cause auth issues
     if (document.cookie.includes('auth_success') || document.cookie.includes('user_info')) {
       console.log("Clearing existing auth cookies before login attempt");
-      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+      document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+      document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     }
     
     // Log login attempt for security monitoring
