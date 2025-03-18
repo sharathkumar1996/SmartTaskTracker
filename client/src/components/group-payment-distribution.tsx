@@ -83,9 +83,9 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
   const { data: fundData } = useQuery<ChitFund>({
     queryKey: ["/api/chitfunds", chitFundId],
     queryFn: async () => {
-      const res = await fetch(`/api/chitfunds/${chitFundId}`);
-      if (!res.ok) throw new Error("Failed to fetch fund details");
-      return res.json();
+      // Use apiRequest to ensure auth headers are included 
+      const data = await apiRequest("GET", `/api/chitfunds/${chitFundId}`);
+      return data;
     },
     enabled: !!chitFundId,
   });
@@ -94,9 +94,8 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
   const { data: groupWithMembers, isLoading: isLoadingGroup } = useQuery({
     queryKey: ["/api/member-groups", groupId, "members"],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/member-groups/${groupId}?includeMembers=true`);
-      const data = await response.json();
-      return data;
+      // apiRequest already returns the parsed JSON data
+      return await apiRequest("GET", `/api/member-groups/${groupId}?includeMembers=true`);
     },
     enabled: !!groupId,
   });
@@ -171,25 +170,16 @@ export function GroupPaymentDistribution({ className, chitFundId, groupId, onSuc
   // Create mutation for group payment submission
   const groupPaymentMutation = useMutation({
     mutationFn: async (data: GroupPaymentFormValues & { distribution: any[] }) => {
-      const response = await apiRequest("POST", "/api/member-groups/payments", {
-        body: JSON.stringify({
-          groupId,
-          chitFundId,
-          amount: data.amount,
-          paymentMethod: data.paymentMethod,
-          notes: data.notes || `Group payment for month ${data.monthNumber}`,
-          paymentDate: data.paymentDate,
-          monthNumber: data.monthNumber,
-          distribution: data.distribution
-        }),
+      return await apiRequest("POST", "/api/member-groups/payments", {
+        groupId,
+        chitFundId,
+        amount: data.amount,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes || `Group payment for month ${data.monthNumber}`,
+        paymentDate: data.paymentDate,
+        monthNumber: data.monthNumber,
+        distribution: data.distribution
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to process group payment");
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       toast({

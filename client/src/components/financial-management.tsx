@@ -166,7 +166,11 @@ export function FinancialManagement() {
   // Mutation for creating transactions
   const createTransactionMutation = useMutation({
     mutationFn: async (transaction: any) => {
-      return await apiRequest("POST", "/api/financial-transactions", transaction);
+      return await apiRequest({
+        url: "/api/financial-transactions",
+        method: "POST",
+        body: transaction
+      });
     },
     onSuccess: () => {
       toast({
