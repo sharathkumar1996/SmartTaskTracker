@@ -89,9 +89,10 @@ export default function AuthPage() {
     }
   }, [user, loginMutation.isError, loginMutation.error, toast, loginForm]);
   
-  // Enhanced login handler with better error handling and debugging
+  // Simplified direct login handler
   const handleLoginSubmit = async (data: { username: string; password: string }) => {
-    console.log("Login attempt with:", data.username, "and password length:", data.password.length);
+    // For security, don't log credentials
+    console.log("Processing login attempt");
     
     // Clear any previous errors and form state
     loginForm.clearErrors();
@@ -114,40 +115,35 @@ export default function AuthPage() {
     }
     
     // Clear any stale cookies before attempting new login
-    // This helps prevent cookie conflicts that might cause auth issues
-    if (document.cookie.includes('auth_success') || document.cookie.includes('user_info')) {
-      console.log("Clearing existing auth cookies before login attempt");
-      // Clear all cookies - standard format (no secure flag)
+    console.log("Clearing existing auth cookies before login attempt");
+    try {
       document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    } catch (e) {
+      console.error("Error clearing cookies:", e);
     }
     
-    // Log login attempt for security monitoring
-    console.log("Processing login with validated credentials");
-    
     try {
-      console.log("Submitting login request to /api/login");
-      
       // Use the mutation to log in
       loginMutation.mutate(data, {
         onSuccess: (userData) => {
           console.log("Login successful, redirecting to dashboard");
           toast({
             title: "Login successful",
-            description: `Welcome back, ${userData.fullName || userData.username}`,
+            description: "Welcome back!",
             variant: "default"
           });
           
-          // Set our own client-side authentication cookies as a backup
-          // This helps ensure authentication works even if server cookies fail
-          const cookieExpiration = new Date();
-          cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
-          
-          // Set manual auth flag for our own checking
-          document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+          try {
+            // Store session in localStorage as a last resort
+            const SESSION_STORAGE_KEY = 'chitfund_user_session';
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userData));
+          } catch (e) {
+            console.error("Failed to save to sessionStorage:", e);
+          }
           
           // Store user info for APIs that need it
           const userInfoCookie = JSON.stringify({
@@ -155,7 +151,13 @@ export default function AuthPage() {
             username: userData.username,
             role: userData.role
           });
+          
+          // Set expiration for cookies
+          const cookieExpiration = new Date();
+          cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+          
           document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+          document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
           
           console.log("Set client-side auth cookies for redundancy");
           
@@ -273,7 +275,7 @@ export default function AuthPage() {
                     />
                     {/* Login guidance */}
                     <div className="p-2 mb-2 bg-blue-50 text-blue-800 rounded-md text-sm">
-                      <p>Default admin: username=admin, password=admin123</p>
+                      <p>Please log in with your account credentials</p>
                     </div>
                     
                     <Button

@@ -134,12 +134,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      console.log("Logging in with username:", credentials.username);
+      // For security, don't log credentials
+      console.log("Processing login");
       try {
-        const res = await apiRequest("POST", "/api/login", credentials);
-        const userData = await res.json();
-        console.log("Login successful:", userData);
-        return userData;
+        const data = await apiRequest<SelectUser>({
+          url: "/api/login",
+          method: "POST",
+          body: credentials,
+        });
+        console.log("Login response received");
+        return data;
       } catch (error) {
         console.error("Login error:", error);
         throw error;
@@ -148,6 +152,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (user: SelectUser) => {
       console.log("Setting user data in cache");
       queryClient.setQueryData(["/api/user"], user);
+      
+      // Update session state
+      setSessionStorageUser(user);
       
       // Store session in sessionStorage as a fallback
       try {
@@ -211,14 +218,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", credentials);
-      return await res.json();
+      const data = await apiRequest<SelectUser>({
+        url: "/api/register",
+        method: "POST",
+        body: credentials,
+      });
+      return data;
     },
     onSuccess: (user: SelectUser) => {
+      console.log("Setting user data in cache after registration");
       queryClient.setQueryData(["/api/user"], user);
-      queryClient.invalidateQueries();
+      
+      // Update session state
+      setSessionStorageUser(user);
+      
+      // Store session in sessionStorage as a fallback
+      try {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+        console.log("Saved user session to sessionStorage");
+        
+        // Set manual client-side cookies since the server ones might not work
+        const cookieExpiration = new Date();
+        cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+        
+        // Set authentication flag cookie
+        document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+        
+        // Set user info cookie for fallback authentication
+        const userInfoCookie = JSON.stringify({
+          id: user.id,
+          username: user.username,
+          role: user.role
+        });
+        document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+      } catch (err) {
+        console.error("Failed to save session to storage:", err);
+      }
+      
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created.",
+      });
     },
     onError: (error: Error) => {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
         description: error.message,
@@ -229,7 +272,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      await apiRequest({
+        url: "/api/logout",
+        method: "POST",
+      });
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
