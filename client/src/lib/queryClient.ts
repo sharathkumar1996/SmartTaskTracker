@@ -148,11 +148,38 @@ export const getQueryFn: <T>(options: {
     
     // If user endpoint: use sessionStorage fallback if available, otherwise require cookies
     if (endpoint === '/api/user') {
+      // Check sessionStorage first
       if (sessionUser) {
-        console.log('Using sessionStorage user data instead of fetching');
+        console.log('Using sessionStorage user data as fallback authentication');
+        // Even when using sessionStorage, make a background API request to try to 
+        // restore the server session if possible
+        try {
+          // Silent authentication attempt in the background
+          fetch('/api/user', {
+            credentials: "include",
+            cache: "no-store",
+            headers: {
+              "Accept": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate"
+            }
+          }).then(res => {
+            console.log('Background session validation:', res.status);
+          }).catch(err => {
+            console.warn('Background session validation failed:', err);
+          });
+        } catch (e) {
+          console.warn('Failed to start background session check:', e);
+        }
+        
         return sessionUser;
       } else if (!hasAuthCookie && !hasManualAuthCookie) {
         console.log('No auth cookie found when fetching user data, skipping request');
+        // Last resort attempt - try to get a fresh session
+        try {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        } catch (e) {
+          console.warn('Failed to clear session storage:', e);
+        }
         return null;
       }
     }

@@ -150,7 +150,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Set a manual client-side cookie since the server one might not work
         const cookieExpiration = new Date();
         cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+        // Store a cookie with normal parameters (no cross-origin support needed)
         document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+        // Also keep a secure one just in case
+        document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}; SameSite=None; Secure;`;
         console.log("Set manual auth cookie for fallback");
         
         // Update local state

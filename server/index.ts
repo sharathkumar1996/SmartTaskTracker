@@ -82,8 +82,40 @@ app.use((req, res, next) => {
   next();
 });
 
+// Function to ensure admin user exists
+async function ensureAdminUserExists() {
+  try {
+    const { storage } = await import('./storage');
+    const { hashPassword } = await import('./auth');
+    
+    // Check if admin user already exists
+    const adminUser = await storage.getUserByUsername('admin');
+    if (!adminUser) {
+      console.log('No admin user found, creating default admin account');
+      const hashedPassword = await hashPassword('admin123');
+      const newAdmin = await storage.createUser({
+        username: 'admin',
+        password: hashedPassword,
+        role: 'admin',
+        fullName: 'System Admin',
+        email: 'admin@chitfund.com',
+        phone: '1234567890',
+        status: 'active'
+      });
+      console.log('Default admin user created with ID:', newAdmin.id);
+    } else {
+      console.log('Admin user already exists with ID:', adminUser.id);
+    }
+  } catch (error) {
+    console.error('Error ensuring admin user exists:', error);
+  }
+}
+
 (async () => {
   try {
+    // Ensure we have an admin user before starting the server
+    await ensureAdminUserExists();
+    
     const server = await registerRoutes(app);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
