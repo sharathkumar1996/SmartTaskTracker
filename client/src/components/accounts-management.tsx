@@ -62,25 +62,16 @@ export const AccountsManagement = () => {
   // Query for paid amounts (accounts payable)
   const payablesQuery = useQuery<AccountsPayable[]>({
     queryKey: ['/api/accounts/payables'],
-    queryFn: async () => {
-      const response = await fetch('/api/accounts/payables');
-      if (!response.ok) {
-        throw new Error('Failed to load payables data');
-      }
-      return response.json();
-    },
-    retry: 1,
+    // Using the default queryFn provided through QueryClient
+    // This ensures auth headers are properly sent
   });
   
   // Fetch additional dashboard data for payment summaries 
   // to make sure we're consistent with the dashboard
   const { data: paymentsData } = useQuery({
     queryKey: ['/api/payments'],
-    queryFn: async () => {
-      const res = await fetch('/api/payments');
-      if (!res.ok) throw new Error('Failed to load payments');
-      return res.json();
-    },
+    // Using the default queryFn provided through QueryClient
+    // This ensures auth headers are properly sent
   });
 
   // Calculate balances when payment data changes

@@ -77,9 +77,28 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
           return []; // Return empty array if no session
         }
         
+        // Parse the user session for our auth headers
+        let userObject = null;
+        try {
+          userObject = JSON.parse(userSession);
+          console.log("Using stored user session for chart data request");
+        } catch (e) {
+          console.error("Error parsing session data:", e);
+          return []; // Return empty if we can't parse the session
+        }
+        
         let url = '/api/payments';
         if (fundId) {
           url = `/api/payments/fund/${fundId}`;
+        }
+        
+        // Prepare auth headers from session
+        const authHeaders = {};
+        if (userObject && userObject.id) {
+          Object.assign(authHeaders, {
+            "X-User-ID": userObject.id.toString(),
+            "X-User-Role": userObject.role
+          });
         }
         
         // Add credentials and headers to help with authentication
@@ -87,7 +106,8 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache',
+            ...authHeaders
           }
         });
         

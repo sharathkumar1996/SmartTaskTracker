@@ -49,7 +49,28 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
   const { data: fundDetails } = useQuery({
     queryKey: ["/api/chitfunds", fundId],
     queryFn: async () => {
-      const res = await fetch(`/api/chitfunds/${fundId}`);
+      // Get user session for auth headers
+      const sessionStorageKey = 'chitfund_user_session';
+      const userSession = sessionStorage.getItem(sessionStorageKey);
+      const authHeaders = {};
+      
+      if (userSession) {
+        try {
+          const userObject = JSON.parse(userSession);
+          Object.assign(authHeaders, {
+            "X-User-ID": userObject.id.toString(),
+            "X-User-Role": userObject.role
+          });
+        } catch (e) {
+          console.error("Error parsing session data:", e);
+        }
+      }
+      
+      const res = await fetch(`/api/chitfunds/${fundId}`, {
+        headers: {
+          ...authHeaders
+        }
+      });
       if (!res.ok) throw new Error("Failed to fetch fund details");
       return res.json();
     },
@@ -59,7 +80,28 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
   const { data, isLoading, error, refetch } = useQuery<PaymentData>({
     queryKey: ["/api/chitfunds", fundId, "payments"],
     queryFn: async () => {
-      const res = await fetch(`/api/chitfunds/${fundId}/payments`);
+      // Get user session for auth headers
+      const sessionStorageKey = 'chitfund_user_session';
+      const userSession = sessionStorage.getItem(sessionStorageKey);
+      const authHeaders = {};
+      
+      if (userSession) {
+        try {
+          const userObject = JSON.parse(userSession);
+          Object.assign(authHeaders, {
+            "X-User-ID": userObject.id.toString(),
+            "X-User-Role": userObject.role
+          });
+        } catch (e) {
+          console.error("Error parsing session data:", e);
+        }
+      }
+      
+      const res = await fetch(`/api/chitfunds/${fundId}/payments`, {
+        headers: {
+          ...authHeaders
+        }
+      });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to fetch payments");

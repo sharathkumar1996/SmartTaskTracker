@@ -61,14 +61,27 @@ export async function apiRequest<T>({
     }
   }
   
+  // Debug info about cookies
+  console.log(`Cookies available: [${document.cookie || 'none'}]`);
+  
+  // Make sure we have auth headers if session is available
+  const authHeaders = {};
+  if (userObject) {
+    console.log(`Adding auth headers for API request: User ID ${userObject.id}, Role: ${userObject.role}`);
+    Object.assign(authHeaders, {
+      "X-User-ID": userObject.id.toString(),
+      "X-User-Role": userObject.role,
+    });
+  }
+  
   try {
     const response = await fetch(url, {
       method,
       headers: {
         ...(body ? { "Content-Type": "application/json" } : {}),
         "Accept": "application/json",
-        // Add our local authentication if available
-        ...(userObject ? { "X-User-ID": userObject.id.toString(), "X-User-Role": userObject.role } : {})
+        "Cache-Control": "no-cache, no-store, must-revalidate", // Prevent caching
+        ...authHeaders // Add our authentication headers
       },
       body: body ? JSON.stringify(body) : undefined,
       credentials: "include", // Always include cookies
