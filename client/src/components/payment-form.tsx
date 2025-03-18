@@ -244,7 +244,7 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2 pb-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           {expectedAmount && (
             <Card>
               <CardContent className="pt-4">
@@ -297,8 +297,8 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>
-                  The month number for this payment (1-24)
+                <FormDescription className="text-xs">
+                  Month number (1-24)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -412,9 +412,13 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
             )}
           />
 
+        </div>
+        
+        {/* Submit button at the bottom */}
+        <div className="mt-6 pb-2">
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
