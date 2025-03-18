@@ -316,23 +316,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all payments (admin/agent only)
   app.get("/api/payments", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "agent")) {
-        return res.status(403).json({ error: "Unauthorized" });
+      // Check for session authentication
+      if (req.isAuthenticated() && req.user && (req.user.role === "admin" || req.user.role === "agent")) {
+        const payments = await storage.getPaymentsByFund(0); // 0 means get all payments
+        
+        // Log payment data for debugging
+        console.log("Payments data sample:", 
+          payments.slice(0, 3).map(p => ({
+            id: p.id,
+            amount: p.amount,
+            paymentMethod: p.paymentMethod,
+            paymentType: p.paymentType,
+            monthNumber: p.monthNumber
+          }))
+        );
+        
+        return res.json(payments);
       }
-      const payments = await storage.getPaymentsByFund(0); // 0 means get all payments
       
-      // Log payment data for debugging
-      console.log("Payments data sample:", 
-        payments.slice(0, 3).map(p => ({
-          id: p.id,
-          amount: p.amount,
-          paymentMethod: p.paymentMethod,
-          paymentType: p.paymentType,
-          monthNumber: p.monthNumber
-        }))
-      );
+      // Alternative check: Cookie authentication
+      if (req.cookies?.user_info) {
+        try {
+          const userInfo = JSON.parse(req.cookies.user_info);
+          if (userInfo && userInfo.id && (userInfo.role === "admin" || userInfo.role === "agent")) {
+            // Verify the user exists in database
+            const user = await storage.getUser(userInfo.id);
+            if (user && (user.role === "admin" || user.role === "agent")) {
+              // Re-establish session for admin/agent
+              req.login(user, async (err) => {
+                if (err) {
+                  console.error('Failed to restore session from cookie:', err);
+                  return res.status(403).json({ error: "Unauthorized" });
+                }
+                
+                // Now fetch and return the payments
+                const payments = await storage.getPaymentsByFund(0);
+                return res.json(payments);
+              });
+              return; // Important: stop execution here as we're handling response in callback
+            }
+          }
+        } catch (err) {
+          console.error('Error parsing user cookie for payments:', err);
+        }
+      }
       
-      res.json(payments);
+      // If we reach here, user is not authorized
+      return res.status(403).json({ error: "Unauthorized" });
     } catch (error) {
       console.error("Error fetching payments:", error);
       res.status(500).json({ error: "Failed to fetch payments" });

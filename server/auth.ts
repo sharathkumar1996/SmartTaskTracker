@@ -71,11 +71,11 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: false, // Changed to false for Replit environment
-      httpOnly: true, 
+      secure: false, // Must be false for non-HTTPS in Replit environment
+      httpOnly: false, // Allow client-side access for development
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/'
-      // Removed sameSite to allow default browser handling for Replit
+      path: '/',
+      sameSite: 'lax' // Most compatible option for browsers
     }
   };
 
