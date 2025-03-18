@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation, registerMutation, setManualUser } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -302,7 +302,7 @@ export default function AuthPage() {
                       variant="outline" 
                       className="w-full"
                       onClick={() => {
-                        // Create a hardcoded admin user for direct access
+                        // Create a hardcoded admin user for direct access with all required fields
                         const adminUser = {
                           id: 1,
                           username: "admin",
@@ -311,6 +311,10 @@ export default function AuthPage() {
                           fullName: "System Administrator",
                           email: "admin@example.com",
                           phone: "1234567890",
+                          address: null,
+                          city: null,
+                          state: null,
+                          pincode: null,
                           createdAt: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),
                           status: "active" as const
@@ -320,7 +324,7 @@ export default function AuthPage() {
                         setManualUser(adminUser);
                         
                         // Navigate to dashboard
-                        navigate('/');
+                        setLocation('/');
                       }}
                       disabled={loginMutation.isPending}
                     >
