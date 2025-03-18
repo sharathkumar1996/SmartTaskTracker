@@ -407,11 +407,12 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
                 <span className="text-sm text-muted-foreground">Month:</span>
               </div>
               <Select 
-                value={selectedMonth || ""} 
+                value={selectedMonth || "all"} 
                 onValueChange={(value) => {
-                  setSelectedMonth(value || null);
+                  // If "all" is selected, set selectedMonth to null
+                  setSelectedMonth(value === "all" ? null : value);
                   // Reset quarter selection if a specific month is chosen
-                  if (value) {
+                  if (value && value !== "all") {
                     setSelectedQuarter("all");
                   }
                 }}
@@ -420,7 +421,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
                   <SelectValue placeholder="Select specific month" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Months</SelectItem>
+                  <SelectItem value="all">All Months</SelectItem>
                   {availableMonths.map(month => (
                     <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
                   ))}
