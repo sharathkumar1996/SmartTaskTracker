@@ -291,9 +291,10 @@ export function GroupMemberManagement({
       }
     },
     onError: (error: Error) => {
+      const errorMsg = error?.message || "Failed to create group";
       toast({
         title: "Error",
-        description: error.message || "Failed to create group",
+        description: errorMsg,
         variant: "destructive",
       });
     },
@@ -350,9 +351,10 @@ export function GroupMemberManagement({
       }
     },
     onError: (error: Error) => {
+      const errorMsg = error?.message || "Failed to add group to fund";
       toast({
         title: "Error",
-        description: error.message || "Failed to add group to fund",
+        description: errorMsg,
         variant: "destructive",
       });
     },
@@ -382,14 +384,17 @@ export function GroupMemberManagement({
         onError: (error: Error) => {
           console.error("Error adding member to group:", error);
           
+          // Properly check error messages with null/undefined handling
+          const errorMsg = error?.message || "";
+          
           // Check if this is a duplicate member error (409 status)
-          if (error.message.includes("409") || error.message.includes("already exists")) {
+          if (errorMsg.includes("409") || errorMsg.includes("already exists")) {
             toast({
               variant: "destructive",
               title: "Member already exists",
               description: "This member is already part of the group. Please select a different member.",
             });
-          } else if (error.message.includes("400")) {
+          } else if (errorMsg.includes("400")) {
             toast({
               variant: "destructive",
               title: "Invalid form data",
@@ -399,17 +404,18 @@ export function GroupMemberManagement({
             toast({
               variant: "destructive",
               title: "Error adding member",
-              description: error.message || "Failed to add member to group",
+              description: errorMsg || "Failed to add member to group",
             });
           }
         }
       });
     } catch (error) {
       console.error("Error in mutation execution:", error);
+      const errorMsg = error instanceof Error ? error.message : "An unexpected error occurred";
       toast({
         variant: "destructive",
         title: "Error adding member",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description: errorMsg,
       });
     }
   };
