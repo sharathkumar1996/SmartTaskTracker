@@ -88,20 +88,77 @@ export function FinancialManagement() {
     notes: "",
   });
 
+  // Helper function to get auth headers from session storage
+  const getAuthHeaders = () => {
+    const sessionStorageKey = 'chitfund_user_session';
+    const userSession = sessionStorage.getItem(sessionStorageKey);
+    const authHeaders = {};
+    
+    if (userSession) {
+      try {
+        const userObject = JSON.parse(userSession);
+        Object.assign(authHeaders, {
+          "X-User-ID": userObject.id.toString(),
+          "X-User-Role": userObject.role
+        });
+      } catch (e) {
+        console.error("Error parsing session data:", e);
+      }
+    }
+    
+    return authHeaders;
+  };
+  
   // Queries for financial transactions and summary
   const transactionsQuery = useQuery<FinancialTransaction[]>({
     queryKey: ['/api/financial-transactions'],
     enabled: user?.role === "admin",
+    queryFn: async () => {
+      const response = await fetch('/api/financial-transactions', {
+        headers: {
+          ...getAuthHeaders()
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch financial transactions");
+      }
+      return response.json();
+    }
   });
 
   const summaryQuery = useQuery<FinancialSummary>({
     queryKey: ['/api/financial-transactions/summary'],
     enabled: user?.role === "admin",
+    queryFn: async () => {
+      const response = await fetch('/api/financial-transactions/summary', {
+        headers: {
+          ...getAuthHeaders()
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch financial summary");
+      }
+      return response.json();
+    }
   });
 
   const agentsQuery = useQuery<any[]>({
     queryKey: ['/api/users/agents'],
     enabled: user?.role === "admin" && formValues.transactionType === "agent_salary",
+    queryFn: async () => {
+      const response = await fetch('/api/users/agents', {
+        headers: {
+          ...getAuthHeaders()
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch agents");
+      }
+      return response.json();
+    },
     // Default to empty array if data is not available
     initialData: [],
   });

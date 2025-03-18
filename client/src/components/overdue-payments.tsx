@@ -37,6 +37,35 @@ export function OverduePayments({ className }: OverduePaymentsProps) {
   // Fetch all chit funds for selection
   const { data: chitFunds = [], isLoading: isLoadingFunds } = useQuery<ChitFund[]>({
     queryKey: ["/api/chitfunds"],
+    queryFn: async () => {
+      // Get user session for auth headers
+      const sessionStorageKey = 'chitfund_user_session';
+      const userSession = sessionStorage.getItem(sessionStorageKey);
+      const authHeaders = {};
+      
+      if (userSession) {
+        try {
+          const userObject = JSON.parse(userSession);
+          Object.assign(authHeaders, {
+            "X-User-ID": userObject.id.toString(),
+            "X-User-Role": userObject.role
+          });
+        } catch (e) {
+          console.error("Error parsing session data:", e);
+        }
+      }
+      
+      const response = await fetch("/api/chitfunds", {
+        headers: {
+          ...authHeaders
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch chit funds");
+      }
+      return response.json();
+    },
   });
 
   // State for selected fund
@@ -61,7 +90,30 @@ export function OverduePayments({ className }: OverduePaymentsProps) {
       if (!selectedFundId) return [];
       
       try {
-        const response = await fetch(`/api/fund-members/payment-status/${selectedFundId}`);
+        // Get user session for auth headers
+        const sessionStorageKey = 'chitfund_user_session';
+        const userSession = sessionStorage.getItem(sessionStorageKey);
+        const authHeaders = {};
+        
+        if (userSession) {
+          try {
+            const userObject = JSON.parse(userSession);
+            Object.assign(authHeaders, {
+              "X-User-ID": userObject.id.toString(),
+              "X-User-Role": userObject.role
+            });
+            console.log("Using auth headers for payment status:", authHeaders);
+          } catch (e) {
+            console.error("Error parsing session data:", e);
+          }
+        }
+        
+        const response = await fetch(`/api/fund-members/payment-status/${selectedFundId}`, {
+          headers: {
+            ...authHeaders
+          }
+        });
+        
         if (!response.ok) {
           throw new Error("Failed to fetch member payment status");
         }
