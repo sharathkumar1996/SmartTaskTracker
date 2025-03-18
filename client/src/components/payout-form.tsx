@@ -174,18 +174,22 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     }
   }, [memberPayments]);
 
-  // Calculate bonus amount based on months paid and custom fund amount
+  // Calculate bonus amount based on months paid and monthly payment amount
   useEffect(() => {
     if (fundData && monthsPaid > 0 && fundAmount) {
       try {
-        // Calculate monthly bonus as 1% of the fund amount
-        // For standard 100,000 (1 lakh) fund, the monthly bonus would be 1,000
+        // Calculate monthly payment (5% of fund amount)
         const fundAmountValue = parseFloat(fundAmount);
-        const monthlyBonus = fundAmountValue * 0.01; // 1% of fund amount
+        const monthlyPayment = fundAmountValue * 0.05; // 5% of fund amount
+        
+        // Calculate monthly bonus as 20% of monthly payment
+        // For example: If monthly payment is 10k, bonus is 2k
+        const monthlyBonus = monthlyPayment * 0.2; // 20% of monthly payment
         
         // Log calculation details for debugging
         console.log(`Bonus calculation: Fund amount = ${fundAmountValue}`);
-        console.log(`Monthly bonus (1% of fund amount) = ${monthlyBonus}`);
+        console.log(`Monthly payment (5% of fund amount) = ${monthlyPayment}`);
+        console.log(`Monthly bonus (20% of monthly payment) = ${monthlyBonus}`);
         
         // Total bonus is months paid × monthly bonus
         const calculatedBonus = monthsPaid * monthlyBonus;

@@ -131,8 +131,9 @@ export function ContributionAmountForm({
     const contributionAmount = getMonthlyContribution();
     if (isNaN(contributionAmount)) return formatCurrency(0);
     
-    // Calculate bonus as 10% of monthly contribution
-    const bonusAmount = contributionAmount * 0.1;
+    // For 10k monthly payment, bonus should be 2k
+    // This is equivalent to 20% of monthly contribution
+    const bonusAmount = contributionAmount * 0.2;
     return formatCurrency(bonusAmount);
   };
 
@@ -146,7 +147,7 @@ export function ContributionAmountForm({
               Standard Monthly Amount: <span className="font-medium">{formatCurrency(standardAmount)}</span>
             </p>
             <p className="text-sm text-muted-foreground mb-1">
-              Standard Monthly Bonus: <span className="font-medium">{formatCurrency(parseFloat(standardAmount) * 0.1)}</span>
+              Standard Monthly Bonus: <span className="font-medium">{formatCurrency(parseFloat(standardAmount) * 0.2)}</span>
             </p>
             <p className="text-xs text-green-700 dark:text-green-400 mt-2">
               After withdrawal, payment increases by 20%.
