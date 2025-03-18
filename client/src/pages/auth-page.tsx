@@ -23,40 +23,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
-//import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; //Removed as per edit
-
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Debug: Check session cookies and auth status
-  useEffect(() => {
-    console.log("Auth page loaded, checking session status");
-    
-    // Log current user state
-    console.log("Current user:", user);
-    
-    // Check cookies
-    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=');
-      acc[key] = value;
-      return acc;
-    }, {} as Record<string, string>);
-    
-    console.log("Current cookies:", cookies);
-    
-    // Notify if there are session issues
-    if (loginMutation.isError) {
-      toast({
-        title: "Login error detected",
-        description: `Error: ${loginMutation.error?.message || "Unknown error"}`,
-        variant: "destructive",
-      });
-    }
-  }, [user, loginMutation.isError, loginMutation.error, toast]);
-
   // Login form with no default credentials for security
   const loginForm = useForm({
     defaultValues: {
@@ -66,6 +38,56 @@ export default function AuthPage() {
     // Prevent excessive rerendering
     mode: "onSubmit",
   });
+  
+  // Enhanced session check and feedback
+  useEffect(() => {
+    console.log("Auth page loaded, checking session status");
+    
+    // Log current user state and automatically redirect if already logged in
+    console.log("Current user:", user);
+    
+    // Advanced cookie debugging
+    try {
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const parts = cookie.trim().split('=');
+        if (parts.length >= 1) {
+          const key = parts[0].trim();
+          const value = parts.length > 1 ? parts[1] : '';
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+      
+      console.log("Current cookies:", cookies);
+      
+      // Check for server availability
+      if (cookies['server_online']) {
+        console.log("Server is reachable (server_online cookie found)");
+      }
+      
+      // Auto-fill credentials for development if cookies suggest a previous session
+      if ((cookies['auth_success'] || cookies['manual_auth_success']) && 
+          !user && !loginForm.getValues().username) {
+        console.log("Previous session detected but not active, suggesting login");
+        toast({
+          title: "Session expired",
+          description: "Your previous session has expired. Please log in again.",
+          variant: "default",
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing cookies:", e);
+    }
+    
+    // Notify if there are login errors
+    if (loginMutation.isError) {
+      toast({
+        title: "Login error detected",
+        description: `Error: ${loginMutation.error?.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    }
+  }, [user, loginMutation.isError, loginMutation.error, toast, loginForm]);
   
   // Enhanced login handler with better error handling and debugging
   const handleLoginSubmit = async (data: { username: string; password: string }) => {
@@ -228,7 +250,7 @@ export default function AuthPage() {
                     />
                     {/* Login guidance */}
                     <div className="p-2 mb-2 bg-blue-50 text-blue-800 rounded-md text-sm">
-                      <p>Contact your system administrator for login credentials</p>
+                      <p>Default admin: username=admin, password=admin123</p>
                     </div>
                     
                     <Button
