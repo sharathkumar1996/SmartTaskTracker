@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { PaymentForm } from "./payment-form";
 import { GroupMemberManagement } from "./group-member-management";
+import { ContributionAmountForm } from "./contribution-amount-form";
+import { WithdrawalStatusForm } from "./withdrawal-status-form";
 import {
   Dialog,
   DialogContent,
@@ -60,7 +62,6 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { PaymentTrackingSheet } from "./payment-tracking-sheet";
-import { WithdrawalStatusForm } from "./withdrawal-status-form";
 import { formatCurrency } from "@/lib/utils";
 import { PayoutForm } from "./payout-form";
 
@@ -450,6 +451,42 @@ export function ChitFundTable({ chitFunds, userRole, userId }: ChitFundTableProp
                                               />
                                             </DialogContent>
                                           </Dialog>
+                                          
+                                          <Dialog>
+                                            <DialogTrigger asChild>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setSelectedMemberId(member.id)}
+                                              >
+                                                Custom Amount
+                                              </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                              <DialogHeader>
+                                                <DialogTitle>Customize Contribution</DialogTitle>
+                                                <DialogDescription>
+                                                  Set custom monthly amount for {member.fullName} in {fund.name}
+                                                </DialogDescription>
+                                              </DialogHeader>
+                                              <ContributionAmountForm
+                                                fundId={fund.id}
+                                                userId={member.id}
+                                                standardAmount={fund.amount}
+                                                initialValues={{
+                                                  increasedMonthlyAmount: memberDetails?.increasedMonthlyAmount || null,
+                                                  shareIdentifier: memberDetails?.shareIdentifier || null
+                                                }}
+                                                onSuccess={() => {
+                                                  queryClient.invalidateQueries({
+                                                    queryKey: ["/api/chitfunds", fund.id, "members", member.id, "details"]
+                                                  });
+                                                }}
+                                                className="mt-4"
+                                              />
+                                            </DialogContent>
+                                          </Dialog>
+                                          
                                           <Button
                                             variant="destructive"
                                             size="sm"
