@@ -843,6 +843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if member has paid for current month
         const hasCurrentMonthPayment = payments.some(payment => {
+          if (!payment.paymentDate) return false;
           const paymentDate = new Date(payment.paymentDate);
           return (
             payment.paymentType === 'monthly' &&
@@ -853,6 +854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if member has paid for previous month
         const hasPreviousMonthPayment = payments.some(payment => {
+          if (!payment.paymentDate) return false;
           const paymentDate = new Date(payment.paymentDate);
           return (
             payment.paymentType === 'monthly' &&

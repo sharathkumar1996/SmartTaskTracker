@@ -10,8 +10,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role").notNull().$type<"admin" | "agent" | "member">(),
   fullName: text("full_name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone").notNull(),
+  email: text("email"),
+  phone: text("phone"),
   address: text("address"),
   city: text("city"),
   state: text("state"),
@@ -111,8 +111,8 @@ export const fundMembersRelations = relations(fundMembers, ({ one }) => ({
 // Updated insert schemas with proper validation
 export const insertUserSchema = createInsertSchema(users).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  email: z.string().email("Invalid email format"),
-  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format"),
+  email: z.string().email("Invalid email format").optional().nullable(),
+  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format").optional().nullable(),
 });
 
 export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
