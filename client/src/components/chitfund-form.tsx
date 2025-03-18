@@ -61,16 +61,33 @@ export function ChitFundForm() {
     try {
       setIsSubmitting(true);
 
+      // Calculate monthly contribution from amount and duration
+      const monthlyContribution = (values.amount / values.duration).toFixed(2);
+      // Calculate default monthly bonus (e.g., 10% of monthly contribution)
+      const monthlyBonus = (values.amount * 0.1).toFixed(2);
+      // Set default base commission (e.g., 5% of total amount)
+      const baseCommission = (values.amount * 0.05).toFixed(2);
+
       const fundData = {
         ...values,
-        amount: values.amount.toString(), 
+        amount: values.amount.toString(),
         status: "active" as const,
+        // Add required fields from the schema
+        monthlyContribution: monthlyContribution,
+        monthlyBonus: monthlyBonus,
+        baseCommission: baseCommission
       };
 
+      console.log("Submitting fund data:", fundData);
+
       const response = await apiRequest("POST", "/api/chitfunds", fundData);
+      
+      console.log("Response status:", response.status);
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create chit fund");
+        const errorData = await response.json();
+        console.error("Server error response:", errorData);
+        throw new Error(errorData.message || "Failed to create chit fund");
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
