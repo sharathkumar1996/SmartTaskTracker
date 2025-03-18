@@ -179,10 +179,11 @@ export const getQueryFn: <T>(options: {
           // If this is a user endpoint and we have stale cookies, clear them
           if (endpoint === '/api/user' && hasAuthCookie) {
             console.log('Clearing stale authentication cookies');
-            document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
-            document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
-            document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
-            document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
+            document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+            document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+            document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+            document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+            document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
           }
           
           return null;
@@ -200,10 +201,11 @@ export const getQueryFn: <T>(options: {
       // If this is a critical auth endpoint, clear cookies on error for a clean slate
       if (endpoint === '/api/user') {
         console.log('Auth error occurred, clearing potentially corrupted cookies');
-        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
-        document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
-        document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
-        document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None;';
+        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+        document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+        document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+        document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+        document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       }
       
       throw error;
