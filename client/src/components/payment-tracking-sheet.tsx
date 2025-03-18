@@ -27,6 +27,10 @@ interface FundMember {
   id: number;
   fullName: string;
   payments: FundMemberPayment[];
+  shareIdentifier?: string;
+  increasedMonthlyAmount?: string;
+  customFundAmount?: string;
+  isWithdrawn?: boolean;
 }
 
 interface PaymentData {

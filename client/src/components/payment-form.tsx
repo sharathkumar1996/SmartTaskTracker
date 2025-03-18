@@ -104,10 +104,20 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
   useEffect(() => {
     if (fundData && fundData.amount) {
       try {
-        // Check if member has a custom contribution amount set
-        const memberContributionAmount = memberDetails?.increasedMonthlyAmount 
-          ? parseFloat(memberDetails.increasedMonthlyAmount.toString())
-          : parseFloat(fundData.amount.toString()) * 0.05; // 5% of fund amount per month
+        // Check if member has a custom contribution amount or custom fund amount set
+        let memberContributionAmount;
+        
+        if (memberDetails?.increasedMonthlyAmount) {
+          // If member has a directly specified monthly amount, use that
+          memberContributionAmount = parseFloat(memberDetails.increasedMonthlyAmount.toString());
+        } else if (memberDetails?.customFundAmount) {
+          // If member has a custom fund amount (e.g., 2 lakhs in a 1 lakh fund), calculate 5% of that
+          const customFundAmount = parseFloat(memberDetails.customFundAmount.toString());
+          memberContributionAmount = customFundAmount * 0.05;
+        } else {
+          // Default to 5% of standard fund amount
+          memberContributionAmount = parseFloat(fundData.amount.toString()) * 0.05; // 5% of fund amount per month
+        }
         
         // Standard monthly amount is 5% of the fund amount
         const baseAmount = memberContributionAmount;
