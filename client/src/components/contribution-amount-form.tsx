@@ -173,23 +173,38 @@ export function ContributionAmountForm({
               )}
             />
             
-            {(form.watch("increasedMonthlyAmount") || form.watch("customFundAmount")) && (
-              <div className="p-4 border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 rounded-lg mb-4">
-                <h4 className="font-medium mb-2 text-green-800 dark:text-green-300">Calculation Summary</h4>
-                <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                  Monthly contribution: {formatCurrency(getMonthlyContribution())}
-                </p>
-                <p className="text-sm font-medium text-green-800 dark:text-green-300 mt-1">
-                  Total fund amount: {formatCurrency(getTotalFundAmount())}
-                </p>
-                <p className="text-sm font-medium text-green-800 dark:text-green-300 mt-1">
-                  Expected monthly bonus: {getCurrentBonus()}
-                </p>
-                <p className="text-xs text-green-700 dark:text-green-400 mt-1">
-                  After withdrawal, member will need to pay {formatCurrency(getMonthlyContribution() * 1.2)} per month
-                </p>
+            <div className="p-4 border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 rounded-lg mb-4">
+              <h4 className="font-medium mb-2 text-green-800 dark:text-green-300">Updated Calculation Summary</h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div>
+                  <p className="text-xs text-green-700 dark:text-green-400">Monthly contribution:</p>
+                  <p className="text-lg font-bold text-green-800 dark:text-green-300">
+                    {formatCurrency(getMonthlyContribution())}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-green-700 dark:text-green-400">Total fund amount:</p>
+                  <p className="text-lg font-bold text-green-800 dark:text-green-300">
+                    {formatCurrency(getTotalFundAmount())}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-green-700 dark:text-green-400">Expected monthly bonus:</p>
+                  <p className="text-md font-medium text-green-800 dark:text-green-300">
+                    {getCurrentBonus()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-green-700 dark:text-green-400">Post-withdrawal payment:</p>
+                  <p className="text-md font-medium text-green-800 dark:text-green-300">
+                    {formatCurrency(getMonthlyContribution() * 1.2)}
+                  </p>
+                </div>
               </div>
-            )}
+              <div className="text-xs text-green-700 dark:text-green-400 mt-3 pt-3 border-t border-green-200 dark:border-green-700">
+                <strong>Note:</strong> Monthly payment is always 5% of the total fund amount. After withdrawal, payment increases by 20%.
+              </div>
+            </div>
 
             <div className="p-4 border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 rounded-lg mb-4">
               <h4 className="font-medium mb-2 text-blue-800 dark:text-blue-300">Customize Fund and Contribution Amount</h4>
@@ -282,8 +297,8 @@ export function ContributionAmountForm({
           </div>
         </div>
 
-        <div className="mt-4 sticky bottom-0 bg-background pt-2 border-t">
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+        <div className="mt-4 sticky bottom-0 left-0 right-0 bg-background pt-2 border-t p-4">
+          <Button type="submit" disabled={isSubmitting} className="w-full font-medium">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

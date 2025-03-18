@@ -420,7 +420,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4 mb-16">
+        <div className="space-y-4 pb-24">
             {fundAmount && (
               <Card>
                 <CardContent className="pt-4">
@@ -669,6 +669,10 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
               )}
             />
 
+          </div>
+
+          {/* Fixed position submit button at the bottom */}
+          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
             <Button
               type="submit"
               className="w-full"
@@ -687,28 +691,6 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                 'Process Payout'
               )}
             </Button>
-
-            {/* Fixed position submit button at the bottom */}
-            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting || !!(memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing Payout...
-                  </>
-                ) : (memberDetails?.isWithdrawn && memberDetails?.hasPayable) ? (
-                  'Member Has Already Withdrawn and Received Payout'
-                ) : memberDetails?.isWithdrawn ? (
-                  'Retry Processing Incomplete Payout'
-                ) : (
-                  'Process Payout'
-                )}
-              </Button>
-            </div>
           </div>
       </form>
     </Form>
