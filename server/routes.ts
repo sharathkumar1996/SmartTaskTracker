@@ -5,7 +5,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { 
   insertChitFundSchema, insertPaymentSchema, insertUserSchema, 
-  insertAccountsReceivableSchema, insertAccountsPayableSchema, Payment,
+  insertAccountsReceivableSchema, insertAccountsPayableSchema, Payment, FundMember,
   insertMemberGroupSchema, insertGroupMemberSchema, insertFinancialTransactionSchema
 } from "@shared/schema";
 import { db } from "./db"; // Assuming db is imported from elsewhere
