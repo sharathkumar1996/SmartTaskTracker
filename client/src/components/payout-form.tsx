@@ -400,12 +400,14 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         paymentMethod: "cash",
       });
 
-      onSuccess?.();
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
-      console.error("Payout error:", error);
+      console.error("Error processing payout:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to record payout",
+        description: error instanceof Error ? error.message : "Failed to process payout",
         variant: "destructive",
       });
     } finally {
@@ -416,276 +418,294 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-            {fundAmount && (
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <InfoIcon className="h-4 w-4 text-blue-500" />
-                    <span>
-                      Fund amount: {formatCurrency(fundAmount)}
-                      {memberDetails?.customFundAmount && fundData?.amount && memberDetails.customFundAmount !== fundData.amount && (
-                        <span className="ml-1 text-xs font-medium text-blue-600">
-                          (Custom amount)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <InfoIcon className="h-4 w-4 text-green-500" />
-                    <span>
-                      Months paid: {monthsPaid}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <InfoIcon className="h-4 w-4 text-green-500" />
-                    <span>
-                      Amount paid: {formatCurrency(paidAmount)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <InfoIcon className="h-4 w-4 text-green-500" />
-                    <span>
-                      Bonus earned: {formatCurrency(bonusAmount)}
-                      {memberDetails?.customFundAmount && fundData?.amount && memberDetails.customFundAmount !== fundData.amount && (
-                        <span className="ml-1 text-xs font-medium text-green-600">
-                          (Proportional to custom fund amount)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 text-sm">
-                    <InfoIcon className="h-4 w-4 text-amber-500" />
-                    <span>
-                      Remaining fund: {formatCurrency(remainingAmount)}
-                    </span>
-                  </div>
-                  {commissionAmount && (
+        <div className="mb-6">
+          <ScrollArea className="h-[450px] rounded-md border p-4">
+            <div className="space-y-4">
+              {fundAmount && (
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <InfoIcon className="h-4 w-4 text-blue-500" />
+                      <span>
+                        Fund amount: {formatCurrency(fundAmount)}
+                        {memberDetails?.customFundAmount && fundData?.amount && memberDetails.customFundAmount !== fundData.amount && (
+                          <span className="ml-1 text-xs font-medium text-blue-600">
+                            (Custom amount)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-sm">
+                      <InfoIcon className="h-4 w-4 text-green-500" />
+                      <span>
+                        Months paid: {monthsPaid}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-sm">
+                      <InfoIcon className="h-4 w-4 text-green-500" />
+                      <span>
+                        Amount paid: {formatCurrency(paidAmount)}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-sm">
+                      <InfoIcon className="h-4 w-4 text-green-500" />
+                      <span>
+                        Bonus earned: {formatCurrency(bonusAmount)}
+                        {memberDetails?.customFundAmount && fundData?.amount && memberDetails.customFundAmount !== fundData.amount && (
+                          <span className="ml-1 text-xs font-medium text-green-600">
+                            (Proportional to custom fund amount)
+                          </span>
+                        )}
+                      </span>
+                    </div>
                     <div className="mt-2 flex items-center gap-2 text-sm">
                       <InfoIcon className="h-4 w-4 text-amber-500" />
                       <span>
-                        Commission: {formatCurrency(commissionAmount)}
+                        Remaining fund: {formatCurrency(remainingAmount)}
                       </span>
                     </div>
-                  )}
-                  {penaltyAmount && parseFloat(penaltyAmount) > 0 && (
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      <InfoIcon className="h-4 w-4 text-red-500" />
-                      <span>
-                        Late withdrawal penalty: {formatCurrency(penaltyAmount)}
-                      </span>
-                    </div>
-                  )}
-                  {payoutAmount && (
-                    <div className="mt-2 flex items-center gap-2 text-sm font-semibold">
-                      <InfoIcon className="h-4 w-4 text-green-500" />
-                      <span>
-                        Payout amount: {formatCurrency(payoutAmount)}
-                      </span>
-                    </div>
-                  )}
-                  {memberDetails?.isWithdrawn && (
-                    <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-red-600">
-                      <InfoIcon className="h-4 w-4 text-red-500" />
-                      <span>
-                        Member has already withdrawn from this fund!
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            <FormField
-              control={form.control}
-              name="withdrawalMonth"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Withdrawal Month</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="24"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Month number for withdrawal (1-24)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
+                    {commissionAmount && (
+                      <div className="mt-2 flex items-center gap-2 text-sm">
+                        <InfoIcon className="h-4 w-4 text-amber-500" />
+                        <span>
+                          Commission: {formatCurrency(commissionAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {penaltyAmount && parseFloat(penaltyAmount) > 0 && (
+                      <div className="mt-2 flex items-center gap-2 text-sm">
+                        <InfoIcon className="h-4 w-4 text-red-500" />
+                        <span>
+                          Late withdrawal penalty: {formatCurrency(penaltyAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {payoutAmount && (
+                      <div className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                        <InfoIcon className="h-4 w-4 text-green-500" />
+                        <span>
+                          Payout amount: {formatCurrency(payoutAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {memberDetails?.isWithdrawn && (
+                      <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-red-600">
+                        <InfoIcon className="h-4 w-4 text-red-500" />
+                        <span>
+                          Member has already withdrawn from this fund!
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-            />
 
-            <FormField
-              control={form.control}
-              name="paymentDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Payment Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() // Only restrict future dates, allow historical dates
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="commission"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Commission Amount</FormLabel>
-                  <FormControl>
-                    <div className="flex space-x-2">
+              <FormField
+                control={form.control}
+                name="withdrawalMonth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Withdrawal Month</FormLabel>
+                    <FormControl>
                       <Input
                         type="number"
-                        inputMode="numeric"
-                        min="0"
-                        step="100" 
-                        placeholder="Enter commission amount in rupees (e.g. 5000)"
+                        min="1"
+                        max="24"
                         {...field}
-                        onChange={(e) => {
-                          // Ensure we only save valid numbers
-                          const value = parseInt(e.target.value, 10);
-                          field.onChange(isNaN(value) ? "5000" : String(value));
-                        }}
-                        className="flex-1"
                       />
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => {
-                          // Reset to fund's base commission or calculate 5k per lakh (5% of fund amount)
-                          let baseCommission = "5000";
-                          if (fundData?.baseCommission) {
-                            baseCommission = fundData.baseCommission;
-                          } else if (memberDetails?.customFundAmount) {
-                            // Use custom fund amount if available
-                            const customFundAmount = parseFloat(memberDetails.customFundAmount);
-                            baseCommission = Math.round(customFundAmount * 0.05).toString();
-                          } else if (fundData?.amount) {
-                            // Fallback to standard fund amount
-                            const fundAmountNum = parseFloat(fundData.amount);
-                            baseCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh (5% of fund amount)
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Month number for withdrawal (1-24)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="paymentDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Payment Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() // Only restrict future dates, allow historical dates
                           }
-                          field.onChange(baseCommission);
-                          setCommissionAmount(baseCommission);
-                        }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="commission"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Commission Amount</FormLabel>
+                    <FormControl>
+                      <div className="flex space-x-2">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          step="100" 
+                          placeholder="Enter commission amount in rupees (e.g. 5000)"
+                          {...field}
+                          onChange={(e) => {
+                            // Ensure we only save valid numbers
+                            const value = parseInt(e.target.value, 10);
+                            field.onChange(isNaN(value) ? "5000" : String(value));
+                          }}
+                          className="flex-1"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline"
+                          onClick={() => {
+                            // Reset to fund's base commission or calculate 5k per lakh (5% of fund amount)
+                            let baseCommission = "5000";
+                            if (fundData?.baseCommission) {
+                              baseCommission = fundData.baseCommission;
+                            } else if (memberDetails?.customFundAmount) {
+                              // Use custom fund amount if available
+                              const customFundAmount = parseFloat(memberDetails.customFundAmount);
+                              baseCommission = Math.round(customFundAmount * 0.05).toString();
+                            } else if (fundData?.amount) {
+                              // Fallback to standard fund amount
+                              const fundAmountNum = parseFloat(fundData.amount);
+                              baseCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh (5% of fund amount)
+                            }
+                            field.onChange(baseCommission);
+                            setCommissionAmount(baseCommission);
+                          }}
+                        >
+                          Reset to Default
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Commission: 5% of fund amount (₹5k per lakh). Default: 
+                      {memberDetails?.customFundAmount 
+                        ? ` ₹${Math.round(parseFloat(memberDetails.customFundAmount) * 0.05).toLocaleString()}` 
+                        : fundData?.baseCommission 
+                          ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
+                          : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <FormControl>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
                       >
-                        Reset to Default
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Commission: 5% of fund amount (₹5k per lakh). Default: 
-                    {memberDetails?.customFundAmount 
-                      ? ` ₹${Math.round(parseFloat(memberDetails.customFundAmount) * 0.05).toLocaleString()}` 
-                      : fundData?.baseCommission 
-                        ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
-                        : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="google_pay">Google Pay</option>
+                        <option value="phone_pay">Phone Pay</option>
+                        <option value="online_portal">Online Portal</option>
+                      </select>
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Payment method used for this payout
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Add any additional notes about the payout"
+                        className="min-h-[80px]"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Add any relevant details about this withdrawal. Visible only to admins.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Extra information section to ensure scrollbar appears */}
+              <div className="mt-6 bg-gray-50 p-3 rounded-md border border-gray-100">
+                <h3 className="text-sm font-medium mb-2">Important Information</h3>
+                <p className="text-xs text-gray-600 mb-2">
+                  Payouts are final and will mark the member as withdrawn from this fund.
+                </p>
+                <p className="text-xs text-gray-600">
+                  The commission amount (5% of fund) will be deducted from the total payout.
+                </p>
+              </div>
+            </div>
+          </ScrollArea>
+        </div>
 
-            <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Method</FormLabel>
-                  <FormControl>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      {...field}
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="google_pay">Google Pay</option>
-                      <option value="phone_pay">Phone Pay</option>
-                      <option value="online_portal">Online Portal</option>
-                    </select>
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Payment method used for this payout
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Add any additional notes about the payout"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-          </div>
-
-          {/* Submit button at the bottom */}
-          <div className="mt-6 pb-2">
-            <Button
-              type="submit"
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white"
-              disabled={isSubmitting || !!(memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing Payout...
-                </>
-              ) : (memberDetails?.isWithdrawn && memberDetails?.hasPayable) ? (
-                'Member Has Already Withdrawn and Received Payout'
-              ) : memberDetails?.isWithdrawn ? (
-                'Retry Processing Incomplete Payout'
-              ) : (
-                'Process Payout'
-              )}
-            </Button>
-          </div>
+        {/* Submit button at the bottom */}
+        <div className="mt-6 pb-2">
+          <Button
+            type="submit"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+            disabled={isSubmitting || !!(memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing Payout...
+              </>
+            ) : (memberDetails?.isWithdrawn && memberDetails?.hasPayable) ? (
+              'Member Has Already Withdrawn and Received Payout'
+            ) : memberDetails?.isWithdrawn ? (
+              'Retry Processing Incomplete Payout'
+            ) : (
+              'Process Payout'
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );
