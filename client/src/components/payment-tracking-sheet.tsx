@@ -165,6 +165,17 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
             (payment.notes?.toLowerCase().includes('withdrawal') ?? false)
           );
           
+          // Log for debugging if there's a withdrawal
+          if (hasWithdrawal) {
+            console.log(`Found withdrawal for ${member.fullName} in month ${month}:`, 
+              monthPayments.filter(p => 
+                p.isWithdrawal === true || 
+                p.paymentType === 'withdrawal' ||
+                (p.notes?.toLowerCase().includes('withdrawal') ?? false)
+              )
+            );
+          }
+          
           // Sum up all payments for this month - safely parse the amount
           const totalAmount = monthPayments.reduce((sum, p) => {
             // Handle potential parsing errors
