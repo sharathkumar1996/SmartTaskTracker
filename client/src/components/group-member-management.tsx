@@ -270,11 +270,28 @@ export function GroupMemberManagement({
   // Mutation to create a new group
   const createGroupMutation = useMutation({
     mutationFn: async (values: z.infer<typeof createGroupSchema>) => {
-      const response = await apiRequest("POST", "/api/member-groups", {
-        body: JSON.stringify(values),
-      });
-      const data = await response.json();
-      return data;
+      try {
+        console.log("Creating group with values:", values);
+        // Make sure userId is a number
+        if (values.initialMember && values.initialMember.userId) {
+          values.initialMember.userId = Number(values.initialMember.userId);
+        }
+        
+        const response = await apiRequest("POST", "/api/member-groups", {
+          body: JSON.stringify(values),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to create group: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error creating group:", error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       toast({
@@ -305,11 +322,27 @@ export function GroupMemberManagement({
     mutationFn: async (values: z.infer<typeof addMemberSchema>) => {
       if (!selectedGroup) throw new Error("No group selected");
       try {
+        console.log("Adding member with values:", values);
+        // Make sure userId is a number
+        if (values.userId) {
+          values.userId = Number(values.userId);
+        }
+        
         const response = await apiRequest("POST", `/api/member-groups/${selectedGroup.id}/members`, {
           body: JSON.stringify(values)
         });
+        
+        if (!response.ok) {
+          if (response.status === 409) {
+            throw new Error("Member already exists in this group");
+          }
+          const errorText = await response.text();
+          throw new Error(`Failed to add member: ${errorText}`);
+        }
+        
         return response;
       } catch (error) {
+        console.error("Error adding member:", error);
         // Check for specific error types
         if (error instanceof Response && error.status === 409) {
           throw new Error("Member already exists in this group");
@@ -335,8 +368,25 @@ export function GroupMemberManagement({
   // Mutation to add a group to a chitfund
   const addGroupToFundMutation = useMutation({
     mutationFn: async ({ fundId, groupId }: { fundId: number; groupId: number }) => {
-      const response = await apiRequest("POST", `/api/chitfunds/${fundId}/group-members/${groupId}`);
-      return response;
+      try {
+        console.log(`Adding group ${groupId} to fund ${fundId}`);
+        
+        // Ensure both values are numbers
+        fundId = Number(fundId);
+        groupId = Number(groupId);
+        
+        const response = await apiRequest("POST", `/api/chitfunds/${fundId}/group-members/${groupId}`);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to add group to fund: ${errorText}`);
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Error adding group to fund:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -691,7 +741,7 @@ export function GroupMemberManagement({
                           <option value="" disabled>Select a member</option>
                           {members.map((member) => (
                             <option key={member.id} value={member.id}>
-                              {member.fullName} ({member.phone})
+                              {member.fullName ? member.fullName : `User ${member.id}`}{member.phone ? ` (${member.phone})` : ''}
                             </option>
                           ))}
                         </select>
@@ -781,7 +831,7 @@ export function GroupMemberManagement({
                         <option value="">Select a member</option>
                         {members.map((member) => (
                           <option key={member.id} value={member.id}>
-                            {member.fullName}
+                            {member.fullName ? member.fullName : `User ${member.id}`}{member.phone ? ` (${member.phone})` : ''}
                           </option>
                         ))}
                       </select>
