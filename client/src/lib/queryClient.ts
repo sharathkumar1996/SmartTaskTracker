@@ -35,68 +35,59 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  console.log(`API Request: ${method} ${url}`, data ? 'with data' : 'no data');
-  
-  // Check for existing cookies and log them
-  console.log('Cookies being sent:', document.cookie || 'No cookies available');
+export async function apiRequest<T>({
+  url,
+  method = "GET",
+  body
+}: {
+  url: string;
+  method?: string;
+  body?: unknown;
+}): Promise<T> {
+  console.log(`API Request: ${method} ${url}`, body ? 'with data' : 'no data');
   
   try {
-    const res = await fetch(url, {
+    const response = await fetch(url, {
       method,
       headers: {
-        ...(data ? { "Content-Type": "application/json" } : {}),
+        ...(body ? { "Content-Type": "application/json" } : {}),
         "Accept": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache"
       },
-      body: data ? JSON.stringify(data) : undefined,
+      body: body ? JSON.stringify(body) : undefined,
       credentials: "include", // Always include cookies
-      cache: "no-store" // Prevent caching
     });
     
-    console.log(`API Response: ${res.status} ${res.statusText}`, 
-                {url, method, status: res.status});
+    console.log(`API Response: ${response.status} ${response.statusText}`, 
+                {url, method, status: response.status});
     
-    // Check and log response cookies
-    const setCookieHeader = res.headers.get('set-cookie');
-    if (setCookieHeader) {
-      console.log('Set-Cookie header received:', setCookieHeader.substring(0, 30) + '...');
-    }
-    
-    // Clone the response to inspect its body while preserving it for later use
-    const resClone = res.clone();
-    
-    try {
-      // Log response body only for non-successful responses or auth endpoints
-      if (!res.ok || url.includes('login') || url.includes('register') || url.includes('user')) {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const bodyText = await resClone.text();
-          // Sanitize logged responses to avoid exposing sensitive data
-          const sanitizedBody = bodyText.replace(/"password":"[^"]*"/g, '"password":"[REDACTED]"');
-          console.log('Response body (sanitized):', 
-              url.includes('login') || url.includes('register') ? 
-              '[AUTH RESPONSE - DETAILS REDACTED]' : sanitizedBody);
-        }
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = errorText;
+      
+      try {
+        // Try to parse as JSON if possible
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+      } catch (e) {
+        // If not JSON, just use the text
       }
-    } catch (e) {
-      console.warn('Could not log response body:', e);
+      
+      console.error(`API Error (${response.status}): ${errorMessage}`);
+      throw new Error(errorMessage || `Request failed with status ${response.status}`);
     }
     
-    await throwIfResNotOk(res);
-    
-    // For login and register endpoints, force a cookie refresh
-    if (url.includes('login') || url.includes('register')) {
-      // Successful login/register - ensure cookies are refreshed
-      console.log('Auth operation successful, current cookies:', document.cookie || 'No cookies');
+    // Special handling for auth endpoints
+    if (url.includes('/login') || url.includes('/register')) {
+      console.log('Auth operation successful');
     }
     
-    return res;
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return await response.json() as T;
+    }
+    
+    // Handle non-JSON responses
+    return {} as T;
   } catch (error) {
     console.error(`API Request failed: ${method} ${url}`, error);
     throw error;

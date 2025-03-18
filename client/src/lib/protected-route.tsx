@@ -4,6 +4,9 @@ import { Redirect, Route } from "wouter";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+// Session storage key must match the one in use-auth.tsx
+const SESSION_STORAGE_KEY = 'chitfund_user_session';
+
 type ProtectedRouteProps = {
   path: string;
   component: React.ComponentType;
@@ -16,53 +19,45 @@ export function ProtectedRoute({
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const [authChecked, setAuthChecked] = useState(false);
+  const [sessionUser, setSessionUser] = useState<any>(null);
   
-  // Enhanced auth verification with fallback mechanisms
+  // Use both normal auth and session storage for enhanced reliability
   useEffect(() => {
     // Only run once when loading completes
     if (!isLoading && !authChecked) {
+      // First try to get session from sessionStorage
+      try {
+        const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (savedSession) {
+          const userData = JSON.parse(savedSession);
+          console.log("Found user session in storage:", { id: userData.id, role: userData.role });
+          setSessionUser(userData);
+        }
+      } catch (err) {
+        console.error("Error reading from sessionStorage:", err);
+      }
+      
+      // Also check for any relevant cookies
       const hasCookies = document.cookie.includes('auth_success') || 
                         document.cookie.includes('chitfund.sid') ||
                         document.cookie.includes('manual_auth_success') ||
                         document.cookie.includes('user_info');
                         
       console.log(`ProtectedRoute (${path}): Auth check completed.`, { 
-        isAuthenticated: !!user,
+        isAuthenticated: !!user || !!sessionUser,
         hasCookies,
         cookiesFound: document.cookie ? document.cookie.split(';').map(c => c.trim().split('=')[0]) : []
       });
       
-      // Check for sessionStorage backup if cookie auth is failing
-      if (!user && !hasCookies) {
-        try {
-          // Match the same key used in the auth hook
-          const SESSION_STORAGE_KEY = 'chitfund_user_session';
-          const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
-          
-          if (savedSession) {
-            console.log("Loaded user session from sessionStorage:", JSON.parse(savedSession).username);
-            // Don't actually redirect - the useAuth hook should handle this
-          }
-        } catch (err) {
-          console.error("Error reading from sessionStorage:", err);
-        }
-      }
-      
-      // If there's a cookie/user state mismatch, it may indicate a session issue
-      if ((!user && hasCookies) || (user && !hasCookies)) {
-        console.warn("Authentication state mismatch detected");
-        // Don't show toast for now as it's disruptive while we fix the issue
-      }
-      
       setAuthChecked(true);
     }
-  }, [isLoading, user, toast, path, authChecked]);
+  }, [isLoading, user, toast, path, authChecked, sessionUser]);
 
   return (
     <Route path={path}>
       {() => {
         // Show loading spinner while checking auth
-        if (isLoading) {
+        if (isLoading || !authChecked) {
           return (
             <div className="flex flex-col items-center justify-center min-h-screen">
               <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
@@ -71,8 +66,11 @@ export function ProtectedRoute({
           );
         }
 
+        // Check for authentication from any source (React Query or session storage)
+        const isAuthenticated = !!user || !!sessionUser;
+        
         // Redirect to auth page if not authenticated
-        if (!user) {
+        if (!isAuthenticated) {
           console.log(`ProtectedRoute (${path}): No user found, redirecting to auth page`);
           return <Redirect to="/auth" />;
         }

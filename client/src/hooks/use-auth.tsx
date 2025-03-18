@@ -137,13 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // For security, don't log credentials
       console.log("Processing login");
       try {
-        const data = await apiRequest<SelectUser>({
+        return await apiRequest<SelectUser>({
           url: "/api/login",
           method: "POST",
           body: credentials,
         });
-        console.log("Login response received");
-        return data;
       } catch (error) {
         console.error("Login error:", error);
         throw error;
@@ -272,9 +270,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest({
-        url: "/api/logout",
-        method: "POST",
+      return await apiRequest<void>({
+        url: "/api/logout", 
+        method: "POST"
       });
     },
     onSuccess: () => {

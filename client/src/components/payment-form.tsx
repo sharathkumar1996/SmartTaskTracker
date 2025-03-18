@@ -199,12 +199,11 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
         recordedBy: user?.id,
       };
 
-      const response = await apiRequest("POST", "/api/payments", paymentData);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to record payment");
-      }
+      await apiRequest<Payment>({
+        url: "/api/payments",
+        method: "POST",
+        body: paymentData
+      });
 
       await queryClient.invalidateQueries({ queryKey: ["/api/payments"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds", chitFundId, "payments"] });
