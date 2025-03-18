@@ -211,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get member details to check if they have withdrawn
         const memberDetails = await storage.getFundMemberDetails(payment.chitFundId, payment.userId);
 
-        // Calculate expected amount based on fund amount and withdrawal status
+        // Calculate expected amount based on fund amount, custom contribution, and withdrawal status
         // Before withdrawal: 5% of fund amount per month (1 lakh fund = 5k per month)
         // After withdrawal: 6% of fund amount per month (1 lakh fund = 6k per month)
         let expectedAmount = payment.amount; // Default to payment amount if calculation fails
@@ -220,11 +220,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fundAmount = parseFloat(fund.amount.toString());
           const baseRate = 0.05; // 5% of fund amount per month
           const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
-
-          if (memberDetails?.isWithdrawn) {
-            expectedAmount = (fundAmount * withdrawnRate).toString();
+          
+          // Check if member has a custom contribution amount set
+          let memberContributionAmount = null;
+          if (memberDetails?.increasedMonthlyAmount) {
+            memberContributionAmount = parseFloat(memberDetails.increasedMonthlyAmount.toString());
           } else {
-            expectedAmount = (fundAmount * baseRate).toString();
+            memberContributionAmount = fundAmount * baseRate; // Default to 5% of fund amount
+          }
+          
+          if (memberDetails?.isWithdrawn) {
+            // Withdrawn members pay 20% more (1.2x the normal amount)
+            const withdrawnMultiplier = 1.2;
+            expectedAmount = (memberContributionAmount * withdrawnMultiplier).toString();
+          } else {
+            expectedAmount = memberContributionAmount.toString();
           }
         }
 
@@ -1402,18 +1412,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Get member details to check if they have withdrawn
             const memberDetails = await storage.getFundMemberDetails(payment.chitFundId, payment.userId);
 
-            // Calculate expected amount based on fund amount and withdrawal status
+            // Calculate expected amount based on fund amount, custom contribution, and withdrawal status
             let expectedAmount = payment.amount.toString(); // Default
 
             if (fund) {
               const fundAmount = parseFloat(fund.amount.toString());
               const baseRate = 0.05; // 5% of fund amount per month
               const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
-
-              if (memberDetails?.isWithdrawn) {
-                expectedAmount = (fundAmount * withdrawnRate).toString();
+              
+              // Check if member has a custom contribution amount set
+              let memberContributionAmount = null;
+              if (memberDetails?.increasedMonthlyAmount) {
+                memberContributionAmount = parseFloat(memberDetails.increasedMonthlyAmount.toString());
               } else {
-                expectedAmount = (fundAmount * baseRate).toString();
+                memberContributionAmount = fundAmount * baseRate; // Default to 5% of fund amount
+              }
+              
+              if (memberDetails?.isWithdrawn) {
+                // Withdrawn members pay 20% more (1.2x the normal amount)
+                const withdrawnMultiplier = 1.2;
+                expectedAmount = (memberContributionAmount * withdrawnMultiplier).toString();
+              } else {
+                expectedAmount = memberContributionAmount.toString();
               }
             }
 
