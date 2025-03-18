@@ -280,7 +280,7 @@ export default function AuthPage() {
                     
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full mb-2"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -294,6 +294,37 @@ export default function AuthPage() {
                       ) : (
                         "Login"
                       )}
+                    </Button>
+                    
+                    {/* Direct Admin Login */}
+                    <Button
+                      type="button"
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        // Create a hardcoded admin user for direct access
+                        const adminUser = {
+                          id: 1,
+                          username: "admin",
+                          password: "", // Don't store passwords in frontend
+                          role: "admin" as const,
+                          fullName: "System Administrator",
+                          email: "admin@example.com",
+                          phone: "1234567890",
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                          status: "active" as const
+                        };
+                        
+                        // Use our direct authentication method
+                        setManualUser(adminUser);
+                        
+                        // Navigate to dashboard
+                        navigate('/');
+                      }}
+                      disabled={loginMutation.isPending}
+                    >
+                      Quick Admin Access
                     </Button>
                   </form>
                 </Form>

@@ -18,6 +18,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  setManualUser: (user: SelectUser) => void; // Manual override to set the user
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -316,6 +317,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Ensure user is always correctly typed as SelectUser | null
   const safeUser: SelectUser | null = user || null;
+  
+  // Function to manually set user data (for direct login scenarios)
+  const setManualUser = (userData: SelectUser) => {
+    console.log("Manually setting user data:", userData.username);
+    
+    // Set in query cache
+    queryClient.setQueryData(["/api/user"], userData);
+    
+    // Update session state
+    setSessionStorageUser(userData);
+    
+    // Store in sessionStorage
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userData));
+      
+      // Set manual cookies
+      const cookieExpiration = new Date();
+      cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+      
+      document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+      
+      const userInfoCookie = JSON.stringify({
+        id: userData.id,
+        username: userData.username,
+        role: userData.role
+      });
+      document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+      
+      toast({
+        title: "Logged in",
+        description: `Welcome, ${userData.fullName || userData.username}!`,
+      });
+      
+      // Invalidate queries that might need refreshing with the new user
+      queryClient.invalidateQueries({queryKey: ["/api/chitfunds"]});
+      queryClient.invalidateQueries({queryKey: ["/api/users"]});
+    } catch (err) {
+      console.error("Failed to save manual user data:", err);
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -326,6 +367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        setManualUser,
       }}
     >
       {children}

@@ -27,6 +27,21 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChitFund, FundMember } from "@shared/schema";
 
+// Add Payment type definition
+interface Payment {
+  id: number;
+  userId: number;
+  chitFundId: number;
+  amount: string;
+  paymentType: string;
+  paymentMethod: string;
+  paymentDate: string;
+  monthNumber: number;
+  notes?: string;
+  recordedBy?: number;
+  commission?: string;
+}
+
 interface PaymentFormProps {
   className?: string;
   chitFundId: number;
