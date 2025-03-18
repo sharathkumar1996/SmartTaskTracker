@@ -515,7 +515,12 @@ export function MemberManagement() {
                                             <FormItem>
                                               <FormLabel>Email (Optional)</FormLabel>
                                               <FormControl>
-                                                <Input {...field} defaultValue={agent.email as string || ''} />
+                                                <Input 
+                                                  type="email"
+                                                  {...field} 
+                                                  defaultValue={agent.email as string || ''} 
+                                                  placeholder="user@example.com"
+                                                />
                                               </FormControl>
                                               <FormMessage />
                                             </FormItem>
@@ -526,9 +531,13 @@ export function MemberManagement() {
                                           name="phone"
                                           render={({ field }) => (
                                             <FormItem>
-                                              <FormLabel>Phone</FormLabel>
+                                              <FormLabel>Phone (Optional)</FormLabel>
                                               <FormControl>
-                                                <Input {...field} defaultValue={agent.phone as string || ''} />
+                                                <Input 
+                                                  {...field} 
+                                                  defaultValue={agent.phone as string || ''} 
+                                                  placeholder="+91 XXXXX XXXXX"
+                                                />
                                               </FormControl>
                                               <FormMessage />
                                             </FormItem>
