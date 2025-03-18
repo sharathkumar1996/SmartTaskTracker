@@ -315,8 +315,9 @@ export default function AuthPage() {
                           city: null,
                           state: null,
                           pincode: null,
-                          createdAt: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
+                          fundPreferences: null,
+                          agentId: null,
+                          agentCommission: null,
                           status: "active" as const
                         };
                         

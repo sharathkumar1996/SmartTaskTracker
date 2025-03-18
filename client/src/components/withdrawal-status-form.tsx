@@ -50,18 +50,17 @@ export function WithdrawalStatusForm({ fundId, userId, initialValues, onSuccess,
   async function onSubmit(data: z.infer<typeof withdrawalSchema>) {
     setIsSubmitting(true);
     try {
-      const response = await apiRequest(
-        "PATCH",
-        `/api/chitfunds/${fundId}/members/${userId}/withdraw`,
-        {
-          isWithdrawn: data.isWithdrawn,
-          withdrawalMonth: data.withdrawalMonth,
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update withdrawal status");
+      try {
+        await apiRequest({
+          method: "PATCH",
+          url: `/api/chitfunds/${fundId}/members/${userId}/withdraw`,
+          body: {
+            isWithdrawn: data.isWithdrawn,
+            withdrawalMonth: data.withdrawalMonth,
+          }
+        });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Failed to update withdrawal status");
       }
 
       toast({

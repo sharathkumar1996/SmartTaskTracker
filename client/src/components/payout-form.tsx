@@ -365,11 +365,14 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         paymentMethod: values.paymentMethod, // Add payment method
       };
 
-      const response = await apiRequest("POST", "/api/payables", payableData);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to record payout");
+      try {
+        await apiRequest({
+          method: "POST",
+          url: "/api/payables",
+          body: payableData
+        });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Failed to record payout");
       }
 
       // Invalidate queries to refresh data

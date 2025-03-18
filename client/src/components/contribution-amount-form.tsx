@@ -62,19 +62,18 @@ export function ContributionAmountForm({
   async function onSubmit(data: z.infer<typeof contributionSchema>) {
     setIsSubmitting(true);
     try {
-      const response = await apiRequest(
-        "PATCH",
-        `/api/chitfunds/${fundId}/members/${userId}/contribution`,
-        {
-          increasedMonthlyAmount: data.increasedMonthlyAmount,
-          shareIdentifier: data.shareIdentifier,
-          customFundAmount: data.customFundAmount,
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update contribution amount");
+      try {
+        await apiRequest({
+          method: "PATCH",
+          url: `/api/chitfunds/${fundId}/members/${userId}/contribution`,
+          body: {
+            increasedMonthlyAmount: data.increasedMonthlyAmount,
+            shareIdentifier: data.shareIdentifier,
+            customFundAmount: data.customFundAmount,
+          }
+        });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Failed to update contribution amount");
       }
 
       toast({
