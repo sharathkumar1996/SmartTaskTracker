@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import { z } from "zod"; // Add this import
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { 
@@ -114,18 +115,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log("Received chit fund creation data:", req.body);
 
-    // Manually calculate the missing fields before validation
-    const fundData = {
-      ...req.body,
-      // Calculate these values server-side
-      monthlyContribution: (parseFloat(req.body.amount) / req.body.duration).toFixed(2).toString(),
-      monthlyBonus: (parseFloat(req.body.amount) * 0.1).toFixed(2).toString(),
-      baseCommission: (parseFloat(req.body.amount) * 0.05).toFixed(2).toString(),
-    };
+    // Create a custom validator without the problematic fields
+    const basicChitFundSchema = z.object({
+      name: z.string(),
+      amount: z.string().or(z.number()).transform(String),
+      duration: z.number().min(1, "Duration must be at least 1 month"),
+      memberCount: z.number().min(2, "Member count must be at least 2"),
+      startDate: z.coerce.date(),
+      endDate: z.coerce.date(),
+      status: z.string(),
+    });
     
-    console.log("Enhanced fund data with calculated fields:", fundData);
-    
-    const parseResult = insertChitFundSchema.safeParse(fundData);
+    const parseResult = basicChitFundSchema.safeParse(req.body);
     if (!parseResult.success) {
       console.error("Validation error details:", parseResult.error.format());
       return res.status(400).json({
@@ -133,10 +134,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errors: parseResult.error.format()
       });
     }
+    
+    // Create the fund data with the validated data and calculated fields
+    const fundData = {
+      ...parseResult.data,
+      monthlyContribution: (parseFloat(req.body.amount) / req.body.duration).toFixed(2).toString(),
+      monthlyBonus: (parseFloat(req.body.amount) * 0.1).toFixed(2).toString(),
+      baseCommission: (parseFloat(req.body.amount) * 0.05).toFixed(2).toString(),
+    };
 
     try {
-      console.log("Validated data being sent to storage:", parseResult.data);
-      const chitFund = await storage.createChitFund(parseResult.data);
+      console.log("Validated data being sent to storage:", fundData);
+      const chitFund = await storage.createChitFund(fundData);
       console.log("Chit fund created successfully:", chitFund);
       res.json(chitFund);
     } catch (error) {

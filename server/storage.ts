@@ -253,20 +253,27 @@ export class DatabaseStorage implements IStorage {
         baseCommission
       });
       
+      // Define the schema correct type for insertion
+      const insertData = {
+        name: fund.name,
+        amount: fund.amount,
+        duration: fund.duration,
+        memberCount: fund.memberCount,
+        monthlyContribution: monthlyContribution,
+        monthlyBonus: monthlyBonus,
+        baseCommission: baseCommission,
+        startDate: new Date(fund.startDate),
+        endDate: new Date(fund.endDate),
+        status: fund.status === "active" ? "active" : 
+               fund.status === "completed" ? "completed" : 
+               fund.status === "closed" ? "closed" : "active"
+      };
+      
+      console.log("Final data for DB insert:", insertData);
+      
       const result = await db
         .insert(chitFunds)
-        .values({
-          name: fund.name,
-          amount: fund.amount,
-          duration: fund.duration,
-          memberCount: fund.memberCount,
-          monthlyContribution: monthlyContribution,
-          monthlyBonus: monthlyBonus,
-          baseCommission: baseCommission,
-          startDate: new Date(fund.startDate),
-          endDate: new Date(fund.endDate),
-          status: fund.status
-        })
+        .values(insertData)
         .returning();
       
       console.log("Chit fund created successfully with ID:", result[0]?.id);
