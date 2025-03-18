@@ -139,7 +139,7 @@ export function ContributionAmountForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           <div className="p-4 bg-muted rounded-lg mb-4">
             <h3 className="font-medium mb-2">Current Contribution Details</h3>
             <p className="text-sm text-muted-foreground mb-1">

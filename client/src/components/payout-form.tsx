@@ -420,7 +420,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
             {fundAmount && (
               <Card>
                 <CardContent className="pt-4">

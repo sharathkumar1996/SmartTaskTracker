@@ -88,7 +88,7 @@ export function WithdrawalStatusForm({ fundId, userId, initialValues, onSuccess,
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
           <FormField
             control={form.control}
             name="isWithdrawn"
@@ -137,7 +137,15 @@ export function WithdrawalStatusForm({ fundId, userId, initialValues, onSuccess,
             />
           )}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+        </div>
+        
+        {/* Submit button at the bottom */}
+        <div className="mt-6 pb-2">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting} 
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
