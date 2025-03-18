@@ -947,6 +947,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Update member contribution amount
+  app.patch("/api/chitfunds/:fundId/members/:userId/contribution", async (req, res) => {
+    if (req.user?.role !== "admin") return res.sendStatus(403);
+
+    try {
+      const fundId = parseInt(req.params.fundId);
+      const userId = parseInt(req.params.userId);
+      const { increasedMonthlyAmount, shareIdentifier } = req.body;
+
+      // Only update fields that are explicitly provided
+      const updateData: Partial<FundMember> = {};
+      
+      if (increasedMonthlyAmount !== undefined) {
+        updateData.increasedMonthlyAmount = increasedMonthlyAmount;
+      }
+      
+      if (shareIdentifier !== undefined) {
+        updateData.shareIdentifier = shareIdentifier;
+      }
+      
+      // Only proceed if there's data to update
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No valid fields provided for update" });
+      }
+
+      const result = await storage.updateMemberWithdrawalStatus(fundId, userId, updateData);
+
+      if (!result) {
+        return res.status(404).json({ message: "Member not found in fund" });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Member contribution details updated",
+        updates: updateData
+      });
+    } catch (error) {
+      console.error("Error updating contribution details:", error);
+      res.status(500).json({
+        message: "Failed to update contribution details",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   app.get("/api/users/:userId/funds", async (req, res) => {
     if (!req.user) return res.sendStatus(401);

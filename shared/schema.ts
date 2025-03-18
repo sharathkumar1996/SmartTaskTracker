@@ -56,6 +56,7 @@ export const fundMembers = pgTable("fund_members", {
   id: serial("id").primaryKey(),
   fundId: integer("fund_id").notNull().references(() => chitFunds.id, { onDelete: 'cascade' }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  shareIdentifier: text("share_identifier"), // Optional identifier for each share (e.g., "Main", "Second", etc.)
   earlyWithdrawalMonth: integer("early_withdrawal_month"),
   increasedMonthlyAmount: decimal("increased_monthly_amount", { precision: 10, scale: 2 }),
   totalBonusReceived: decimal("total_bonus_received", { precision: 10, scale: 2 }).default('0'),
@@ -63,6 +64,7 @@ export const fundMembers = pgTable("fund_members", {
   isWithdrawn: boolean("is_withdrawn").default(false),
   notes: text("notes"), // Added notes field for storing metadata
 }, (table) => ({
+  // No unique constraint on fundId and userId to allow multiple entries for same user
   fundUserIdx: index().on(table.fundId, table.userId),
 }));
 
@@ -150,6 +152,7 @@ export const insertPaymentSchema = z.object({
 });
 
 export const insertFundMemberSchema = createInsertSchema(fundMembers).extend({
+  shareIdentifier: z.string().optional().nullable(),
   earlyWithdrawalMonth: z.number().min(1).max(20).optional(),
   increasedMonthlyAmount: z.string().or(z.number()).optional().transform(String),
   isGroup: z.boolean().optional(),
