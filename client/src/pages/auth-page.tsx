@@ -67,14 +67,14 @@ export default function AuthPage() {
     mode: "onSubmit",
   });
   
-  // Add admin login hint
-  const handleLoginSubmit = (data: { username: string; password: string }) => {
+  // Enhanced login handler with better error handling and debugging
+  const handleLoginSubmit = async (data: { username: string; password: string }) => {
     console.log("Login attempt with:", data.username, "and password length:", data.password.length);
     
-    // Clear any previous errors
+    // Clear any previous errors and form state
     loginForm.clearErrors();
     
-    // Basic validation
+    // Enhanced validation
     if (!data.username.trim()) {
       loginForm.setError("username", { 
         type: "manual", 
@@ -91,14 +91,62 @@ export default function AuthPage() {
       return;
     }
     
-    // Log any login attempts for security monitoring
-    console.log("Processing login attempt");
+    // Clear any stale cookies before attempting new login
+    // This helps prevent cookie conflicts that might cause auth issues
+    if (document.cookie.includes('auth_success') || document.cookie.includes('user_info')) {
+      console.log("Clearing existing auth cookies before login attempt");
+      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+    
+    // Log login attempt for security monitoring
+    console.log("Processing login with validated credentials");
     
     try {
-      console.log("Submitting login form to /api/login");
-      loginMutation.mutate(data);
+      console.log("Submitting login request to /api/login");
+      
+      // Use the mutation to log in
+      loginMutation.mutate(data, {
+        onSuccess: (userData) => {
+          console.log("Login successful, redirecting to dashboard");
+          toast({
+            title: "Login successful",
+            description: `Welcome back, ${userData.fullName || userData.username}`,
+            variant: "default"
+          });
+          
+          // After successful login, check for session cookies
+          setTimeout(() => {
+            const hasCookies = document.cookie.includes('auth_success') || 
+                              document.cookie.includes('chitfund.sid');
+            console.log("Auth cookies present after login:", hasCookies);
+            
+            if (!hasCookies) {
+              console.warn("Warning: No auth cookies detected after successful login");
+              toast({
+                title: "Cookie Warning",
+                description: "Login succeeded but session cookies weren't stored. You may be logged out soon.",
+                variant: "destructive"
+              });
+            }
+          }, 500);
+        },
+        onError: (error) => {
+          console.error("Login mutation error:", error);
+          loginForm.setError("root", {
+            type: "manual",
+            message: "Login failed: " + error.message
+          });
+          
+          toast({
+            title: "Login failed",
+            description: error.message || "Authentication failed",
+            variant: "destructive"
+          });
+        }
+      });
     } catch (error) {
-      console.error("Login submission error:", error);
+      console.error("Unexpected login error:", error);
       loginForm.setError("root", {
         type: "manual",
         message: "Login failed: " + (error instanceof Error ? error.message : String(error))
