@@ -386,7 +386,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
         <div className="flex flex-col space-y-2">
           <p className="text-sm text-muted-foreground">
             {selectedMonth ? (
-              <>Showing data for {availableMonths[parseInt(selectedMonth)].label} {selectedYear}</>
+              <>Showing data for {availableMonths.find(m => m.value === selectedMonth)?.label || 'Unknown month'} {selectedYear}</>
             ) : selectedQuarter === "q1" ? (
               <>Showing Q1 (Jan-Mar) of {selectedYear}</>
             ) : selectedQuarter === "q2" ? (
