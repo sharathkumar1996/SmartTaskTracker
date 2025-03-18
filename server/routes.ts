@@ -107,11 +107,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Chit Fund Management Routes
   app.post("/api/chitfunds", async (req, res) => {
-    if (req.user?.role !== "admin") return res.sendStatus(403);
+    if (req.user?.role !== "admin") {
+      console.log("Permission denied, user role:", req.user?.role);
+      return res.sendStatus(403);
+    }
 
+    console.log("Received data for ChitFund creation:", req.body);
     const parseResult = insertChitFundSchema.safeParse(req.body);
     if (!parseResult.success) {
-      console.error("Validation error:", parseResult.error);
+      console.error("Validation error details:", JSON.stringify(parseResult.error, null, 2));
       return res.status(400).json(parseResult.error);
     }
 
