@@ -220,16 +220,17 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       totalRow.push("");
       
       // Combine all parts to create the complete CSV template
+      // Make sure we handle empty rows properly for CSV export
       const csvContent = [
         ...templateHeaders,
         mainHeaders,
         ...memberRows,
-        [], // Empty row before totals
+        [""], // Empty row before totals
         totalRow
       ]
         .map(row => row.map(val => {
           // Ensure proper CSV formatting by escaping quotes and commas
-          const cellValue = String(val).replace(/"/g, '""');
+          const cellValue = String(val || "").replace(/"/g, '""');
           return cellValue.includes(',') ? `"${cellValue}"` : cellValue;
         }).join(","))
         .join("\n");
