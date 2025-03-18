@@ -420,7 +420,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4 pb-24">
+        <div className="space-y-4">
             {fundAmount && (
               <Card>
                 <CardContent className="pt-4">
@@ -514,8 +514,8 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    The month number when the member is withdrawing the chit (1-24)
+                  <FormDescription className="text-xs">
+                    Month number for withdrawal (1-24)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -611,15 +611,13 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                       </Button>
                     </div>
                   </FormControl>
-                  <FormDescription>
-                    Commission to be deducted from the fund amount (in rupees, not percentage).
-                    The default commission is calculated at 5k per lakh (5% of fund amount).
-                    For this member, it is {memberDetails?.customFundAmount 
-                      ? ` ₹${Math.round(parseFloat(memberDetails.customFundAmount) * 0.05).toLocaleString()} (based on custom fund amount)` 
+                  <FormDescription className="text-xs">
+                    Commission: 5% of fund amount (₹5k per lakh). Default: 
+                    {memberDetails?.customFundAmount 
+                      ? ` ₹${Math.round(parseFloat(memberDetails.customFundAmount) * 0.05).toLocaleString()}` 
                       : fundData?.baseCommission 
                         ? ` ₹${parseFloat(fundData.baseCommission).toLocaleString()}` 
-                        : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}, 
-                    but can be adjusted by an admin as needed.
+                        : fundData?.amount ? ` ₹${Math.round(parseFloat(fundData.amount) * 0.05).toLocaleString()}` : " ₹5,000"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -644,8 +642,8 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
                       <option value="online_portal">Online Portal</option>
                     </select>
                   </FormControl>
-                  <FormDescription>
-                    Select the payment method used for this payout. This affects the balance tracking.
+                  <FormDescription className="text-xs">
+                    Payment method used for this payout
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -671,11 +669,11 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
 
           </div>
 
-          {/* Fixed position submit button at the bottom */}
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+          {/* Submit button at the bottom */}
+          <div className="mt-6 pb-2">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white"
               disabled={isSubmitting || !!(memberDetails?.isWithdrawn && memberDetails?.hasPayable)}
             >
               {isSubmitting ? (
