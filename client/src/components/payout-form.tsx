@@ -149,11 +149,24 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
     }
   }, [memberPayments]);
 
-  // Calculate bonus amount based on months paid
+  // Calculate bonus amount based on months paid and custom fund amount
   useEffect(() => {
     if (fundData && monthsPaid > 0) {
       try {
-        const monthlyBonus = parseFloat(fundData.monthlyBonus || "1000");
+        // Base bonus is 1000 per month for a 1 lakh fund (1% of fund amount)
+        const defaultBonus = parseFloat(fundData.monthlyBonus || "1000");
+        let monthlyBonus = defaultBonus;
+        
+        // If member has a custom fund amount, scale the bonus proportionally
+        if (memberDetails?.customFundAmount) {
+          const standardFundAmount = parseFloat(fundData.amount);
+          const customFundAmount = parseFloat(memberDetails.customFundAmount);
+          
+          // Scale bonus proportionally to custom fund amount
+          // e.g., if standard is 1 lakh with 1k bonus, and custom is 2 lakh, bonus should be 2k
+          monthlyBonus = defaultBonus * (customFundAmount / standardFundAmount);
+        }
+        
         const calculatedBonus = monthsPaid * monthlyBonus;
         setBonusAmount(calculatedBonus.toString());
       } catch (error) {
@@ -161,7 +174,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         setBonusAmount("0");
       }
     }
-  }, [fundData, monthsPaid]);
+  }, [fundData, monthsPaid, memberDetails]);
 
   // Calculate remaining fund amount (fund amount - paid amount)
   useEffect(() => {
