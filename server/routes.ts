@@ -114,7 +114,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log("Received chit fund creation data:", req.body);
 
-    const parseResult = insertChitFundSchema.safeParse(req.body);
+    // Manually calculate the missing fields before validation
+    const fundData = {
+      ...req.body,
+      // Calculate these values server-side
+      monthlyContribution: (parseFloat(req.body.amount) / req.body.duration).toFixed(2).toString(),
+      monthlyBonus: (parseFloat(req.body.amount) * 0.1).toFixed(2).toString(),
+      baseCommission: (parseFloat(req.body.amount) * 0.05).toFixed(2).toString(),
+    };
+    
+    console.log("Enhanced fund data with calculated fields:", fundData);
+    
+    const parseResult = insertChitFundSchema.safeParse(fundData);
     if (!parseResult.success) {
       console.error("Validation error details:", parseResult.error.format());
       return res.status(400).json({
