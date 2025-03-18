@@ -1651,19 +1651,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Add withdrawal payments to the regular payments with improved month extraction
           const withdrawalPayments = userWithdrawals.map(withdrawal => {
-            // Try to extract the month from the notes or use the withdrawalMonth field
-            let monthNum = 1; // Default to month 1
+            // Try to extract the month from various fields
+            let monthNum = 1; // Default to month 1, will be updated
             
-            // First, check if withdrawal has a withdrawalMonth field
-            // Using optional chaining and type checking to avoid errors
-            if (typeof (withdrawal as any).withdrawalMonth !== 'undefined') {
+            // Get withdrawal month from the correct field based on priority
+            // 1. Direct withdrawalMonth field (from the database)
+            if (typeof (withdrawal as any).withdrawalMonth === 'number') {
+              monthNum = (withdrawal as any).withdrawalMonth;
+            } 
+            // 2. String withdrawalMonth that needs parsing
+            else if (typeof (withdrawal as any).withdrawalMonth !== 'undefined') {
               const withdrawalMonthValue = (withdrawal as any).withdrawalMonth;
-              monthNum = parseInt(withdrawalMonthValue.toString());
+              const parsedMonth = parseInt(withdrawalMonthValue.toString());
+              if (!isNaN(parsedMonth) && parsedMonth > 0) {
+                monthNum = parsedMonth;
+              }
             }
-            // Next, try to extract from notes using regex
+            // 3. Extract from notes as fallback
             else if (withdrawal.notes && withdrawal.notes.match(/month (\d+)/i)) {
-              monthNum = parseInt(withdrawal.notes.match(/month (\d+)/i)?.[1] || '1');
+              const extractedMonth = parseInt(withdrawal.notes.match(/month (\d+)/i)?.[1] || '1');
+              if (!isNaN(extractedMonth) && extractedMonth > 0) {
+                monthNum = extractedMonth;
+              }
             }
+            
+            console.log(`Processing withdrawal for user ${withdrawal.userId}: setting to month ${monthNum}`);
+            
             
             return {
               id: -withdrawal.id, // Negative ID to avoid conflicts
