@@ -219,9 +219,21 @@ export default function AuthPage() {
     },
   });
 
+  // Use useEffect for navigation to prevent state updates during render
+  useEffect(() => {
+    if (user) {
+      // Redirect if user is already authenticated
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+  
+  // Don't return null during render as it causes blank screen
   if (user) {
-    setLocation("/");
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Redirecting to dashboard...</p>
+      </div>
+    );
   }
 
   return (
@@ -321,11 +333,10 @@ export default function AuthPage() {
                           status: "active" as const
                         };
                         
-                        // Use our direct authentication method
+                        // Use our direct authentication method - this will trigger the useEffect above
                         setManualUser(adminUser);
                         
-                        // Navigate to dashboard
-                        setLocation('/');
+                        // No need to call setLocation directly, the useEffect will handle it
                       }}
                       disabled={loginMutation.isPending}
                     >
