@@ -157,7 +157,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Store session in sessionStorage as a fallback
       try {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+        // Store just the minimal user info we need for authentication in sessionStorage
+        const userAuthInfo = {
+          id: user.id,
+          username: user.username, 
+          role: user.role,
+          fullName: user.fullName
+        };
+        
+        // Save to sessionStorage for our custom header auth
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userAuthInfo));
         console.log("Saved user session to sessionStorage");
         
         // Set manual client-side cookies since the server ones might not work
@@ -168,11 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
         
         // Set user info cookie for fallback authentication
-        const userInfoCookie = JSON.stringify({
-          id: user.id,
-          username: user.username,
-          role: user.role
-        });
+        const userInfoCookie = JSON.stringify(userAuthInfo);
         document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
         
         console.log("Set manual auth cookies for fallback:", {
@@ -233,7 +238,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Store session in sessionStorage as a fallback
       try {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
+        // Store just the minimal user info we need for authentication in sessionStorage
+        const userAuthInfo = {
+          id: user.id,
+          username: user.username, 
+          role: user.role,
+          fullName: user.fullName
+        };
+        
+        // Save to sessionStorage for our custom header auth
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userAuthInfo));
         console.log("Saved user session to sessionStorage");
         
         // Set manual client-side cookies since the server ones might not work
@@ -244,11 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
         
         // Set user info cookie for fallback authentication
-        const userInfoCookie = JSON.stringify({
-          id: user.id,
-          username: user.username,
-          role: user.role
-        });
+        const userInfoCookie = JSON.stringify(userAuthInfo);
         document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
       } catch (err) {
         console.error("Failed to save session to storage:", err);
@@ -330,7 +340,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Store in sessionStorage
     try {
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userData));
+      // Create minimal auth info for the header authentication
+      const userAuthInfo = {
+        id: userData.id,
+        username: userData.username, 
+        role: userData.role,
+        fullName: userData.fullName
+      };
+      
+      // Save to sessionStorage for our custom header auth
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userAuthInfo));
       
       // Set manual cookies
       const cookieExpiration = new Date();
@@ -338,11 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
       
-      const userInfoCookie = JSON.stringify({
-        id: userData.id,
-        username: userData.username,
-        role: userData.role
-      });
+      const userInfoCookie = JSON.stringify(userAuthInfo);
       document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
       
       toast({

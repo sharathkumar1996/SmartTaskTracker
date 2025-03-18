@@ -94,6 +94,50 @@ export function setupAuth(app: Express) {
     });
     next();
   });
+  
+  // Alternative authentication middleware using custom headers
+  // This is used when cookies aren't working but we still need authentication
+  app.use(async (req, res, next) => {
+    // If already authenticated through session, continue
+    if (req.isAuthenticated()) {
+      return next();
+    }
+    
+    // Check for our custom auth headers
+    const userId = req.headers['x-user-id'];
+    const userRole = req.headers['x-user-role'];
+    
+    if (userId && userRole) {
+      try {
+        console.log(`Using header-based auth: User ID ${userId}, Role: ${userRole}`);
+        // Convert headers to expected types
+        const userIdNum = parseInt(userId.toString(), 10);
+        
+        if (!isNaN(userIdNum)) {
+          // Get the user from storage
+          const user = await storage.getUser(userIdNum);
+          
+          if (user && user.role === userRole) {
+            // Manually set user authentication
+            req.login(user, (err) => {
+              if (err) {
+                console.error("Error in manual login:", err);
+              } else {
+                console.log(`Manual authentication successful for user ${user.username}`);
+              }
+              next();
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Header auth error:", error);
+      }
+    }
+    
+    // Continue without authentication if headers weren't valid
+    next();
+  });
 
   passport.use(
     new LocalStrategy(async (username: string, password: string, done) => {

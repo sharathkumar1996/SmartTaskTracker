@@ -143,8 +143,9 @@ export const getQueryFn: <T>(options: {
     
     // Check for a sessionStorage fallback if cookies aren't working
     let sessionUser = null;
+    const sessionStorageKey = 'chitfund_user_session';
     try {
-      const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      const savedSession = sessionStorage.getItem(sessionStorageKey);
       if (savedSession) {
         sessionUser = JSON.parse(savedSession);
         console.log('Found backup user session in sessionStorage:', sessionUser?.username);
@@ -183,7 +184,7 @@ export const getQueryFn: <T>(options: {
         console.log('No auth cookie found when fetching user data, skipping request');
         // Last resort attempt - try to get a fresh session
         try {
-          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+          sessionStorage.removeItem(sessionStorageKey);
         } catch (e) {
           console.warn('Failed to clear session storage:', e);
         }
@@ -192,13 +193,25 @@ export const getQueryFn: <T>(options: {
     }
     
     try {
+      // Add the auth headers from session storage if available
+      const authHeaders = {};
+      
+      if (sessionUser) {
+        console.log(`Adding auth headers for user ID: ${sessionUser.id}, role: ${sessionUser.role}`);
+        Object.assign(authHeaders, {
+          "X-User-ID": sessionUser.id.toString(),
+          "X-User-Role": sessionUser.role
+        });
+      }
+      
       const res = await fetch(endpoint, {
         credentials: "include", // Essential for session cookies
         cache: "no-store", // Prevent caching of auth responses
         headers: {
           "Accept": "application/json",
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache"
+          "Pragma": "no-cache",
+          ...authHeaders
         },
       });
       
