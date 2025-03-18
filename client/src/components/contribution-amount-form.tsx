@@ -116,6 +116,15 @@ export function ContributionAmountForm({
     // Default to standard amount
     return parseFloat(standardAmount);
   };
+  
+  // Calculate total fund amount based on monthly contribution
+  const getTotalFundAmount = () => {
+    const monthlyAmount = getMonthlyContribution();
+    if (isNaN(monthlyAmount)) return 0;
+    
+    // Total fund amount is 20 times the monthly contribution (since monthly is 5% of total)
+    return monthlyAmount * 20;
+  };
 
   // Calculate expected bonus based on contribution
   const getCurrentBonus = () => {
@@ -163,33 +172,101 @@ export function ContributionAmountForm({
                 </FormItem>
               )}
             />
+            
+            {(form.watch("increasedMonthlyAmount") || form.watch("customFundAmount")) && (
+              <div className="p-4 border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 rounded-lg mb-4">
+                <h4 className="font-medium mb-2 text-green-800 dark:text-green-300">Calculation Summary</h4>
+                <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                  Monthly contribution: {formatCurrency(getMonthlyContribution())}
+                </p>
+                <p className="text-sm font-medium text-green-800 dark:text-green-300 mt-1">
+                  Total fund amount: {formatCurrency(getTotalFundAmount())}
+                </p>
+                <p className="text-sm font-medium text-green-800 dark:text-green-300 mt-1">
+                  Expected monthly bonus: {getCurrentBonus()}
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-400 mt-1">
+                  After withdrawal, member will need to pay {formatCurrency(getMonthlyContribution() * 1.2)} per month
+                </p>
+              </div>
+            )}
 
             <div className="p-4 border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 rounded-lg mb-4">
-              <h4 className="font-medium mb-2 text-blue-800 dark:text-blue-300">Custom Amount Options</h4>
+              <h4 className="font-medium mb-2 text-blue-800 dark:text-blue-300">Customize Fund and Contribution Amount</h4>
               <p className="text-xs text-blue-700 dark:text-blue-400 mb-4">
-                Choose one of the options below to customize the contribution amount.
+                Enter either the monthly contribution or total fund amount - both fields will update automatically to maintain the 5% ratio.
               </p>
 
               <FormField
                 control={form.control}
-                name="customFundAmount"
+                name="increasedMonthlyAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Option 1: Custom Chit Fund Amount</FormLabel>
+                    <FormLabel>Option 1: Custom Monthly Contribution</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={`Standard fund: ₹100,000`}
+                        placeholder={`Standard amount: ${formatCurrency(standardAmount)}`}
                         {...field}
-                        disabled={isSubmitting || !!form.watch("increasedMonthlyAmount")}
+                        disabled={isSubmitting}
                         value={field.value || ""}
                         onChange={(e) => {
                           // Allow only numbers and basic formatting
                           const value = e.target.value.replace(/[^\d.-]/g, '');
                           field.onChange(value);
                           
-                          // If we set a custom fund amount, clear any custom monthly contribution
-                          if (value && form.watch("increasedMonthlyAmount")) {
-                            form.setValue("increasedMonthlyAmount", "");
+                          // If we set a custom monthly amount, calculate and update the custom fund amount
+                          if (value) {
+                            const monthlyContribution = parseFloat(value);
+                            if (!isNaN(monthlyContribution)) {
+                              // Calculate fund amount as 20x the monthly contribution (since monthly is 5% of total)
+                              const fundAmount = monthlyContribution * 20;
+                              // Update the custom fund amount field with this calculated value
+                              form.setValue("customFundAmount", fundAmount.toString());
+                            }
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Directly specify a monthly contribution amount (e.g., 10,000 per month instead of 5,000)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="my-4 flex items-center">
+                <div className="h-px flex-1 bg-blue-200 dark:bg-blue-800"></div>
+                <span className="px-3 text-xs text-blue-600 dark:text-blue-400">AND</span>
+                <div className="h-px flex-1 bg-blue-200 dark:bg-blue-800"></div>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="customFundAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Option 2: Custom Chit Fund Amount</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={`Standard fund: ₹100,000`}
+                        {...field}
+                        disabled={isSubmitting}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          // Allow only numbers and basic formatting
+                          const value = e.target.value.replace(/[^\d.-]/g, '');
+                          field.onChange(value);
+                          
+                          // If we set a custom fund amount, calculate and update the monthly contribution
+                          if (value) {
+                            const customFundAmount = parseFloat(value);
+                            if (!isNaN(customFundAmount)) {
+                              // Calculate monthly contribution as 5% of the fund amount
+                              const monthlyAmount = customFundAmount * 0.05;
+                              // Update the monthly contribution field with this calculated value
+                              form.setValue("increasedMonthlyAmount", monthlyAmount.toString());
+                            }
                           }
                         }}
                       />
@@ -201,60 +278,7 @@ export function ContributionAmountForm({
                   </FormItem>
                 )}
               />
-
-              <div className="my-4 flex items-center">
-                <div className="h-px flex-1 bg-blue-200 dark:bg-blue-800"></div>
-                <span className="px-3 text-xs text-blue-600 dark:text-blue-400">OR</span>
-                <div className="h-px flex-1 bg-blue-200 dark:bg-blue-800"></div>
-              </div>
-
-              <FormField
-                control={form.control}
-                name="increasedMonthlyAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Option 2: Custom Monthly Contribution</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={`Standard amount: ${formatCurrency(standardAmount)}`}
-                        {...field}
-                        disabled={isSubmitting || !!form.watch("customFundAmount")}
-                        value={field.value || ""}
-                        onChange={(e) => {
-                          // Allow only numbers and basic formatting
-                          const value = e.target.value.replace(/[^\d.-]/g, '');
-                          field.onChange(value);
-                          
-                          // If we set a custom monthly amount, clear any custom fund amount
-                          if (value && form.watch("customFundAmount")) {
-                            form.setValue("customFundAmount", "");
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Directly specify a monthly contribution amount (alternative to custom fund amount)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
-            
-            {(form.watch("increasedMonthlyAmount") || form.watch("customFundAmount")) && (
-              <div className="p-4 border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950 rounded-lg">
-                <h4 className="font-medium mb-2 text-green-800 dark:text-green-300">Calculation Summary</h4>
-                <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                  Monthly contribution: {formatCurrency(getMonthlyContribution())}
-                </p>
-                <p className="text-sm font-medium text-green-800 dark:text-green-300 mt-1">
-                  Expected monthly bonus: {getCurrentBonus()}
-                </p>
-                <p className="text-xs text-green-700 dark:text-green-400 mt-1">
-                  After withdrawal, member will need to pay {formatCurrency(getMonthlyContribution() * 1.2)} per month
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
