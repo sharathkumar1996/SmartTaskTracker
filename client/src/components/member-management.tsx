@@ -255,9 +255,14 @@ export function MemberManagement() {
                                       name="email"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Email</FormLabel>
+                                          <FormLabel>Email (Optional)</FormLabel>
                                           <FormControl>
-                                            <Input {...field} defaultValue={member.email} />
+                                            <Input 
+                                              type="email" 
+                                              {...field} 
+                                              defaultValue={member.email as string || ''} 
+                                              placeholder="user@example.com"
+                                            />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
@@ -268,9 +273,13 @@ export function MemberManagement() {
                                       name="phone"
                                       render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Phone</FormLabel>
+                                          <FormLabel>Phone (Optional)</FormLabel>
                                           <FormControl>
-                                            <Input {...field} defaultValue={member.phone} />
+                                            <Input 
+                                              {...field} 
+                                              defaultValue={member.phone as string || ''} 
+                                              placeholder="+91 XXXXX XXXXX"
+                                            />
                                           </FormControl>
                                           <FormMessage />
                                         </FormItem>
@@ -504,9 +513,9 @@ export function MemberManagement() {
                                           name="email"
                                           render={({ field }) => (
                                             <FormItem>
-                                              <FormLabel>Email</FormLabel>
+                                              <FormLabel>Email (Optional)</FormLabel>
                                               <FormControl>
-                                                <Input {...field} defaultValue={agent.email} />
+                                                <Input {...field} defaultValue={agent.email as string || ''} />
                                               </FormControl>
                                               <FormMessage />
                                             </FormItem>
@@ -519,7 +528,7 @@ export function MemberManagement() {
                                             <FormItem>
                                               <FormLabel>Phone</FormLabel>
                                               <FormControl>
-                                                <Input {...field} defaultValue={agent.phone} />
+                                                <Input {...field} defaultValue={agent.phone as string || ''} />
                                               </FormControl>
                                               <FormMessage />
                                             </FormItem>
@@ -711,9 +720,14 @@ export function MemberManagement() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>Email (Optional)</FormLabel>
                           <FormControl>
-                            <Input type="email" {...field} />
+                            <Input 
+                              type="email" 
+                              {...field} 
+                              value={field.value || ''} 
+                              placeholder="user@example.com"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -724,9 +738,13 @@ export function MemberManagement() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone</FormLabel>
+                          <FormLabel>Phone (Optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input 
+                              {...field} 
+                              value={field.value || ''} 
+                              placeholder="+91 XXXXX XXXXX"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
