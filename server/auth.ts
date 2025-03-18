@@ -61,7 +61,7 @@ export function setupAuth(app: Express) {
     process.env.SESSION_SECRET = 'chitfund-dev-session-secret-' + Date.now();
   }
 
-  // Improved session configuration for Replit environment
+  // Simple session configuration with minimal options
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
     resave: true, // Always save session even if not modified
@@ -70,10 +70,9 @@ export function setupAuth(app: Express) {
     name: 'chitfund.sid',
     cookie: {
       secure: false, // Must be false in development environment
-      httpOnly: true, 
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/',
-      sameSite: 'lax' // Allow cookies in same-site context
+      path: '/'
     }
   };
 
@@ -210,30 +209,20 @@ export function setupAuth(app: Express) {
         
         const { password, ...userWithoutPassword } = user;
         
-        // Set additional cookies to help debug session issues
-        // Non-httpOnly cookies we can check in the browser console
+        // Set a success cookie to help debug session issues
+        res.cookie('auth_success', 'true', { 
+          maxAge: 60000, // 1 minute
+          httpOnly: true,
+          path: '/',
+          sameSite: 'lax'
+        });
+        
+        // Set another non-httpOnly cookie to verify in the browser
         res.cookie('visible_auth_success', 'true', { 
           maxAge: 60000, // 1 minute
           httpOnly: false,
           path: '/',
-          sameSite: 'lax',
-          secure: false
-        });
-        
-        res.cookie('visible_user_id', String(user.id), { 
-          maxAge: 60000, // 1 minute
-          httpOnly: false,
-          path: '/',
-          sameSite: 'lax',
-          secure: false
-        });
-        
-        res.cookie('login_time', new Date().toISOString(), { 
-          maxAge: 60000, // 1 minute
-          httpOnly: false,
-          path: '/',
-          sameSite: 'lax',
-          secure: false
+          sameSite: 'lax'
         });
         
         res.json(userWithoutPassword);

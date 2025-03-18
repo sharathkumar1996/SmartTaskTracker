@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
-import { z } from "zod"; // Add this import
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { 
@@ -108,53 +107,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Chit Fund Management Routes
   app.post("/api/chitfunds", async (req, res) => {
-    if (req.user?.role !== "admin") {
-      console.log("Unauthorized chit fund creation attempt. User role:", req.user?.role);
-      return res.sendStatus(403);
-    }
-    
-    console.log("Received chit fund creation data:", req.body);
+    if (req.user?.role !== "admin") return res.sendStatus(403);
 
-    // Create a custom validator without the problematic fields
-    const basicChitFundSchema = z.object({
-      name: z.string(),
-      amount: z.string().or(z.number()).transform(String),
-      duration: z.number().min(1, "Duration must be at least 1 month"),
-      memberCount: z.number().min(2, "Member count must be at least 2"),
-      startDate: z.coerce.date(),
-      endDate: z.coerce.date(),
-      status: z.string(),
-    });
-    
-    const parseResult = basicChitFundSchema.safeParse(req.body);
+    const parseResult = insertChitFundSchema.safeParse(req.body);
     if (!parseResult.success) {
-      console.error("Validation error details:", parseResult.error.format());
-      return res.status(400).json({
-        message: "Validation failed for chit fund data",
-        errors: parseResult.error.format()
-      });
+      console.error("Validation error:", parseResult.error);
+      return res.status(400).json(parseResult.error);
     }
-    
-    // Create the fund data with the validated data and calculated fields
-    const fundData = {
-      ...parseResult.data,
-      monthlyContribution: (parseFloat(req.body.amount) / req.body.duration).toFixed(2).toString(),
-      monthlyBonus: (parseFloat(req.body.amount) * 0.1).toFixed(2).toString(),
-      baseCommission: (parseFloat(req.body.amount) * 0.05).toFixed(2).toString(),
-    };
 
     try {
-      console.log("Validated data being sent to storage:", fundData);
-      const chitFund = await storage.createChitFund(fundData);
-      console.log("Chit fund created successfully:", chitFund);
+      const chitFund = await storage.createChitFund(parseResult.data);
       res.json(chitFund);
     } catch (error) {
       console.error("Error creating chit fund:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ 
-        message: "Failed to create chit fund",
-        error: errorMessage
-      });
+      res.status(500).json({ message: "Failed to create chit fund" });
     }
   });
 
@@ -873,9 +839,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if member has paid for current month
         const hasCurrentMonthPayment = payments.some(payment => {
-          // Ensure payment.paymentDate is not null before creating a new Date
-          if (!payment.paymentDate) return false;
-          
           const paymentDate = new Date(payment.paymentDate);
           return (
             payment.paymentType === 'monthly' &&
@@ -886,9 +849,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if member has paid for previous month
         const hasPreviousMonthPayment = payments.some(payment => {
-          // Ensure payment.paymentDate is not null before creating a new Date
-          if (!payment.paymentDate) return false;
-          
           const paymentDate = new Date(payment.paymentDate);
           return (
             payment.paymentType === 'monthly' &&

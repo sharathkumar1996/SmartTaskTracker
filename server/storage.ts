@@ -234,49 +234,21 @@ export class DatabaseStorage implements IStorage {
 
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
     try {
-      console.log("Creating chit fund with data:", fund);
-      
-      // Calculate the values that will be stored in the database but not sent by the client
-      // Only calculate if they're not already provided
-      const monthlyContribution = fund.monthlyContribution || 
-        (parseFloat(fund.amount) / fund.duration).toFixed(2).toString();
-      
-      const monthlyBonus = fund.monthlyBonus || 
-        (parseFloat(fund.amount) * 0.1).toFixed(2).toString();
-      
-      const baseCommission = fund.baseCommission || 
-        (parseFloat(fund.amount) * 0.05).toFixed(2).toString();
-      
-      console.log("Using values for fund:", {
-        monthlyContribution,
-        monthlyBonus,
-        baseCommission
-      });
-      
-      // Define the schema correct type for insertion
-      const insertData = {
-        name: fund.name,
-        amount: fund.amount,
-        duration: fund.duration,
-        memberCount: fund.memberCount,
-        monthlyContribution: monthlyContribution,
-        monthlyBonus: monthlyBonus,
-        baseCommission: baseCommission,
-        startDate: new Date(fund.startDate),
-        endDate: new Date(fund.endDate),
-        status: fund.status === "active" ? "active" : 
-               fund.status === "completed" ? "completed" : 
-               fund.status === "closed" ? "closed" : "active"
-      };
-      
-      console.log("Final data for DB insert:", insertData);
-      
       const result = await db
         .insert(chitFunds)
-        .values(insertData)
+        .values({
+          name: fund.name,
+          amount: fund.amount,
+          duration: fund.duration,
+          memberCount: fund.memberCount,
+          monthlyContribution: fund.monthlyContribution || "5000",
+          monthlyBonus: fund.monthlyBonus || "1000",
+          baseCommission: fund.baseCommission || "5000",
+          startDate: new Date(fund.startDate),
+          endDate: new Date(fund.endDate),
+          status: fund.status
+        } as any)
         .returning();
-      
-      console.log("Chit fund created successfully with ID:", result[0]?.id);
       return result[0] as ChitFund;
     } catch (error) {
       console.error("Error in createChitFund:", error);

@@ -121,6 +121,9 @@ export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
   amount: z.string().or(z.number()).transform(String),
   duration: z.number().min(1, "Duration must be at least 1 month"),
   memberCount: z.number().min(2, "Member count must be at least 2"),
+  monthlyContribution: z.string().or(z.number()).transform(String),
+  monthlyBonus: z.string().or(z.number()).transform(String),
+  baseCommission: z.string().or(z.number()).transform(String),
 });
 
 // Define a completely custom payments schema instead of using createInsertSchema

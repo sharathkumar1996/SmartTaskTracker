@@ -63,20 +63,14 @@ export function ChitFundForm() {
 
       const fundData = {
         ...values,
-        amount: values.amount.toString(),
-        status: "active" as const
+        amount: values.amount.toString(), 
+        status: "active" as const,
       };
 
-      console.log("Submitting fund data:", fundData);
-
       const response = await apiRequest("POST", "/api/chitfunds", fundData);
-      
-      console.log("Response status:", response.status);
-      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Server error response:", errorData);
-        throw new Error(errorData.message || "Failed to create chit fund");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create chit fund");
       }
 
       await queryClient.invalidateQueries({ queryKey: ["/api/chitfunds"] });
