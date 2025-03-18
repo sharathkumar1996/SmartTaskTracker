@@ -50,8 +50,8 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
   // Set up year selection state
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   
-  // Add month range selection
-  const [monthRange, setMonthRange] = useState<string>("all");
+  // Add quarter selection
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("all");
   
   // Add month selection for individual month filtering
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -177,6 +177,17 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
     });
   }, []);
 
+  // Create an array of quarters for dropdown
+  const availableQuarters = useMemo(() => {
+    return [
+      { value: "all", label: "All Quarters" },
+      { value: "q1", label: "Q1 (Jan-Mar)" },
+      { value: "q2", label: "Q2 (Apr-Jun)" },
+      { value: "q3", label: "Q3 (Jul-Sep)" },
+      { value: "q4", label: "Q4 (Oct-Dec)" }
+    ];
+  }, []);
+  
   // Apply month range filter and display the appropriate months
   const recentData = useMemo(() => {
     // Create array for all 12 months of the year to ensure all months are shown
@@ -209,52 +220,16 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
       });
     }
     
-    // Apply filter based on selected month range or specific month
+    // Apply filter based on selected quarter or specific month
     let filteredMonths = [...allMonths];
     
     // If a specific month is selected
     if (selectedMonth !== null) {
       const monthIndex = parseInt(selectedMonth);
       filteredMonths = allMonths.filter(m => m.monthIndex === monthIndex);
-      // Reset month range when a specific month is selected
-      if (monthRange !== "monthly") {
-        setMonthRange("monthly");
-      }
     } else {
-      // Get current month (0-11)
-      const currentMonth = new Date().getMonth();
-      
-      switch (monthRange) {
-        case "monthly":
-          // If monthly is selected but no specific month, keep all months
-          break;
-      
-        case "3m": // Last 3 months
-          if (selectedYear === new Date().getFullYear().toString()) {
-            // If we're viewing the current year, filter relative to current month
-            const startMonth = Math.max(0, currentMonth - 2); // Ensure we don't go below 0
-            filteredMonths = allMonths.filter(m => 
-              m.monthIndex >= startMonth && m.monthIndex <= currentMonth
-            );
-          } else {
-            // For past years, show the last 3 months of the year
-            filteredMonths = allMonths.slice(9, 12);
-          }
-          break;
-        
-        case "6m": // Last 6 months
-          if (selectedYear === new Date().getFullYear().toString()) {
-            // If we're viewing the current year, filter relative to current month
-            const startMonth = Math.max(0, currentMonth - 5); // Ensure we don't go below 0
-            filteredMonths = allMonths.filter(m => 
-              m.monthIndex >= startMonth && m.monthIndex <= currentMonth
-            );
-          } else {
-            // For past years, show the last 6 months of the year
-            filteredMonths = allMonths.slice(6, 12);
-          }
-          break;
-          
+      // Apply quarter filter
+      switch (selectedQuarter) {
         case "q1": // First quarter (Jan-Mar)
           filteredMonths = allMonths.slice(0, 3);
           break;
@@ -287,7 +262,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
     filteredMonths.sort((a, b) => a.monthIndex - b.monthIndex);
     
     return filteredMonths;
-  }, [chartData, selectedYear, monthRange, selectedMonth]);
+  }, [chartData, selectedYear, selectedQuarter, selectedMonth]);
 
   if (isLoading) {
     return (
@@ -349,36 +324,51 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
           </div>
         </div>
         
-        <div className="flex flex-col space-y-1">
-          <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Month Range:</span>
-          </div>
-          <Tabs value={monthRange} onValueChange={(value) => {
-            setMonthRange(value);
-            // Clear selected month when changing tabs unless switching to monthly
-            if (value !== "monthly") {
-              setSelectedMonth(null);
-            }
-          }} className="w-full">
-            <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 w-full">
-              <TabsTrigger value="all" className="text-xs md:text-sm">All</TabsTrigger>
-              <TabsTrigger value="3m" className="text-xs md:text-sm">3 Months</TabsTrigger>
-              <TabsTrigger value="6m" className="text-xs md:text-sm">6 Months</TabsTrigger>
-              <TabsTrigger value="q1" className="text-xs md:text-sm">Q1 (Jan-Mar)</TabsTrigger>
-              <TabsTrigger value="q2" className="text-xs md:text-sm">Q2 (Apr-Jun)</TabsTrigger>
-              <TabsTrigger value="q3" className="text-xs md:text-sm">Q3 (Jul-Sep)</TabsTrigger>
-              <TabsTrigger value="q4" className="text-xs md:text-sm">Q4 (Oct-Dec)</TabsTrigger>
-              <TabsTrigger value="monthly" className="text-xs md:text-sm">Monthly</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          {/* Show month selector only when monthly tab is active */}
-          {monthRange === "monthly" && (
-            <div className="mt-2">
-              <Select value={selectedMonth || ""} onValueChange={setSelectedMonth}>
+        <div className="flex flex-col space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Quarter selector */}
+            <div>
+              <div className="flex items-center mb-2">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Quarter:</span>
+              </div>
+              <Select 
+                value={selectedQuarter} 
+                onValueChange={(value) => {
+                  setSelectedQuarter(value);
+                  // Clear selected month when changing quarter
+                  setSelectedMonth(null);
+                }}
+              >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a specific month" />
+                  <SelectValue placeholder="Select quarter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableQuarters.map(quarter => (
+                    <SelectItem key={quarter.value} value={quarter.value}>{quarter.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Month selector */}
+            <div>
+              <div className="flex items-center mb-2">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Month:</span>
+              </div>
+              <Select 
+                value={selectedMonth || ""} 
+                onValueChange={(value) => {
+                  setSelectedMonth(value || null);
+                  // Reset quarter selection if a specific month is chosen
+                  if (value) {
+                    setSelectedQuarter("all");
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select specific month" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Months</SelectItem>
@@ -388,31 +378,25 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
                 </SelectContent>
               </Select>
             </div>
-          )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
         {/* Period summary with totals */}
         <div className="flex flex-col space-y-2">
           <p className="text-sm text-muted-foreground">
-            {monthRange === "all" ? (
-              <>Showing all months in {selectedYear}</>
-            ) : monthRange === "3m" ? (
-              <>Showing last 3 months {selectedYear === new Date().getFullYear().toString() ? 'of current year' : `of ${selectedYear}`}</>
-            ) : monthRange === "6m" ? (
-              <>Showing last 6 months {selectedYear === new Date().getFullYear().toString() ? 'of current year' : `of ${selectedYear}`}</>
-            ) : monthRange === "q1" ? (
-              <>Showing Q1 (Jan-Mar) of {selectedYear}</>
-            ) : monthRange === "q2" ? (
-              <>Showing Q2 (Apr-Jun) of {selectedYear}</>
-            ) : monthRange === "q3" ? (
-              <>Showing Q3 (Jul-Sep) of {selectedYear}</>
-            ) : monthRange === "q4" ? (
-              <>Showing Q4 (Oct-Dec) of {selectedYear}</>
-            ) : monthRange === "monthly" && selectedMonth ? (
+            {selectedMonth ? (
               <>Showing data for {availableMonths[parseInt(selectedMonth)].label} {selectedYear}</>
+            ) : selectedQuarter === "q1" ? (
+              <>Showing Q1 (Jan-Mar) of {selectedYear}</>
+            ) : selectedQuarter === "q2" ? (
+              <>Showing Q2 (Apr-Jun) of {selectedYear}</>
+            ) : selectedQuarter === "q3" ? (
+              <>Showing Q3 (Jul-Sep) of {selectedYear}</>
+            ) : selectedQuarter === "q4" ? (
+              <>Showing Q4 (Oct-Dec) of {selectedYear}</>
             ) : (
-              <>Select a specific month from the dropdown above</>
+              <>Showing all months in {selectedYear}</>
             )}
           </p>
           
