@@ -125,11 +125,12 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
         if (memberDetails.customFundAmount) {
           setFundAmount(memberDetails.customFundAmount);
           
-          // Set the commission based on the custom fund amount (5k per lakh = 5% of fund amount)
+          // Set the commission based on the custom fund amount (5% of fund amount)
           const customFundAmount = parseFloat(memberDetails.customFundAmount);
           const defaultCommission = Math.round(customFundAmount * 0.05).toString();
           
-          console.log(`Custom fund amount: ${customFundAmount}, Calculated commission: ${defaultCommission}`);
+          console.log(`Custom fund amount: ${customFundAmount}`);
+          console.log(`Commission calculation: ${customFundAmount} × 5% = ${defaultCommission}`);
           
           setCommissionAmount(defaultCommission);
           form.setValue('commission', defaultCommission);
@@ -137,11 +138,12 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
           // Use standard fund amount if no custom amount
           setFundAmount(baseAmount);
           
-          // Set the commission based on the fund amount (5k per lakh = 5% of fund amount)
+          // Set the commission based on the fund amount (5% of fund amount)
           const fundAmountNum = parseFloat(baseAmount);
-          const defaultCommission = Math.round(fundAmountNum * 0.05).toString(); // 5k per lakh = 50k for 10 lakh fund
+          const defaultCommission = Math.round(fundAmountNum * 0.05).toString();
           
-          console.log(`Fund amount: ${fundAmountNum}, Calculated commission: ${defaultCommission}`);
+          console.log(`Standard fund amount: ${fundAmountNum}`);
+          console.log(`Commission calculation: ${fundAmountNum} × 5% = ${defaultCommission}`);
           
           setCommissionAmount(defaultCommission);
           form.setValue('commission', defaultCommission);
@@ -174,27 +176,21 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
 
   // Calculate bonus amount based on months paid and custom fund amount
   useEffect(() => {
-    if (fundData && monthsPaid > 0) {
+    if (fundData && monthsPaid > 0 && fundAmount) {
       try {
-        // Base bonus is 1000 per month for a 1 lakh fund (1% of fund amount)
-        const defaultBonus = parseFloat(fundData.monthlyBonus || "1000");
-        let monthlyBonus = defaultBonus;
+        // Calculate monthly bonus as 1% of the fund amount
+        // For standard 100,000 (1 lakh) fund, the monthly bonus would be 1,000
+        const fundAmountValue = parseFloat(fundAmount);
+        const monthlyBonus = fundAmountValue * 0.01; // 1% of fund amount
         
-        // If member has a custom fund amount, scale the bonus proportionally
-        if (memberDetails?.customFundAmount) {
-          const standardFundAmount = parseFloat(fundData.amount);
-          const customFundAmount = parseFloat(memberDetails.customFundAmount);
-          
-          // Scale bonus proportionally to custom fund amount
-          // e.g., if standard is 1 lakh with 1k bonus, and custom is 2 lakh, bonus should be 2k
-          monthlyBonus = defaultBonus * (customFundAmount / standardFundAmount);
-          
-          console.log(`Bonus calculation: Standard amount = ${standardFundAmount}, Custom amount = ${customFundAmount}`);
-          console.log(`Default monthly bonus = ${defaultBonus}, Calculated monthly bonus = ${monthlyBonus}`);
-        }
+        // Log calculation details for debugging
+        console.log(`Bonus calculation: Fund amount = ${fundAmountValue}`);
+        console.log(`Monthly bonus (1% of fund amount) = ${monthlyBonus}`);
         
+        // Total bonus is months paid × monthly bonus
         const calculatedBonus = monthsPaid * monthlyBonus;
         console.log(`Total bonus calculation: ${monthsPaid} months × ${monthlyBonus} = ${calculatedBonus}`);
+        
         setBonusAmount(calculatedBonus.toString());
       } catch (error) {
         console.error("Error calculating bonus amount:", error);
@@ -204,7 +200,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
       // Reset bonus if no months paid or no fund data
       setBonusAmount("0");
     }
-  }, [fundData, monthsPaid, memberDetails]);
+  }, [fundData, monthsPaid, memberDetails, fundAmount]);
 
   // Calculate remaining fund amount (fund amount - paid amount)
   useEffect(() => {
@@ -420,7 +416,7 @@ export function PayoutForm({ className, chitFundId, userId, onSuccess }: PayoutF
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className={className}>
-        <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
             {fundAmount && (
               <Card>
                 <CardContent className="pt-4">
