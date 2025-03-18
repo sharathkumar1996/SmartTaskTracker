@@ -135,7 +135,23 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       // Create rows for each member with proper formatting for A4 sheet
       const memberRows = sortedMembers.map((member: FundMember, index) => {
         // Start with member number and name
-        const row = [(index + 1).toString(), member.fullName];
+        let memberName = member.fullName;
+        
+        // Add share identifier if present
+        if (member.shareIdentifier) {
+          memberName += ` (${member.shareIdentifier})`;
+        }
+        
+        // Add custom fund amount if present
+        if (member.customFundAmount) {
+          memberName += ` [Custom: ${formatCurrency(member.customFundAmount)}]`;
+        } 
+        // Or add custom monthly amount if present
+        else if (member.increasedMonthlyAmount) {
+          memberName += ` [Monthly: ${formatCurrency(member.increasedMonthlyAmount)}]`;
+        }
+        
+        const row = [(index + 1).toString(), memberName];
         
         // Add payment data for each month
         for (let month = 1; month <= 20; month++) {
@@ -331,8 +347,29 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
                 <TableBody>
                   {sortedMembers.map((member) => (
                     <TableRow key={member.id}>
-                      <TableCell className="sticky left-0 z-10 bg-background font-medium min-w-[180px]">
-                        {member.fullName}
+                      <TableCell className="sticky left-0 z-10 bg-background font-medium min-w-[220px]">
+                        <div>
+                          {member.fullName}
+                          {member.shareIdentifier && (
+                            <span className="text-xs ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-1.5 py-0.5 rounded">
+                              {member.shareIdentifier}
+                            </span>
+                          )}
+                        </div>
+                        {(member.customFundAmount || member.increasedMonthlyAmount) && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {member.customFundAmount && (
+                              <span className="bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-200 px-1.5 py-0.5 rounded">
+                                Custom: {formatCurrency(member.customFundAmount)}
+                              </span>
+                            )}
+                            {member.increasedMonthlyAmount && (
+                              <span className="bg-amber-50 text-amber-700 dark:bg-amber-900 dark:text-amber-200 px-1.5 py-0.5 rounded">
+                                Monthly: {formatCurrency(member.increasedMonthlyAmount)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                       {Array.from({ length: 20 }, (_, month) => {
                         const monthNumber = month + 1;
