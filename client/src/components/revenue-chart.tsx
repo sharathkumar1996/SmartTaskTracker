@@ -114,10 +114,9 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
         : Number(payment.amount);
       
       if (!isNaN(amount)) {
-        // Regular payments contribute to revenue
-        if (payment.paymentType === 'monthly') {
-          monthData.revenue += amount;
-        }
+        // All payment types contribute to revenue (total amount received by members)
+        // This includes monthly payments, bonuses, and withdrawals
+        monthData.revenue += amount;
 
         // For withdrawal payments, extract commission if available
         if (payment.paymentType === 'withdrawal') {
@@ -135,9 +134,12 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
               : Number(payment.commissionAmount);
           }
           
-          // If no commission found, estimate it as 5-6% of payment amount
+          // If no commission found, calculate it as per project rules (20% of monthly amount)
           if (commission === 0) {
-            commission = amount * 0.05; // Default commission rate
+            // Standard calculation: commission is 20% of monthly payment
+            // Monthly payment is 5% of fund amount
+            const estimatedMonthlyAmount = amount * 0.05; // Estimate based on withdrawal amount
+            commission = estimatedMonthlyAmount * 0.2; // 20% of monthly amount
           }
           
           if (!isNaN(commission) && commission > 0) {

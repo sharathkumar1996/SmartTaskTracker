@@ -53,17 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       console.log('Fetching current user session');
       
-      // Check for local cookie confirmation first
-      // Be less strict about the exact format as different environments may store cookies differently
-      const hasAuthCookie = document.cookie.includes('auth_success');
-      const hasManualAuthCookie = document.cookie.includes('manual_auth_success');
-      const hasUserInfoCookie = document.cookie.includes('user_info=');
-      
-      // Check if we have a session in storage as fallback
-      if (sessionStorageUser && (hasManualAuthCookie || hasAuthCookie)) {
+      // Check for session storage first as our most reliable source
+      if (sessionStorageUser) {
         console.log('Using session from sessionStorage:', sessionStorageUser.username);
         return sessionStorageUser;
       }
+      
+      // Check cookies as a secondary authentication method
+      const hasAuthCookie = document.cookie.includes('auth_success');
+      const hasManualAuthCookie = document.cookie.includes('manual_auth_success');
       
       if (!hasAuthCookie && !hasManualAuthCookie) {
         console.log('No auth cookie found, assuming not logged in');
@@ -89,13 +87,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
             // Clear local cookies if they exist but the server rejects them
             // This helps with cookie/session mismatch
-            if (hasAuthCookie || hasUserInfoCookie) {
+            const hasUserInfoCookie = document.cookie.includes('user_info=');
+            if (hasAuthCookie || hasManualAuthCookie || hasUserInfoCookie) {
               console.log('Clearing stale client-side cookies');
+              // Standard cookies (no secure/sameSite flags)
+              document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+              document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+              document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+              document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+              document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+              
+              // Also try with secure flag variants
               document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+              document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
               document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
               document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
               document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
-              document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
             }
             
             return null;
@@ -222,9 +229,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
         console.log("Cleared user session from sessionStorage");
         
-        // Clear all cookies
-        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+        // Clear all cookies - use multiple formats to ensure they're cleared
+        // Standard cookies (no secure/sameSite flags)
+        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
         document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        
+        // Also try with secure flag variants
+        document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+        document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
         document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
         document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
         document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
