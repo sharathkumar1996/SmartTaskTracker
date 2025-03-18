@@ -34,7 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Fetching current user session');
       
       // Check for local cookie confirmation first
-      const hasAuthCookie = document.cookie.includes('auth_success=true');
+      // Be less strict about the exact format as different environments may store cookies differently
+      const hasAuthCookie = document.cookie.includes('auth_success');
       const hasUserInfoCookie = document.cookie.includes('user_info=');
       
       if (!hasAuthCookie) {

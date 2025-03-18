@@ -126,7 +126,9 @@ export const getQueryFn: <T>(options: {
       'No cookies available');
     
     // Check for auth cookie presence - don't even attempt auth-required endpoints without it
-    const hasAuthCookie = document.cookie.includes('auth_success=true');
+    // Check for auth cookie but don't be strict about the format
+    // In some environments 'auth_success=true' might be stored differently
+    const hasAuthCookie = document.cookie.includes('auth_success');
     if (endpoint === '/api/user' && !hasAuthCookie) {
       console.log('No auth cookie found when fetching user data, skipping request');
       return null;
