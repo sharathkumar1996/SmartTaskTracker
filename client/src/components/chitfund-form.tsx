@@ -61,21 +61,10 @@ export function ChitFundForm() {
     try {
       setIsSubmitting(true);
 
-      // Calculate monthly contribution from amount and duration
-      const monthlyContribution = (values.amount / values.duration).toFixed(2);
-      // Calculate default monthly bonus (e.g., 10% of monthly contribution)
-      const monthlyBonus = (values.amount * 0.1).toFixed(2);
-      // Set default base commission (e.g., 5% of total amount)
-      const baseCommission = (values.amount * 0.05).toFixed(2);
-
       const fundData = {
         ...values,
         amount: values.amount.toString(),
-        status: "active" as const,
-        // Add required fields from the schema
-        monthlyContribution: monthlyContribution,
-        monthlyBonus: monthlyBonus,
-        baseCommission: baseCommission
+        status: "active" as const
       };
 
       console.log("Submitting fund data:", fundData);

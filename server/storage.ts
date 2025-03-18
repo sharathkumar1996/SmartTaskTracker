@@ -234,6 +234,13 @@ export class DatabaseStorage implements IStorage {
 
   async createChitFund(fund: InsertChitFund): Promise<ChitFund> {
     try {
+      console.log("Creating chit fund with data:", fund);
+      
+      // Calculate the values that will be stored in the database but not sent by the client
+      const monthlyContribution = (parseFloat(fund.amount) / fund.duration).toFixed(2).toString();
+      const monthlyBonus = (parseFloat(fund.amount) * 0.1).toFixed(2).toString();
+      const baseCommission = (parseFloat(fund.amount) * 0.05).toFixed(2).toString();
+      
       const result = await db
         .insert(chitFunds)
         .values({
@@ -241,14 +248,17 @@ export class DatabaseStorage implements IStorage {
           amount: fund.amount,
           duration: fund.duration,
           memberCount: fund.memberCount,
-          monthlyContribution: fund.monthlyContribution || "5000",
-          monthlyBonus: fund.monthlyBonus || "1000",
-          baseCommission: fund.baseCommission || "5000",
+          // Add calculated values even though they're not in the client schema
+          monthlyContribution: monthlyContribution,
+          monthlyBonus: monthlyBonus,
+          baseCommission: baseCommission,
           startDate: new Date(fund.startDate),
           endDate: new Date(fund.endDate),
           status: fund.status
         } as any)
         .returning();
+      
+      console.log("Chit fund created successfully with ID:", result[0]?.id);
       return result[0] as ChitFund;
     } catch (error) {
       console.error("Error in createChitFund:", error);
