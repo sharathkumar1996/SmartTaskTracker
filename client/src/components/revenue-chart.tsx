@@ -13,8 +13,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // Define a Payment type that includes commission for our chart component
 interface ChartPayment {
   id: number;
@@ -48,6 +49,9 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
   
   // Set up year selection state
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
+  
+  // Add month range selection
+  const [monthRange, setMonthRange] = useState<string>("all");
   
   // Create an array of years (current year and 3 years back)
   const availableYears = useMemo(() => {
@@ -159,7 +163,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
     }));
   }, [payments, selectedYear]);
 
-  // We don't need to slice data for yearly view, we want to show all months
+  // Apply month range filter and display the appropriate months
   const recentData = useMemo(() => {
     // Create array for all 12 months of the year to ensure all months are shown
     const allMonths = Array.from({ length: 12 }, (_, i) => {
@@ -167,7 +171,9 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
       return {
         month: monthDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
         revenue: 0,
-        commission: 0
+        commission: 0,
+        // Store the month index (0-11) for sorting and filtering
+        monthIndex: i
       };
     });
     
@@ -186,8 +192,71 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
       });
     }
     
-    return allMonths;
-  }, [chartData, selectedYear]);
+    // Apply filter based on selected month range
+    let filteredMonths = [...allMonths];
+    
+    // Get current month (0-11)
+    const currentMonth = new Date().getMonth();
+    
+    switch (monthRange) {
+      case "3m": // Last 3 months
+        if (selectedYear === new Date().getFullYear().toString()) {
+          // If we're viewing the current year, filter relative to current month
+          const startMonth = Math.max(0, currentMonth - 2); // Ensure we don't go below 0
+          filteredMonths = allMonths.filter(m => 
+            m.monthIndex >= startMonth && m.monthIndex <= currentMonth
+          );
+        } else {
+          // For past years, show the last 3 months of the year
+          filteredMonths = allMonths.slice(9, 12);
+        }
+        break;
+      
+      case "6m": // Last 6 months
+        if (selectedYear === new Date().getFullYear().toString()) {
+          // If we're viewing the current year, filter relative to current month
+          const startMonth = Math.max(0, currentMonth - 5); // Ensure we don't go below 0
+          filteredMonths = allMonths.filter(m => 
+            m.monthIndex >= startMonth && m.monthIndex <= currentMonth
+          );
+        } else {
+          // For past years, show the last 6 months of the year
+          filteredMonths = allMonths.slice(6, 12);
+        }
+        break;
+        
+      case "q1": // First quarter (Jan-Mar)
+        filteredMonths = allMonths.slice(0, 3);
+        break;
+        
+      case "q2": // Second quarter (Apr-Jun)
+        filteredMonths = allMonths.slice(3, 6);
+        break;
+        
+      case "q3": // Third quarter (Jul-Sep)
+        filteredMonths = allMonths.slice(6, 9);
+        break;
+        
+      case "q4": // Fourth quarter (Oct-Dec)
+        filteredMonths = allMonths.slice(9, 12);
+        break;
+        
+      case "all":
+      default:
+        // All months - no filtering needed
+        break;
+    }
+    
+    // Ensure we have at least one data point
+    if (filteredMonths.length === 0) {
+      return allMonths; // Return all months if filtering resulted in no data
+    }
+    
+    // Sort the months chronologically for proper display
+    filteredMonths.sort((a, b) => a.monthIndex - b.monthIndex);
+    
+    return filteredMonths;
+  }, [chartData, selectedYear, monthRange]);
 
   if (isLoading) {
     return (
@@ -231,23 +300,79 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Revenue & Commission</CardTitle>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Year:</span>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Select year" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <CardHeader className="flex flex-col space-y-2">
+        <div className="flex flex-row items-center justify-between">
+          <CardTitle>Revenue & Commission</CardTitle>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">Year:</span>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="flex flex-col space-y-1">
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Month Range:</span>
+          </div>
+          <Tabs value={monthRange} onValueChange={setMonthRange} className="w-full">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 w-full">
+              <TabsTrigger value="all" className="text-xs md:text-sm">All</TabsTrigger>
+              <TabsTrigger value="3m" className="text-xs md:text-sm">3 Months</TabsTrigger>
+              <TabsTrigger value="6m" className="text-xs md:text-sm">6 Months</TabsTrigger>
+              <TabsTrigger value="q1" className="text-xs md:text-sm">Q1 (Jan-Mar)</TabsTrigger>
+              <TabsTrigger value="q2" className="text-xs md:text-sm">Q2 (Apr-Jun)</TabsTrigger>
+              <TabsTrigger value="q3" className="text-xs md:text-sm">Q3 (Jul-Sep)</TabsTrigger>
+              <TabsTrigger value="q4" className="text-xs md:text-sm">Q4 (Oct-Dec)</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 space-y-4">
+        {/* Period summary with totals */}
+        <div className="flex flex-col space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {monthRange === "all" ? (
+              <>Showing all months in {selectedYear}</>
+            ) : monthRange === "3m" ? (
+              <>Showing last 3 months {selectedYear === new Date().getFullYear().toString() ? 'of current year' : `of ${selectedYear}`}</>
+            ) : monthRange === "6m" ? (
+              <>Showing last 6 months {selectedYear === new Date().getFullYear().toString() ? 'of current year' : `of ${selectedYear}`}</>
+            ) : monthRange === "q1" ? (
+              <>Showing Q1 (Jan-Mar) of {selectedYear}</>
+            ) : monthRange === "q2" ? (
+              <>Showing Q2 (Apr-Jun) of {selectedYear}</>
+            ) : monthRange === "q3" ? (
+              <>Showing Q3 (Jul-Sep) of {selectedYear}</>
+            ) : (
+              <>Showing Q4 (Oct-Dec) of {selectedYear}</>
+            )}
+          </p>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-muted/50 rounded-lg p-3">
+              <h4 className="text-sm font-medium mb-1">Total Revenue</h4>
+              <p className="text-2xl font-bold">
+                {formatCurrency(recentData.reduce((sum, item) => sum + item.revenue, 0))}
+              </p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3">
+              <h4 className="text-sm font-medium mb-1">Total Commission</h4>
+              <p className="text-2xl font-bold">
+                {formatCurrency(recentData.reduce((sum, item) => sum + item.commission, 0))}
+              </p>
+            </div>
+          </div>
+        </div>
+        
         <ChartContainer
           className="h-[300px]"
           config={{
