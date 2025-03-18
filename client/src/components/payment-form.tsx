@@ -100,18 +100,25 @@ export function PaymentForm({ className, chitFundId, userId, onSuccess }: Paymen
     enabled: !!chitFundId && !!userId && !!currentMonth,
   });
 
-  // Calculate expected payment amount based on fund amount and withdrawal status
+  // Calculate expected payment amount based on fund amount, custom contribution, and withdrawal status
   useEffect(() => {
     if (fundData && fundData.amount) {
       try {
-        const fundAmount = parseFloat(fundData.amount.toString());
-        const baseRate = 0.05; // 5% of fund amount per month
-        const withdrawnRate = 0.06; // 6% of fund amount per month (20% increase)
+        // Check if member has a custom contribution amount set
+        const memberContributionAmount = memberDetails?.increasedMonthlyAmount 
+          ? parseFloat(memberDetails.increasedMonthlyAmount.toString())
+          : parseFloat(fundData.amount.toString()) * 0.05; // 5% of fund amount per month
+        
+        // Standard monthly amount is 5% of the fund amount
+        const baseAmount = memberContributionAmount;
+        
+        // Withdrawn members pay 20% more (1.2x the normal amount)
+        const withdrawnMultiplier = 1.2;
 
         if (memberDetails?.isWithdrawn) {
-          setExpectedAmount((fundAmount * withdrawnRate).toString());
+          setExpectedAmount((baseAmount * withdrawnMultiplier).toString());
         } else {
-          setExpectedAmount((fundAmount * baseRate).toString());
+          setExpectedAmount(baseAmount.toString());
         }
       } catch (error) {
         console.error("Error calculating expected amount:", error);
