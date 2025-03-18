@@ -123,10 +123,9 @@ export const getQueryFn: <T>(options: {
         }
       }, {} as Record<string, string>) : {};
     
-    // Only log cookie keys, not values for security
-    console.log(`Current cookies:`, Object.keys(cookieObj).length ? 
-      `Found ${Object.keys(cookieObj).length} cookies: ${Object.keys(cookieObj).join(', ')}` : 
-      'No cookies available');
+    // Log all cookie details for debugging
+    console.log(`Raw cookie string:`, document.cookie || 'No cookies');
+    console.log(`Current cookies:`, cookieObj);
     
     // Check for auth cookie presence - don't even attempt auth-required endpoints without it
     // Check for auth cookie but don't be strict about the format

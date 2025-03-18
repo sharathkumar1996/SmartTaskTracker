@@ -117,8 +117,11 @@ export default function AuthPage() {
     // This helps prevent cookie conflicts that might cause auth issues
     if (document.cookie.includes('auth_success') || document.cookie.includes('user_info')) {
       console.log("Clearing existing auth cookies before login attempt");
-      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
-      document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
+      // Clear all cookies - standard format (no secure flag)
+      document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     }
     
@@ -138,11 +141,31 @@ export default function AuthPage() {
             variant: "default"
           });
           
+          // Set our own client-side authentication cookies as a backup
+          // This helps ensure authentication works even if server cookies fail
+          const cookieExpiration = new Date();
+          cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+          
+          // Set manual auth flag for our own checking
+          document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+          
+          // Store user info for APIs that need it
+          const userInfoCookie = JSON.stringify({
+            id: userData.id,
+            username: userData.username,
+            role: userData.role
+          });
+          document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+          
+          console.log("Set client-side auth cookies for redundancy");
+          
           // After successful login, check for session cookies
           setTimeout(() => {
             const hasCookies = document.cookie.includes('auth_success') || 
-                              document.cookie.includes('chitfund.sid');
+                              document.cookie.includes('chitfund.sid') ||
+                              document.cookie.includes('manual_auth_success');
             console.log("Auth cookies present after login:", hasCookies);
+            console.log("Current cookies:", document.cookie);
             
             if (!hasCookies) {
               console.warn("Warning: No auth cookies detected after successful login");

@@ -154,14 +154,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
         console.log("Saved user session to sessionStorage");
         
-        // Set a manual client-side cookie since the server one might not work
+        // Set manual client-side cookies since the server ones might not work
         const cookieExpiration = new Date();
         cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
-        // Store a cookie with normal parameters (no cross-origin support needed)
+        
+        // Set authentication flag cookie
         document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
-        // Also keep a secure one just in case
-        document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}; SameSite=None; Secure;`;
-        console.log("Set manual auth cookie for fallback");
+        
+        // Set user info cookie for fallback authentication
+        const userInfoCookie = JSON.stringify({
+          id: user.id,
+          username: user.username,
+          role: user.role
+        });
+        document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+        
+        console.log("Set manual auth cookies for fallback:", {
+          auth_cookie: "manual_auth_success=true",
+          user_info: {id: user.id, username: user.username, role: user.role}
+        });
         
         // Update local state
         setSessionStorageUser(user);

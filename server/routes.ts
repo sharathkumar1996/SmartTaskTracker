@@ -44,11 +44,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Member Management Routes
   app.get("/api/users", async (req, res) => {
-    if (req.user?.role !== "admin" && req.user?.role !== "agent") {
-      return res.sendStatus(403);
+    try {
+      // Check for session-based authentication first
+      if (req.isAuthenticated() && req.user && (req.user.role === "admin" || req.user.role === "agent")) {
+        const users = await storage.getUsers();
+        return res.json(users);
+      }
+      
+      // Check for cookie-based authentication as fallback
+      if (req.cookies?.user_info) {
+        try {
+          const userInfo = JSON.parse(req.cookies.user_info);
+          if (userInfo && userInfo.id && (userInfo.role === "admin" || userInfo.role === "agent")) {
+            // Verify the user exists in database
+            const user = await storage.getUser(userInfo.id);
+            if (user && (user.role === "admin" || user.role === "agent")) {
+              // Re-establish session for the user
+              req.login(user, async (err) => {
+                if (err) {
+                  console.error('Failed to restore session from cookie:', err);
+                  return res.status(403).json({ error: "Unauthorized" });
+                }
+                
+                // Now get all users and return them
+                const users = await storage.getUsers();
+                return res.json(users);
+              });
+              return; // Stop execution here as we're handling response in callback
+            }
+          }
+        } catch (err) {
+          console.error('Error parsing user cookie for users API:', err);
+        }
+      }
+      
+      // If we've reached here, authentication failed
+      return res.status(403).json({ error: "Unauthorized" });
+    } catch (error) {
+      console.error("Error in /api/users route:", error);
+      res.status(500).json({ error: "Server error" });
     }
-    const users = await storage.getUsers();
-    res.json(users);
   });
 
   app.get("/api/users/members", async (req, res) => {
