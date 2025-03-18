@@ -1644,12 +1644,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const userPayments = await storage.getUserFundPayments(member.id, fundId);
           
+          // Filter existing payment records to remove withdrawal records we'll handle separately
+          const regularPayments = userPayments.filter(p => p.paymentType !== 'withdrawal');
+          
           // Check if there are withdrawal payables
           const userWithdrawals = payables.filter(
             p => p.userId === member.id && p.paymentType === 'withdrawal'
           );
           
-          // Find corresponding payment records for withdrawals (these should have the correct month number)
+          // Find existing withdrawal payment records (these should have the correct month number)
           const withdrawalPaymentRecords = userPayments.filter(
             p => p.paymentType === 'withdrawal'
           );
@@ -1660,9 +1663,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let monthNum = 1; // Default value, will be updated
             
             // PRIORITY 1: Find matching payment record with the correct month (most reliable source)
-            const matchingPaymentRecord = withdrawalPaymentRecords.find(
-              p => new Date(p.paymentDate).getTime() === new Date(withdrawal.paidDate).getTime()
-            );
+            const matchingPaymentRecord = withdrawalPaymentRecords.find(p => {
+              // Safely handle date comparison with null check
+              if (!p.paymentDate || !withdrawal.paidDate) return false;
+              
+              // Safely convert to Date objects
+              const paymentDate = typeof p.paymentDate === 'string' ? new Date(p.paymentDate) : p.paymentDate;
+              const paidDate = typeof withdrawal.paidDate === 'string' ? new Date(withdrawal.paidDate) : withdrawal.paidDate;
+              
+              return paymentDate.getTime() === paidDate.getTime();
+            });
             
             if (matchingPaymentRecord && matchingPaymentRecord.monthNumber) {
               monthNum = matchingPaymentRecord.monthNumber;
@@ -1690,14 +1700,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`Processing withdrawal for user ${withdrawal.userId}: setting to month ${monthNum}`);
             
-            
             return {
               id: -withdrawal.id, // Negative ID to avoid conflicts
               userId: withdrawal.userId,
               chitFundId: withdrawal.chitFundId,
               amount: withdrawal.amount,
               paymentType: 'withdrawal',
-              paymentMethod: 'bank',
+              paymentMethod: withdrawal.paymentMethod || 'bank',
               recordedBy: withdrawal.recorderId,
               notes: withdrawal.notes || 'Withdrawal payment',
               paymentDate: withdrawal.paidDate,
@@ -1706,7 +1715,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           });
           
-          const allUserPayments = [...userPayments, ...withdrawalPayments];
+          // Use only regularPayments to avoid duplicates
+          const allUserPayments = [...regularPayments, ...withdrawalPayments];
           
           // Format payments as needed by the client with additional info
           return {
