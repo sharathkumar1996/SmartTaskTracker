@@ -111,8 +111,18 @@ export const fundMembersRelations = relations(fundMembers, ({ one }) => ({
 // Updated insert schemas with proper validation
 export const insertUserSchema = createInsertSchema(users).extend({
   password: z.string().min(8, "Password must be at least 8 characters"),
-  email: z.string().email("Invalid email format").optional().nullable(),
-  phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format").optional().nullable(),
+  email: z.union([
+    z.string().email("Invalid email format"),
+    z.string().max(0),
+    z.null(),
+    z.undefined()
+  ]).optional().nullable(),
+  phone: z.union([
+    z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format"),
+    z.string().max(0),
+    z.null(),
+    z.undefined()
+  ]).optional().nullable(),
 });
 
 export const insertChitFundSchema = createInsertSchema(chitFunds).extend({
