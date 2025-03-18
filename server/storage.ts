@@ -98,11 +98,17 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    // Create a standard memory store with minimal configuration
+    // Enhanced memory store configuration with better persistence
     this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // Prune expired entries every 24h
+      checkPeriod: 86400000, // Prune expired entries every 24h
+      stale: false, // Don't auto-delete stale sessions
+      ttl: 24 * 60 * 60 * 1000, // 24 hour session TTL
+      noDisposeOnSet: true, // Don't dispose sessions on set operations
+      dispose: (key, value) => {
+        console.log(`Session disposed: ${key.substring(0, 8)}...`);
+      }
     });
-    console.log("Session store initialized");
+    console.log("Enhanced session store initialized");
   }
 
   async getUser(id: number): Promise<User | undefined> {

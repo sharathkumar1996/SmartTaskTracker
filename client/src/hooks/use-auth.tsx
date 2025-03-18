@@ -27,15 +27,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch: refetchUser
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
     queryFn: async () => {
       console.log('Fetching current user session');
+      
+      // Check for local cookie confirmation first
+      const hasAuthCookie = document.cookie.includes('auth_success=true');
+      const hasUserInfoCookie = document.cookie.includes('user_info=');
+      
+      if (!hasAuthCookie) {
+        console.log('No auth cookie found, assuming not logged in');
+        return null;
+      }
+      
+      console.log('Auth cookie found, verifying session with server');
+      
       try {
         const response = await fetch('/api/user', {
           credentials: 'include', // Important: include cookies with the request
           headers: {
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache, no-store'
           }
         });
         
@@ -43,22 +57,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (!response.ok) {
           if (response.status === 401) {
-            console.log('Session not authenticated (401)');
+            console.log('Session not authenticated or expired (401)');
+            
+            // Clear local cookies if they exist but the server rejects them
+            // This helps with cookie/session mismatch
+            if (hasAuthCookie || hasUserInfoCookie) {
+              console.log('Clearing stale client-side cookies');
+              document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+              document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            }
+            
             return null;
           }
           throw new Error(`HTTP error: ${response.status}`);
         }
         
         const userData = await response.json();
-        console.log('User session data received:', userData.id, userData.username);
+        
+        if (!userData.authenticated) {
+          console.log('Server did not confirm authentication');
+          return null;
+        }
+        
+        console.log('User session validated:', userData.id, userData.username);
         return userData;
       } catch (err) {
         console.error('Error fetching user session:', err);
         return null;
       }
     },
-    staleTime: 60000, // 1 minute
-    gcTime: Infinity,
+    staleTime: 60000, // 1 minute - keep data fresh for 1 minute
+    gcTime: 3600000, // 1 hour - keep data in cache for an hour
+    refetchInterval: 300000, // Re-check session every 5 minutes
+    refetchOnWindowFocus: true, // Re-check when tab/window gets focus
     // Explicitly initialize to null to fix type issue
     initialData: null,
   });

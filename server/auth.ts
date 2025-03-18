@@ -61,11 +61,12 @@ export function setupAuth(app: Express) {
     process.env.SESSION_SECRET = 'chitfund-dev-session-secret-' + Date.now();
   }
 
-  // Session configuration optimized for development environment
+  // Enhanced session configuration optimized for development environment
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
-    resave: false, // Only save session if modified
-    saveUninitialized: false, // Only save session when we put something on it
+    resave: true, // Always save the session to ensure persistence
+    saveUninitialized: true, // Save uninitialized sessions to prevent lost sessions
+    rolling: true, // Reset expiration with each request
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
@@ -184,65 +185,65 @@ export function setupAuth(app: Express) {
     console.log(`Login request received for username: ${req.body.username}`);
     console.log('Session ID at login start:', req.sessionID);
     
-    // Ensure session has been saved before authentication
-    req.session.save((err) => {
+    // Simplified login flow
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
-        console.error("Session save error before auth:", err);
-        return res.status(500).json({ message: "Session error" });
+        console.error("Authentication error:", err);
+        return next(err);
       }
       
-      passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (!user) {
+        console.log(`Authentication failed for ${req.body.username}: ${info?.message}`);
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
+      }
+      
+      req.login(user, (err) => {
         if (err) {
-          console.error("Authentication error:", err);
+          console.error("Session creation error:", err);
           return next(err);
         }
         
-        if (!user) {
-          console.log(`Authentication failed for ${req.body.username}: ${info?.message}`);
-          return res.status(401).json({ message: info?.message || "Authentication failed" });
-        }
+        console.log('Login successful for user:', user.id, user.username);
+        console.log('Session ID after login:', req.sessionID);
+        console.log('Is authenticated:', req.isAuthenticated());
         
-        // Use regenerate to ensure clean session on login
-        req.session.regenerate((err) => {
+        // Persist the session immediately to avoid synchronization issues
+        req.session.save((err) => {
           if (err) {
-            console.error("Session regeneration error:", err);
+            console.error("Session save error:", err);
             return next(err);
           }
           
-          req.login(user, (err) => {
-            if (err) {
-              console.error("Session creation error:", err);
-              return next(err);
-            }
-            
-            console.log('Login successful for user:', user.id, user.username);
-            console.log('Session ID after login:', req.sessionID);
-            console.log('Is authenticated:', req.isAuthenticated());
-            
-            // Ensure the login is saved before sending response
-            req.session.save((err) => {
-              if (err) {
-                console.error("Final session save error:", err);
-                return next(err);
-              }
-              
-              const { password, ...userWithoutPassword } = user;
-              
-              // Set a cookie to indicate successful authentication in the browser
-              res.cookie('auth_success', 'true', { 
-                maxAge: 24 * 60 * 60 * 1000, // 24 hours
-                httpOnly: false, // Allow JavaScript access to verify auth status
-                path: '/',
-                sameSite: 'lax' 
-              });
-              
-              console.log('Session saved, sending response');
-              res.json(userWithoutPassword);
-            });
+          const { password, ...userWithoutPassword } = user;
+          
+          // Set multiple cookies to help with authentication tracking
+          // Main session cookie is handled by express-session
+          
+          // Additional debugging cookie to track auth state in browser
+          res.cookie('auth_success', 'true', { 
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            httpOnly: false, // Allow JavaScript access for auth status check
+            path: '/',
+            sameSite: 'lax' 
           });
+          
+          // Cookie with user info for improved client-side experience
+          res.cookie('user_info', JSON.stringify({ 
+            id: user.id,
+            username: user.username,
+            role: user.role
+          }), { 
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            httpOnly: false, // Client needs access
+            path: '/',
+            sameSite: 'lax' 
+          });
+          
+          console.log('Session saved, sending response');
+          res.json(userWithoutPassword);
         });
-      })(req, res, next);
-    });
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
@@ -262,11 +263,13 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         
-        // Clear the auth cookie
+        // Clear all authentication cookies
         res.clearCookie('auth_success');
-        res.clearCookie('chitfund.sid');
+        res.clearCookie('user_info');
+        res.clearCookie('chitfund.sid', { path: '/' });
         
-        res.sendStatus(200);
+        console.log('All cookies cleared, user logged out');
+        res.status(200).json({ success: true, message: "Logout successful" });
       });
     });
   });
@@ -281,13 +284,42 @@ export function setupAuth(app: Express) {
       origin: req.headers.origin
     });
     
-    if (!req.user) {
-      console.log('GET /api/user - No user found in session');
-      return res.sendStatus(401);
+    // Check if user is authenticated
+    if (!req.isAuthenticated() || !req.user) {
+      // Enhanced error response with CORS headers to ensure client receives this properly
+      console.log('GET /api/user - No authenticated user found');
+      
+      // If we have an auth_success cookie but no session, it's likely a session mismatch
+      if (req.cookies.auth_success) {
+        console.log('Authentication cookie found but no valid session - possible session expiration');
+        // Clear stale cookies to force fresh login
+        res.clearCookie('auth_success');
+        res.clearCookie('user_info');
+        
+        return res.status(401).json({ 
+          authenticated: false,
+          message: "Session expired. Please log in again."
+        });
+      }
+      
+      return res.status(401).json({ 
+        authenticated: false,
+        message: "Not authenticated"
+      });
     }
     
-    console.log('GET /api/user - User found:', req.user.id, req.user.username);
-    const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    // User is authenticated, refresh session to extend expiration
+    req.session.touch();
+    req.session.save((err) => {
+      if (err) console.error('Error saving session during /api/user call:', err);
+      
+      console.log('GET /api/user - User found:', req.user?.id, req.user?.username);
+      const { password, ...userWithoutPassword } = req.user!;
+      
+      res.json({
+        ...userWithoutPassword,
+        authenticated: true
+      });
+    });
   });
 }

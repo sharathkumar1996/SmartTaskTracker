@@ -25,12 +25,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enable CORS for development with explicit options
+// Enhanced CORS configuration for development
+// This exact configuration is crucial for cookie-based authentication
 app.use(cors({
-  origin: true, // Allow request from any origin
+  origin: function (origin, callback) {
+    // In development, allow all origins
+    callback(null, true);
+  },
   credentials: true, // Allow credentials (cookies)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+  exposedHeaders: ['set-cookie'], // Important for cookie transmission
+  maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 
 app.use(express.json());
