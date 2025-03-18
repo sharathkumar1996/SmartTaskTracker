@@ -14,6 +14,62 @@ import { payments } from "@shared/schema"; // Import the payments table schema
 // Global map to store WebSocket connections by user ID
 const userSockets = new Map<number, WebSocket>();
 
+// Enhanced auth middleware that checks for multiple authentication methods
+const authenticateWithFallback = async (req: any, res: any, next: any) => {
+  // If already authenticated via session, just proceed
+  if (req.isAuthenticated() && req.user) {
+    return next();
+  }
+  
+  // Not authenticated via session, check for backup cookie authentication
+  console.log('authenticateWithFallback - Checking backup auth methods', {
+    cookies: req.cookies,
+    hasAuthCookie: req.cookies.auth_success === 'true',
+    hasManualAuthCookie: req.cookies.manual_auth_success === 'true',
+    hasUserInfo: !!req.cookies.user_info
+  });
+  
+  // Check for our auth cookies
+  const hasAuthCookie = req.cookies.auth_success === 'true';
+  const hasManualAuthCookie = req.cookies.manual_auth_success === 'true';
+  const hasUserInfoCookie = !!req.cookies.user_info;
+  
+  if ((hasAuthCookie || hasManualAuthCookie) && hasUserInfoCookie) {
+    try {
+      // Parse user info cookie
+      const userInfo = JSON.parse(req.cookies.user_info);
+      
+      if (userInfo && userInfo.id) {
+        // Try to load the user from storage
+        const user = await storage.getUser(userInfo.id);
+        
+        if (user) {
+          console.log('authenticateWithFallback - Successfully recovered user from cookie:', user.id);
+          
+          // Log the user in
+          return req.login(user, (err: any) => {
+            if (err) {
+              console.error('Error logging in user from cookie data:', err);
+              return res.status(401).json({ 
+                authenticated: false,
+                message: "Authentication failed. Please log in again."
+              });
+            }
+            
+            // Continue to the route handler
+            return next();
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Error in cookie auth fallback:', e);
+    }
+  }
+  
+  // If we get here, authentication failed
+  return res.status(401).json({ error: "Unauthorized" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
   const httpServer = createServer(app);

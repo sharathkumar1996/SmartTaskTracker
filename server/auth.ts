@@ -62,7 +62,7 @@ export function setupAuth(app: Express) {
     process.env.SESSION_SECRET = 'chitfund-dev-session-secret-' + Date.now();
   }
 
-  // Enhanced session configuration optimized for development environment
+  // Enhanced session configuration specifically for Replit environment
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
     resave: true, // Always save the session to ensure persistence
@@ -71,11 +71,11 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: false, // Must be false for non-HTTPS in Replit environment
-      httpOnly: false, // Allow client-side access for development
+      secure: false, // Must be false for HTTP connections in Replit
+      httpOnly: false, // Allow client-side access to help with debugging
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/',
-      sameSite: 'lax' // Most compatible option for browsers
+      sameSite: 'lax' // Lax is more compatible across browsers
     }
   };
 
@@ -220,25 +220,47 @@ export function setupAuth(app: Express) {
           // Set multiple cookies to help with authentication tracking
           // Main session cookie is handled by express-session
           
-          // Additional debugging cookie to track auth state in browser
-          res.cookie('auth_success', 'true', { 
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            httpOnly: false, // Allow JavaScript access for auth status check
-            path: '/'
-            // Removed sameSite and secure for Replit environment
-          });
-          
-          // Cookie with user info for improved client-side experience
-          res.cookie('user_info', JSON.stringify({ 
-            id: user.id,
-            username: user.username,
-            role: user.role
-          }), { 
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            httpOnly: false, // Client needs access
-            path: '/'
-            // Removed sameSite and secure for Replit environment
-          });
+          try {
+            // Set auth success flag cookie - both with and without sameSite/secure to ensure compatibility
+            // Standard version
+            res.cookie('auth_success', 'true', { 
+              maxAge: 24 * 60 * 60 * 1000, // 24 hours
+              httpOnly: false, // Allow JavaScript access for auth status check
+              path: '/',
+              sameSite: 'lax'
+            });
+            
+            // Fallback version specifically for Replit environment
+            res.cookie('manual_auth_success', 'true', { 
+              maxAge: 24 * 60 * 60 * 1000, // 24 hours
+              httpOnly: false,
+              path: '/'
+            });
+            
+            // Cookie with user info for client-side experience - standard version
+            const userInfoCookie = JSON.stringify({ 
+              id: user.id,
+              username: user.username,
+              role: user.role
+            });
+            
+            res.cookie('user_info', userInfoCookie, { 
+              maxAge: 24 * 60 * 60 * 1000, // 24 hours
+              httpOnly: false, // Client needs access
+              path: '/',
+              sameSite: 'lax'
+            });
+            
+            // Store the same session in local storage as a fallback
+            console.log('Setting auth cookies', {
+              'auth_success': 'true',
+              'manual_auth_success': 'true',
+              'user_info': userInfoCookie.substring(0, 30) + '...'
+            });
+          } catch (err) {
+            console.error('Error setting cookies:', err);
+            // Continue even if cookie setting fails
+          }
           
           console.log('Session saved, sending response');
           res.json(userWithoutPassword);
@@ -265,9 +287,28 @@ export function setupAuth(app: Express) {
         }
         
         // Clear all authentication cookies with matching settings
-        res.clearCookie('auth_success', { path: '/' });
-        res.clearCookie('user_info', { path: '/' });
-        res.clearCookie('chitfund.sid', { path: '/' });
+        // Try multiple cookie clearing strategies to ensure complete logout
+        try {
+          // Standard version
+          res.clearCookie('auth_success', { path: '/' });
+          res.clearCookie('manual_auth_success', { path: '/' });
+          res.clearCookie('user_info', { path: '/' });
+          res.clearCookie('chitfund.sid', { path: '/' });
+          res.clearCookie('server_online', { path: '/' });
+          
+          // Also try with explicit sameSite and secure settings
+          res.clearCookie('auth_success', { path: '/', sameSite: 'lax' });
+          res.clearCookie('manual_auth_success', { path: '/', sameSite: 'lax' });
+          res.clearCookie('user_info', { path: '/', sameSite: 'lax' });
+          res.clearCookie('chitfund.sid', { path: '/', sameSite: 'lax' });
+          
+          // And try with different formats to ensure all variants are cleared
+          res.clearCookie('auth_success', { path: '/', sameSite: 'none', secure: true });
+          res.clearCookie('user_info', { path: '/', sameSite: 'none', secure: true });
+        } catch (err) {
+          console.error('Error clearing cookies:', err);
+          // Continue anyway
+        }
         
         console.log('All cookies cleared, user logged out');
         res.status(200).json({ success: true, message: "Logout successful" });
@@ -275,7 +316,7 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", async (req, res) => {
     console.log('GET /api/user - isAuthenticated:', req.isAuthenticated());
     console.log('GET /api/user - Session ID:', req.sessionID);
     console.log('GET /api/user - Request cookies:', req.cookies);
@@ -285,16 +326,65 @@ export function setupAuth(app: Express) {
       origin: req.headers.origin
     });
     
-    // Check if user is authenticated
+    // Check if user is authenticated via session
     if (!req.isAuthenticated() || !req.user) {
       // Enhanced error response with CORS headers to ensure client receives this properly
-      console.log('GET /api/user - No authenticated user found');
+      console.log('GET /api/user - No authenticated user found in session');
       
-      // If we have an auth_success cookie but no session, it's likely a session mismatch
-      if (req.cookies.auth_success) {
-        console.log('Authentication cookie found but no valid session - possible session expiration');
-        // Clear stale cookies to force fresh login
+      // Check for our backup authentication cookies - if they exist, we might have a session issue
+      const hasAuthCookie = req.cookies.auth_success === 'true';
+      const hasManualAuthCookie = req.cookies.manual_auth_success === 'true';
+      const hasUserInfoCookie = !!req.cookies.user_info;
+      
+      // If we have auth cookies but no session, try to parse the user from cookies
+      if (hasAuthCookie || hasManualAuthCookie || hasUserInfoCookie) {
+        console.log('Auth cookies found but no valid session - attempting to recover');
+        
+        // Try to recover user data from cookie
+        try {
+          if (hasUserInfoCookie) {
+            const userInfo = JSON.parse(req.cookies.user_info);
+            if (userInfo && userInfo.id) {
+              console.log('Found user info in cookie, attempting to load user:', userInfo.id);
+              
+              // If we can load the user, manually log them in
+              const user = await storage.getUser(userInfo.id);
+              if (user) {
+                console.log('Successfully loaded user from cookie data:', user.id, user.username);
+                
+                // Regenerate session - this should fix any session issues
+                return req.login(user, (err) => {
+                  if (err) {
+                    console.error('Error logging in user from cookie data:', err);
+                    // Clear stale cookies
+                    res.clearCookie('auth_success', { path: '/' });
+                    res.clearCookie('manual_auth_success', { path: '/' });
+                    res.clearCookie('user_info', { path: '/' });
+                    
+                    return res.status(401).json({ 
+                      authenticated: false,
+                      message: "Session expired. Please log in again."
+                    });
+                  }
+                  
+                  console.log('Successfully recreated session for user:', user.id);
+                  const { password, ...userWithoutPassword } = user;
+                  return res.json({
+                    ...userWithoutPassword,
+                    authenticated: true
+                  });
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing user info cookie:', e);
+        }
+        
+        // If we got here, we couldn't recover the session
+        // Clear stale cookies
         res.clearCookie('auth_success', { path: '/' });
+        res.clearCookie('manual_auth_success', { path: '/' });
         res.clearCookie('user_info', { path: '/' });
         
         return res.status(401).json({ 
