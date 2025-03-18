@@ -63,15 +63,39 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
     }
 
     try {
-      // Create header row with months
-      const headers = ["Member Name"];
+      // Create a more structured A4 template format
+      
+      // Create top headers for the payment tracking template
+      const templateHeaders = [
+        ["SRI VASAVI FINANCIAL SERVICES"],
+        [`CHIT FUND: ${fundName.toUpperCase()}`],
+        ["PAYMENT RECORD"],
+        ["Generated on: " + new Date().toLocaleDateString("en-IN")],
+        [""],
+      ];
+      
+      // Member number column and name column
+      const mainHeaders = ["S.No", "Member Name"];
+      
+      // Add month columns (1-20)
       for (let i = 1; i <= 20; i++) {
-        headers.push(`Month ${i}`);
+        mainHeaders.push(`Month ${i}`);
       }
-
-      // Create rows for each member with withdrawal information
-      const rows = data.members.map((member: FundMember) => {
-        const row = [member.fullName];
+      
+      // Add signature column at the end
+      mainHeaders.push("Signature");
+      
+      // Sort members alphabetically for better organization
+      const sortedMembers = [...data.members].sort((a, b) => 
+        a.fullName.localeCompare(b.fullName)
+      );
+      
+      // Create rows for each member with proper formatting for A4 sheet
+      const memberRows = sortedMembers.map((member: FundMember, index) => {
+        // Start with member number and name
+        const row = [(index + 1).toString(), member.fullName];
+        
+        // Add payment data for each month
         for (let month = 1; month <= 20; month++) {
           // Get all payments for this month
           const monthPayments = member.payments.filter(p => p.month === month);
@@ -90,22 +114,49 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
             return sum + (isNaN(amount) ? 0 : amount);
           }, 0);
           
-          // Add W to indicate withdrawal payments in CSV
+          // Format cell with payment amount and withdrawal indicator if needed
           row.push(totalAmount > 0 ? 
             (hasWithdrawal ? `${totalAmount.toString()} (W)` : totalAmount.toString()) : 
             "");
         }
+        
+        // Add empty signature column
+        row.push("");
+        
         return row;
       });
-
-      // Combine all rows with organization header
+      
+      // Add a row with totals at the bottom
+      const totalRow = ["", "TOTAL"];
+      
+      // Calculate totals for each month
+      for (let month = 1; month <= 20; month++) {
+        let monthTotal = 0;
+        
+        // Sum all payments for this month across all members
+        sortedMembers.forEach(member => {
+          const monthPayments = member.payments.filter(p => p.month === month);
+          const memberTotal = monthPayments.reduce((sum, p) => {
+            const amount = parseFloat(String(p.amount).replace(/[^\d.-]/g, ''));
+            return sum + (isNaN(amount) ? 0 : amount);
+          }, 0);
+          
+          monthTotal += memberTotal;
+        });
+        
+        totalRow.push(monthTotal > 0 ? monthTotal.toString() : "");
+      }
+      
+      // Add empty cell for signature column in totals row
+      totalRow.push("");
+      
+      // Combine all parts to create the complete CSV template
       const csvContent = [
-        ["Sri Vasavi Financial Services"],
-        [`Payment Record - ${fundName}`],
-        ["Generated on: " + new Date().toLocaleDateString("en-IN")],
-        [""],
-        headers,
-        ...rows
+        ...templateHeaders,
+        mainHeaders,
+        ...memberRows,
+        [], // Empty row before totals
+        totalRow
       ]
         .map(row => row.map(val => {
           // Ensure proper CSV formatting by escaping quotes and commas
@@ -120,21 +171,21 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
       const a = document.createElement("a");
       a.setAttribute("hidden", "");
       a.setAttribute("href", url);
-      a.setAttribute("download", `payment_sheet_${fundName.replace(/\s+/g, "_")}_${new Date().toISOString().split('T')[0]}.csv`);
+      a.setAttribute("download", `payment_record_${fundName.replace(/\s+/g, "_")}_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Download started",
-        description: "Your payment sheet is being downloaded",
+        title: "A4 Payment Record Downloaded",
+        description: "Your payment tracking sheet has been downloaded in CSV format",
       });
     } catch (err) {
       console.error("Error downloading CSV:", err);
       toast({
         title: "Download failed",
-        description: "There was an error creating the payment sheet",
+        description: "There was an error creating the payment record sheet",
         variant: "destructive",
       });
     }
@@ -186,17 +237,22 @@ export function PaymentTrackingSheet({ fundId, fundName }: PaymentTrackingSheetP
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Payment Records</h2>
-        <div className="flex gap-2">
-          <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-1">
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          <Button onClick={downloadSheet} className="gap-2" variant="outline" size="sm">
-            <Download className="h-4 w-4" />
-            Download CSV
-          </Button>
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Payment Records</h2>
+          <div className="flex gap-2">
+            <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-1">
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+            <Button onClick={downloadSheet} className="gap-2" variant="outline" size="sm">
+              <Download className="h-4 w-4" />
+              Download A4 Payment Template
+            </Button>
+          </div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          <p>Download the A4-sized payment template to print and track monthly payments on paper. Open the CSV file in Excel or Google Sheets before printing.</p>
         </div>
       </div>
 
