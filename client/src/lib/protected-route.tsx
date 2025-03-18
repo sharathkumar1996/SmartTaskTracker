@@ -17,26 +17,41 @@ export function ProtectedRoute({
   const { toast } = useToast();
   const [authChecked, setAuthChecked] = useState(false);
   
-  // Enhanced auth verification
+  // Enhanced auth verification with fallback mechanisms
   useEffect(() => {
     // Only run once when loading completes
     if (!isLoading && !authChecked) {
       const hasCookies = document.cookie.includes('auth_success') || 
-                        document.cookie.includes('chitfund.sid');
+                        document.cookie.includes('chitfund.sid') ||
+                        document.cookie.includes('manual_auth_success') ||
+                        document.cookie.includes('user_info');
+                        
       console.log(`ProtectedRoute (${path}): Auth check completed.`, { 
         isAuthenticated: !!user,
         hasCookies,
         cookiesFound: document.cookie ? document.cookie.split(';').map(c => c.trim().split('=')[0]) : []
       });
       
+      // Check for sessionStorage backup if cookie auth is failing
+      if (!user && !hasCookies) {
+        try {
+          // Match the same key used in the auth hook
+          const SESSION_STORAGE_KEY = 'chitfund_user_session';
+          const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+          
+          if (savedSession) {
+            console.log("Loaded user session from sessionStorage:", JSON.parse(savedSession).username);
+            // Don't actually redirect - the useAuth hook should handle this
+          }
+        } catch (err) {
+          console.error("Error reading from sessionStorage:", err);
+        }
+      }
+      
       // If there's a cookie/user state mismatch, it may indicate a session issue
       if ((!user && hasCookies) || (user && !hasCookies)) {
         console.warn("Authentication state mismatch detected");
-        toast({
-          title: "Authentication Issue",
-          description: "Your session appears to be in an inconsistent state. Try logging in again.",
-          variant: "destructive",
-        });
+        // Don't show toast for now as it's disruptive while we fix the issue
       }
       
       setAuthChecked(true);

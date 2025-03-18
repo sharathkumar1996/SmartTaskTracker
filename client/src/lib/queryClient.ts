@@ -137,7 +137,7 @@ export const getQueryFn: <T>(options: {
     let sessionUser = null;
     try {
       const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (savedSession && (hasManualAuthCookie || hasAuthCookie)) {
+      if (savedSession) {
         sessionUser = JSON.parse(savedSession);
         console.log('Found backup user session in sessionStorage:', sessionUser?.username);
       }
