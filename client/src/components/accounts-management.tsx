@@ -50,11 +50,11 @@ export const AccountsManagement = () => {
   const receivablesQuery = useQuery<AccountsReceivable[]>({
     queryKey: ['/api/accounts/receivables'],
     queryFn: async () => {
-      const response = await fetch('/api/accounts/receivables');
-      if (!response.ok) {
-        throw new Error('Failed to load receivables data');
-      }
-      return response.json();
+      // Use apiRequest to include auth headers automatically
+      return await apiRequest({
+        url: '/api/accounts/receivables',
+        method: 'GET'
+      });
     },
     retry: 1,
   });
@@ -106,12 +106,10 @@ export const AccountsManagement = () => {
   // Mutation to sync payments to receivables
   const syncMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/sync-payments-to-receivables");
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to sync payments");
-      }
-      return response.json();
+      return await apiRequest({
+        url: "/api/sync-payments-to-receivables",
+        method: "POST"
+      });
     },
     onSuccess: () => {
       toast({
