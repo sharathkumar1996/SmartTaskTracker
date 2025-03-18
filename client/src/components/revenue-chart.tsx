@@ -262,9 +262,8 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
           // Update with actual data - ensure commission doesn't exceed revenue
           allMonths[existingMonthIndex].revenue = dataPoint.revenue;
           
-          // Make sure commission is at most 10% of revenue to avoid it being higher in charts
-          const maxCommission = dataPoint.revenue * 0.1;
-          allMonths[existingMonthIndex].commission = Math.min(dataPoint.commission, maxCommission);
+          // Update with actual commission data
+          allMonths[existingMonthIndex].commission = dataPoint.commission;
         }
       });
     }
@@ -489,8 +488,22 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis 
+              yAxisId="revenue"
               tickFormatter={(value) => {
                 // Format as currency with shortened notation
+                return new Intl.NumberFormat('en-IN', {
+                  style: 'currency',
+                  currency: 'INR',
+                  notation: 'compact',
+                  maximumFractionDigits: 1
+                }).format(value);
+              }}
+            />
+            <YAxis 
+              yAxisId="commission"
+              orientation="right"
+              tickFormatter={(value) => {
+                // Format as currency with shortened notation for commission
                 return new Intl.NumberFormat('en-IN', {
                   style: 'currency',
                   currency: 'INR',
@@ -512,6 +525,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
             <Line
               type="monotone"
               dataKey="revenue"
+              yAxisId="revenue"
               stroke="var(--color-revenue)"
               strokeWidth={3}
               activeDot={{ r: 6 }}
@@ -520,6 +534,7 @@ export function RevenueChart({ fundId, months = 6 }: RevenueChartProps) {
             <Line
               type="monotone"
               dataKey="commission"
+              yAxisId="commission" 
               stroke="var(--color-commission)"
               strokeWidth={3}
               dot={{ stroke: 'var(--color-commission)', strokeWidth: 2, r: 4 }}
