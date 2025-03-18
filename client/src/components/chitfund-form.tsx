@@ -33,9 +33,6 @@ const chitFundFormSchema = z.object({
     required_error: "End date is required",
   }),
   memberCount: z.coerce.number().min(1, "Member count must be at least 1"),
-  monthlyContribution: z.coerce.number().min(1, "Monthly contribution must be greater than 0"),
-  monthlyBonus: z.coerce.number().min(0, "Monthly bonus cannot be negative"),
-  baseCommission: z.coerce.number().min(0, "Base commission cannot be negative"),
 }).refine((data) => data.endDate > data.startDate, {
   message: "End date must be after start date",
   path: ["endDate"],
@@ -57,9 +54,6 @@ export function ChitFundForm() {
       startDate: new Date(),
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 12)),
       memberCount: 10,
-      monthlyContribution: 0,
-      monthlyBonus: 0,
-      baseCommission: 0,
     },
   });
 
@@ -70,9 +64,9 @@ export function ChitFundForm() {
       const fundData = {
         ...values,
         amount: values.amount.toString(),
-        monthlyContribution: values.monthlyContribution.toString(),
-        monthlyBonus: values.monthlyBonus.toString(),
-        baseCommission: values.baseCommission.toString(),
+        monthlyContribution: "0", // Default values for payout process
+        monthlyBonus: "0", // Default values for payout process
+        baseCommission: "0", // Default values for payout process
         status: "active" as const,
       };
 
@@ -292,74 +286,7 @@ export function ChitFundForm() {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="monthlyContribution"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Monthly Contribution (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    min={1}
-                    placeholder="Enter monthly contribution amount"
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
-                      field.onChange(value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
-          <FormField
-            control={form.control}
-            name="monthlyBonus"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Monthly Bonus (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    min={0}
-                    placeholder="Enter monthly bonus amount"
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
-                      field.onChange(value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="baseCommission"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Base Commission (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    {...field}
-                    min={0}
-                    placeholder="Enter base commission amount"
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value.replace(/^0+/, '') || '0');
-                      field.onChange(value);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
           <Button
             type="submit"
