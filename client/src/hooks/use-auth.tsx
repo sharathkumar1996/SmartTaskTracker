@@ -29,9 +29,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [sessionStorageUser, setSessionStorageUser] = useState<SelectUser | null>(null);
   
-  // Load user from sessionStorage on initial render
+  // Load user from cookies or sessionStorage on initial render
   useEffect(() => {
     try {
+      // First check if we have user info in cookies
+      const userInfoCookie = document.cookie
+        .split(';')
+        .find(cookie => cookie.trim().startsWith('user_info='));
+        
+      if (userInfoCookie) {
+        try {
+          const userInfoValue = userInfoCookie.split('=')[1];
+          if (userInfoValue) {
+            const userData = JSON.parse(decodeURIComponent(userInfoValue));
+            setSessionStorageUser(userData);
+            // Prime the query cache with this data
+            queryClient.setQueryData(["/api/user"], userData);
+            console.log("Loaded user session from cookies:", userData?.username);
+            
+            // Also save to sessionStorage for redundancy
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userData));
+            return; // Cookie data found, no need to check sessionStorage
+          }
+        } catch (cookieErr) {
+          console.error("Error parsing user_info cookie:", cookieErr);
+        }
+      }
+      
+      // Fallback to sessionStorage if no cookie data
       const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (savedSession) {
         const userData = JSON.parse(savedSession);
@@ -41,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("Loaded user session from sessionStorage:", userData?.username);
       }
     } catch (err) {
-      console.error("Error loading session from sessionStorage:", err);
+      console.error("Error loading session:", err);
     }
   }, []);
   const {

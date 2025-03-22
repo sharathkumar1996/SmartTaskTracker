@@ -62,15 +62,43 @@ export async function apiRequest<T>({
   }
   
   // Debug info about cookies
-  console.log(`Cookies available: [${document.cookie || 'none'}]`);
+  console.log(`Raw cookie string:`, document.cookie || 'No cookies');
   
-  // Make sure we have auth headers if session is available
+  // Parse cookie string into object for better debugging
+  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split('=');
+    if (key) acc[key] = value;
+    return acc;
+  }, {} as Record<string, string>);
+  
+  console.log(`Current cookies:`, cookies);
+  
+  // Check for user info in cookie as first option
+  let cookieUserObject = null;
+  try {
+    if (cookies.user_info) {
+      cookieUserObject = JSON.parse(decodeURIComponent(cookies.user_info));
+      console.log('Found user info in cookie:', cookieUserObject);
+    }
+  } catch (e) {
+    console.error('Error parsing user_info cookie:', e);
+  }
+  
+  // Check for user in session storage as backup option
+  if (!cookieUserObject && userObject) {
+    console.log('Found backup user session in sessionStorage:', userObject?.username);
+  }
+  
+  // Use cookie data first, fall back to session storage
+  const finalUserObject = cookieUserObject || userObject;
+  
+  // Make sure we have auth headers if any auth data is available
   const authHeaders = {};
-  if (userObject) {
-    console.log(`Adding auth headers for API request: User ID ${userObject.id}, Role: ${userObject.role}`);
+  if (finalUserObject) {
+    console.log(`Adding auth headers for user ID: ${finalUserObject.id}, role: ${finalUserObject.role}`);
     Object.assign(authHeaders, {
-      "X-User-ID": userObject.id.toString(),
-      "X-User-Role": userObject.role,
+      "X-User-ID": finalUserObject.id.toString(),
+      "X-User-Role": finalUserObject.role,
     });
   }
   
