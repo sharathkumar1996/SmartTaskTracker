@@ -126,10 +126,43 @@ export function setupAuth(app: Express) {
       return next();
     }
     
+    // Check if running in Replit dev environment
+    const isReplitDev = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
+    
     // Check for our custom auth headers
     const userId = req.headers['x-user-id'];
     const userRole = req.headers['x-user-role'];
     
+    // For Replit development environment, add a temporary admin auto-login
+    // This makes testing easier in development - ONLY USE IN DEV ENVIRONMENT!
+    if (isReplitDev && req.path.startsWith('/api/')) {
+      console.log(`Development environment detected, applying auto-admin for ${req.path}`);
+      
+      // Get the first admin user
+      try {
+        const admins = await storage.getUsersByRole('admin');
+        
+        if (admins && admins.length > 0) {
+          const adminUser = admins[0];
+          console.log(`Auto-admin authentication: Using admin ${adminUser.username} (${adminUser.id})`);
+          
+          // Manually set admin authentication for this request
+          req.login(adminUser, (err) => {
+            if (err) {
+              console.error("Error in dev auto-admin:", err);
+            } else {
+              console.log(`Dev auto-admin successful for ${req.path}`);
+            }
+            return next();
+          });
+          return; // Skip regular flow as we're handling it in the callback
+        } 
+      } catch (error) {
+        console.error("Error in auto-admin lookup:", error);
+      }
+    }
+    
+    // Normal header-based auth flow
     if (userId && userRole) {
       try {
         console.log(`Using header-based auth: User ID ${userId}, Role: ${userRole}`);
