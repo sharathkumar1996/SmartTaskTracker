@@ -97,7 +97,7 @@ if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
   console.log("Configuring Render.com specific middleware");
   
   // Add Render authentication detection layer - checks for special headers
-  app.use(async (req, res, next) => {
+  app.use(async (req: any, res, next) => {
     // Skip if already authenticated
     if (req.user) {
       return next();
@@ -125,9 +125,30 @@ if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
           if (user && user.role === userRole.toString()) {
             console.log(`Render auth: User authenticated via headers: ${user.id}, ${user.username}`);
             
-            // Store user for the request processing
-            // @ts-ignore: Work around type safety for special render auth
-            req.renderUser = user;
+            // Either login the user or store in renderUser property
+            if (req.login) {
+              // Proper type casting for TypeScript
+              const userWithPassword = user as unknown as Express.User;
+              
+              // Try to login directly
+              req.login(userWithPassword, (err: any) => {
+                if (err) {
+                  console.error('Render auth: Failed to login user directly:', err);
+                  // If direct login fails, use renderUser as fallback
+                  req.renderUser = user;
+                } else {
+                  console.log('Render auth: Successfully logged in user with passport:', user.id);
+                }
+                return next();
+              });
+              
+              // Don't call next() here - it's called in the login callback
+              return;
+            } else {
+              // Fallback if req.login is not available for some reason
+              console.log('Render auth: req.login not available, using renderUser property');
+              req.renderUser = user;
+            }
           }
         }
       } catch (err) {
@@ -135,6 +156,7 @@ if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
       }
     }
     
+    // Only proceed here if we didn't do req.login (which has its own next() call)
     next();
   });
 }

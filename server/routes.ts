@@ -184,7 +184,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (user && (user.role === "admin" || user.role === "agent")) {
               // Re-establish session for the user
               console.log("Cookie-based authentication successful - getting users");
-              req.login(user, async (err) => {
+              // Cast to proper type for TypeScript compatibility
+              const userWithPassword = user as unknown as Express.User;
+              req.login(userWithPassword, async (err) => {
                 if (err) {
                   console.error('Failed to restore session from cookie:', err);
                   return res.status(403).json({ error: "Unauthorized" });
@@ -368,6 +370,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "User not found" });
     }
     res.sendStatus(200);
+  });
+
+  // Current User Authentication Route
+  app.get("/api/user", async (req, res) => {
+    try {
+      // Debug information for authentication troubleshooting
+      console.log('GET /api/user authentication check:', {
+        authenticated: req.isAuthenticated(),
+        user: req.user ? { id: req.user.id, role: req.user.role } : null,
+        renderUser: req.renderUser ? { id: (req.renderUser as any).id, role: (req.renderUser as any).role } : null,
+        headers: {
+          'x-user-id': req.headers['x-user-id'],
+          'x-user-role': req.headers['x-user-role'],
+          'x-user-auth': req.headers['x-user-auth'],
+          'x-dev-mode': req.headers['x-dev-mode'],
+          'x-special-render-access': req.headers['x-special-render-access'],
+          'x-deploy-type': req.headers['x-deploy-type'],
+        },
+        session: req.session ? { id: req.sessionID } : null,
+        cookies: req.cookies ? Object.keys(req.cookies) : null
+      });
+      
+      // 1. Check if user is already authenticated via session
+      if (req.isAuthenticated() && req.user) {
+        console.log('GET /api/user - User already authenticated via session:', req.user.id);
+        return res.json(req.user);
+      }
+      
+      // 2. Check for the renderUser property (for Render-specific auth)
+      if (req.renderUser) {
+        console.log('GET /api/user - Using renderUser property:', (req.renderUser as any).id);
+        return res.json(req.renderUser);
+      }
+      
+      // 3. Check for Render.com or custom domain authentication via headers
+      const userId = req.headers['x-user-id'];
+      const userRole = req.headers['x-user-role']; 
+      const userAuth = req.headers['x-user-auth'];
+      const isRenderRequest = 
+        req.headers['x-deploy-type'] === 'render' ||
+        req.headers['x-special-render-access'] === 'true';
+      
+      if (isRenderRequest && userId && userRole && userAuth === 'true') {
+        try {
+          console.log('GET /api/user - Trying header-based authentication for:', userId);
+          const userIdNum = parseInt(userId.toString(), 10);
+          
+          if (!isNaN(userIdNum)) {
+            const user = await storage.getUser(userIdNum);
+            
+            if (user && user.role === userRole.toString()) {
+              console.log('GET /api/user - Header authentication successful:', user.id);
+              
+              // Login the user via passport to establish a session
+              const userWithPassword = user as unknown as Express.User;
+              req.login(userWithPassword, (err) => {
+                if (err) {
+                  console.error('Failed to login user from header auth:', err);
+                }
+              });
+              
+              return res.json(user);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing header authentication for /api/user:', error);
+        }
+      }
+      
+      // 4. Development environment auto-admin feature
+      const isDev = process.env.NODE_ENV !== 'production';
+      const isDevMode = req.headers['x-dev-mode'] === 'true';
+      
+      if (isDev && (isDevMode || process.env.AUTO_ADMIN_DEV === 'true')) {
+        try {
+          console.log('GET /api/user - Development environment detected, applying auto-admin');
+          const admins = await storage.getUsersByRole('admin');
+          
+          if (admins && admins.length > 0) {
+            const adminUser = admins[0];
+            console.log('GET /api/user - Using auto-admin:', adminUser.username);
+            
+            // Login the user via passport to establish a session
+            const userWithPassword = adminUser as unknown as Express.User;
+            req.login(userWithPassword, (err) => {
+              if (err) {
+                console.error('Failed to login admin in dev mode:', err);
+              }
+            });
+            
+            return res.json(adminUser);
+          }
+        } catch (error) {
+          console.error('Error with auto-admin in /api/user:', error);
+        }
+      }
+      
+      // If no authentication method worked, return 401 Unauthorized
+      return res.status(401).json({ 
+        message: 'Authentication required',
+        devInfo: isDev ? {
+          env: process.env.NODE_ENV,
+          replit: !!process.env.REPL_ID,
+          render: !!process.env.RENDER
+        } : undefined
+      });
+    } catch (error) {
+      console.error('Error in /api/user route:', error);
+      res.status(500).json({ error: 'Server error' });
+    }
   });
 
   // Chit Fund Management Routes
