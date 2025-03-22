@@ -197,8 +197,18 @@ export async function apiRequest<T>({
   }
   
   try {
+    // Get the base URL for our API (empty string for local dev, full URL for deployed)
+    const baseUrl = getApiBaseUrl();
+    
+    // Create full URL (handles both absolute and relative paths)
+    const fullUrl = url.startsWith('/') ? 
+      `${baseUrl}${url}` : // For paths like /api/users
+      url;                  // For any other URL format
+    
+    console.log(`Making fetch request to: ${fullUrl} (base: "${baseUrl}")`);
+    
     // Perform the fetch request with our enhanced headers
-    const response = await fetch(url, {
+    const response = await fetch(fullUrl, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -327,8 +337,14 @@ export const getQueryFn: <T>(options: {
         // Even when using sessionStorage, make a background API request to try to 
         // restore the server session if possible
         try {
+          // Get the base URL for our API
+          const baseUrl = getApiBaseUrl();
+          const userEndpoint = `${baseUrl}/api/user`;
+          
+          console.log(`Making background session validation request to: ${userEndpoint}`);
+          
           // Silent authentication attempt in the background
-          fetch('/api/user', {
+          fetch(userEndpoint, {
             credentials: "include",
             cache: "no-store",
             headers: {
@@ -395,7 +411,17 @@ export const getQueryFn: <T>(options: {
           window.location.hostname : 'unknown';
       }
       
-      const res = await fetch(endpoint, {
+      // Get the base URL for our API (empty string for local dev, full URL for deployed)
+      const baseUrl = getApiBaseUrl();
+      
+      // Create full URL (handles both absolute and relative paths)
+      const fullEndpoint = endpoint.startsWith('/') ? 
+        `${baseUrl}${endpoint}` : // For paths like /api/users
+        endpoint;                  // For any other URL format
+      
+      console.log(`Making query fetch request to: ${fullEndpoint} (base: "${baseUrl}")`);
+      
+      const res = await fetch(fullEndpoint, {
         credentials: "include", // Essential for session cookies
         cache: "no-store", // Prevent caching of auth responses
         headers
