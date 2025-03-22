@@ -152,16 +152,23 @@ export default function AuthPage() {
       
       // For security in production, this should be replaced with proper authentication
       // but for our demo purposes, we're using a direct login approach for cross-domain environments
+      // Create admin user with all required fields to satisfy TypeScript type checking
       const adminUserData = {
         id: 1,
         username: 'admin',
+        password: '', // Empty password to satisfy type requirements
         role: 'admin' as const,
         fullName: 'System Administrator',
         email: 'admin@example.com',
         phone: '1234567890',
-        status: 'active' as const,
-        createdAt: new Date().toISOString(),
-        authenticated: true
+        address: null,
+        city: null,
+        state: null,
+        pincode: null,
+        fundPreferences: null,
+        agentId: null,
+        agentCommission: null,
+        status: 'active' as const
       };
       
       // Use our setManualUser function to bypass the API call
@@ -298,16 +305,23 @@ export default function AuthPage() {
             console.log("Attempting direct authentication...");
             
             // Retry with direct authentication
+            // Create admin user with all required fields to satisfy TypeScript type checking
             const adminUserData = {
               id: 1,
               username: 'admin',
+              password: '', // Empty password to satisfy type requirements
               role: 'admin' as const,
               fullName: 'System Administrator',
               email: 'admin@example.com',
               phone: '1234567890',
+              address: null,
+              city: null,
+              state: null,
+              pincode: null,
+              fundPreferences: null,
+              createdBy: null,
               status: 'active' as const,
-              createdAt: new Date().toISOString(),
-              authenticated: true
+              createdAt: new Date().toISOString()
             };
             
             // Use direct login
