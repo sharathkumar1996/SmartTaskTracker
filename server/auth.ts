@@ -147,7 +147,9 @@ export function setupAuth(app: Express) {
           console.log(`Auto-admin authentication: Using admin ${adminUser.username} (${adminUser.id})`);
           
           // Manually set admin authentication for this request
-          req.login(adminUser, (err) => {
+          // Cast to full User type to satisfy TypeScript (password exists in DB user)
+          const userWithPassword = adminUser as unknown as Express.User;
+          req.login(userWithPassword, (err) => {
             if (err) {
               console.error("Error in dev auto-admin:", err);
             } else {
@@ -175,7 +177,9 @@ export function setupAuth(app: Express) {
           
           if (user && user.role === userRole) {
             // Manually set user authentication
-            req.login(user, (err) => {
+            // Cast to full User type to satisfy TypeScript (password exists in DB user)
+            const userWithPassword = user as unknown as Express.User;
+            req.login(userWithPassword, (err) => {
               if (err) {
                 console.error("Error in manual login:", err);
               } else {
@@ -263,7 +267,9 @@ export function setupAuth(app: Express) {
         status: 'active'
       });
 
-      req.login(user, (err) => {
+      // Cast to full User type to satisfy TypeScript
+      const userWithPassword = user as unknown as Express.User;
+      req.login(userWithPassword, (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
@@ -298,7 +304,9 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
       
-      req.login(user, (err) => {
+      // Cast to full User type to satisfy TypeScript
+      const userWithPassword = user as unknown as Express.User;
+      req.login(userWithPassword, (err) => {
         if (err) {
           console.error("Session creation error:", err);
           return next(err);
@@ -501,7 +509,9 @@ export function setupAuth(app: Express) {
             console.log('User authenticated via headers:', user.id, user.username);
             
             // Manually log user in to create session
-            req.login(user, (err) => {
+            // Cast to full User type to satisfy TypeScript
+            const userWithPassword = user as unknown as Express.User;
+            req.login(userWithPassword, (err) => {
               if (err) {
                 console.error('Error establishing session from headers:', err);
               } else {
@@ -546,7 +556,9 @@ export function setupAuth(app: Express) {
               console.log('Successfully loaded user from cookie data:', user.id, user.username);
               
               // Regenerate session - this should fix any session issues
-              return req.login(user, (err) => {
+              // Cast to full User type to satisfy TypeScript
+              const userWithPassword = user as unknown as Express.User;
+              return req.login(userWithPassword, (err) => {
                 if (err) {
                   console.error('Error logging in user from cookie data:', err);
                   // Clear stale cookies
