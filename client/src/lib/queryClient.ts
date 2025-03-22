@@ -3,6 +3,27 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 // For session backup in case cookies fail
 const SESSION_STORAGE_KEY = 'chitfund_user_session';
 
+// API URL Configuration - will use relative URLs locally and absolute URLs when deployed
+const getApiBaseUrl = () => {
+  const isRender = typeof window !== 'undefined' && window.location?.hostname ? 
+    window.location.hostname.includes('.onrender.com') : false;
+  
+  const isCustomDomain = typeof window !== 'undefined' && window.location?.hostname ? (
+    window.location.hostname === 'srivasavifinancialservices.in' || 
+    window.location.hostname === 'www.srivasavifinancialservices.in'
+  ) : false;
+  
+  // Use absolute URL only when deployed to Render or custom domain
+  if (isRender) {
+    return 'https://smarttasktracker.onrender.com';
+  } else if (isCustomDomain) {
+    return 'https://srivasavifinancialservices.in';
+  }
+  
+  // In development/Replit, use relative URLs
+  return '';
+};
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorMessage = res.statusText;
