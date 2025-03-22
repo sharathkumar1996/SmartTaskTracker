@@ -1,0 +1,992 @@
+==> Your service is live 🎉
+2:48:14 PM [express] REQUEST: GET /
+2:48:14 PM [express] Headers: {"cookie":"No cookie","host":"smarttasktracker.onrender.com"}
+Session Debug: {
+  sessionId: 'EyZLHXSuiv8Nd7RVHJQLnM39B_-ixU88',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: 'EyZLHXSuiv8Nd7RVHJQLnM39B_-ixU88',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:49:44 PM [express] REQUEST: GET /
+2:49:44 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:49:45 PM [express] REQUEST: GET /assets/index-z_vbGXFl.css
+2:49:45 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"text/css,*/*;q=0.1"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:49:45 PM [express] REQUEST: GET /assets/index-uv0FnNQL.js
+2:49:45 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:49:46 PM [express] REQUEST: GET /api/payments
+2:49:46 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+2:49:46 PM [express] REQUEST: GET /api/chitfunds
+2:49:46 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+Session Debug: {
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Using header-based auth: User ID 1, Role: admin
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+2:49:46 PM [express] REQUEST: GET /api/users
+2:49:46 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+2:49:46 PM [express] RESPONSE: GET /api/payments 403 in 35ms :: {"error":"Unauthorized"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+Session Debug: {
+    errno: -111,
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+  isAuthenticated: false,
+    address: '10.221.247.7',
+  user: undefined,
+    port: 443
+  cookies: undefined
+  },
+}
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+Using header-based auth: User ID 1, Role: admin
+}
+Error in getChitFunds: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+2:49:46 PM [express] RESPONSE: GET /api/chitfunds 304 in 127ms :: []
+2:49:46 PM [express] REQUEST: GET /api/payments
+2:49:46 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:49:46 PM [express] RESPONSE: GET /api/payments 403 in 1ms :: {"error":"Unauthorized"}
+2:49:46 PM [express] REQUEST: GET /favicon.ico
+2:49:46 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Header-based authentication for Render: User ID 1, Role: admin
+Header-based authentication for Render successful - getting users
+2:49:48 PM [express] REQUEST: GET /api/payments
+2:49:48 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:49:48 PM [express] RESPONSE: GET /api/payments 403 in 1ms :: {"error":"Unauthorized"}
+Error in getUsers: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+2:49:48 PM [express] RESPONSE: GET /api/users 200 in 2161ms :: []
+2:49:48 PM [express] Response headers: {"x-powered-by":"Express","vary":"Origin","access-control-allow-credentials":"true","access-control-expose-headers":"Set-Cookie,Access-Control-Allow-Origin,Access-Control-Allow-Credentials","content-type":"application/json; charset=utf-8","content-length":"2","etag":"W/\"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w\"","set-cookie":["chitfund.sid=s%3A6LCoQOZXZGrXj396gg9-hGdG97xdIrZy.ch89YVnDszKH72mToJzG1oYg%2BqivS%2FOe5ubv%2BiCPXGM; Path=/; Expires=Mon, 21 Apr 2025 14:49:48 GMT; Secure; SameSite=None"]}
+2:49:51 PM [express] REQUEST: POST /api/logout
+2:49:51 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Render auth: Attempting header-based authentication { userId: '1', userRole: 'admin', path: '/api/logout' }
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Session Debug: {
+  sessionId: '6LCoQOZXZGrXj396gg9-hGdG97xdIrZy',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+Error in getUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Logging out user: undefined
+Session disposed: 6LCoQOZX...
+All cookies cleared, user logged out
+2:49:51 PM [express] REQUEST: GET /favicon.ico
+2:49:51 PM [express] Headers: {"cookie":"No cookie","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"}
+Session Debug: {
+  sessionId: 'aMsuaEc6PxQOAr_W0hjkqMcY9YuwElHo',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: 'aMsuaEc6PxQOAr_W0hjkqMcY9YuwElHo',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:50:11 PM [express] REQUEST: POST /api/register
+2:50:11 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Session Debug: {
+  sessionId: 'aMsuaEc6PxQOAr_W0hjkqMcY9YuwElHo',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Error in getUserCount: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Error in getUserByUsername: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Error in createUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Registration error: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+2:50:11 PM [express] Error: connect ECONNREFUSED 10.221.247.7:443
+2:50:12 PM [express] REQUEST: POST /api/register
+2:50:12 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Session Debug: {
+  sessionId: 'aMsuaEc6PxQOAr_W0hjkqMcY9YuwElHo',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Error in getUserCount: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Error in getUserByUsername: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Error in createUser: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+Registration error: ErrorEvent {
+  [Symbol(kTarget)]: WebSocket {
+    _events: [Object: null prototype] {
+      error: [Function],
+      message: [Function],
+      close: [Function],
+      open: [Function]
+    },
+    _eventsCount: 4,
+    _maxListeners: undefined,
+    _binaryType: 'arraybuffer',
+    _closeCode: 1006,
+    _closeFrameReceived: false,
+    _closeFrameSent: false,
+    _closeMessage: <Buffer >,
+    _closeTimer: null,
+    _errorEmitted: true,
+    _extensions: {},
+    _paused: false,
+    _protocol: '',
+    _readyState: 3,
+    _receiver: null,
+    _sender: null,
+    _socket: null,
+    _bufferedAmount: 0,
+    _isServer: false,
+    _redirects: 0,
+    _autoPong: true,
+    _url: 'wss://dpg-cvfcoohopnds73b90k00-a/v2',
+    _req: null,
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error: connect ECONNREFUSED 10.221.247.7:443
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1615:16) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '10.221.247.7',
+    port: 443
+  },
+  [Symbol(kMessage)]: 'connect ECONNREFUSED 10.221.247.7:443'
+}
+2:50:13 PM [express] Error: connect ECONNREFUSED 10.221.247.7:443
