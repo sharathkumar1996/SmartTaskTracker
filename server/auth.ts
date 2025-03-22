@@ -43,13 +43,15 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   // Special testing cookie for debugging session issues
   app.use((req, res, next) => {
-    res.cookie('server_online', 'true', { 
-      httpOnly: false, 
-      maxAge: 60000,
-      path: '/',
-      sameSite: 'none',
-      secure: true  // MUST be true when sameSite is 'none'
-    });
+    // Set a testing cookie only in development mode with safer settings
+    if (process.env.NODE_ENV !== 'production') {
+      res.cookie('server_online', 'true', { 
+        httpOnly: false, 
+        maxAge: 60000,
+        path: '/',
+        sameSite: 'lax'
+      });
+    }
     next();
   });
   
@@ -71,8 +73,8 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: false, // Must be false for HTTP connections in Replit
-      httpOnly: false, // Allow client-side access to help with debugging
+      secure: process.env.NODE_ENV === 'production', // Use secure in production only
+      httpOnly: true, // Better security
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/',
       sameSite: 'lax' // Lax is more compatible across browsers
