@@ -25,14 +25,66 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enhanced CORS configuration for development
-// This exact configuration is crucial for cookie-based authentication
+// Enhanced CORS configuration for both development and production
+// This configuration is crucial for cookie-based authentication across multiple domains
 app.use(cors({
-  origin: true, // Allow all origins in development
+  origin: function(origin, callback) {
+    // Always allow requests with no origin (like mobile apps, curl, or Postman)
+    if (!origin) return callback(null, true);
+    
+    // Allow all origins in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // Add your custom domain and common deployment platforms
+    const allowedDomains = [
+      // Local development
+      'localhost',
+      '127.0.0.1',
+      // Replit domains
+      '.replit.dev',
+      '.repl.co',
+      // Render domains
+      '.onrender.com',
+      // Your custom domain
+      'srivasavifinancialservices.in',
+      'www.srivasavifinancialservices.in'
+    ];
+    
+    // Check if the origin matches any allowed domain
+    const allowed = allowedDomains.some(domain => {
+      if (domain.startsWith('.')) {
+        // Handle wildcard subdomains
+        return origin.includes(domain);
+      } else {
+        // Handle exact domain matches
+        return origin.includes(`://${domain}`);
+      }
+    });
+    
+    if (allowed) {
+      callback(null, true);
+    } else {
+      console.log(`CORS request from unauthorized domain: ${origin}`);
+      // In production, we'll still allow it but log it
+      callback(null, true);
+    }
+  },
   credentials: true, // Allow credentials (cookies)
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-  exposedHeaders: ['set-cookie'], // Important for cookie transmission
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Accept', 
+    'X-Requested-With',
+    'X-User-ID',
+    'X-User-Role',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Set-Cookie', 'Access-Control-Allow-Origin', 'Access-Control-Allow-Credentials'],
   maxAge: 86400 // Cache preflight requests for 24 hours
 }));
 

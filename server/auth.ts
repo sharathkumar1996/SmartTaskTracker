@@ -81,7 +81,28 @@ export function setupAuth(app: Express) {
     }
   };
 
+  // Add middleware to ensure trust proxy settings for various deployment environments
+  // This is essential for proper cookie functioning behind proxies (like Render)
   app.set("trust proxy", 1);
+  
+  // Set up environment-specific configurations
+  // This will help with cookie settings in different environments
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isRender = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL;
+  const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
+  
+  console.log(`Environment detection: Production=${isProduction}, Render=${isRender}, Replit=${isReplit}`);
+  
+  // Update cookie settings based on environment
+  if (isRender) {
+    console.log('Render environment detected - adjusting cookie settings');
+    sessionSettings.cookie = {
+      ...sessionSettings.cookie,
+      secure: true, // Render uses HTTPS
+      sameSite: 'none' // Required for cross-domain
+    };
+  }
+  
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -267,35 +288,44 @@ export function setupAuth(app: Express) {
           // Main session cookie is handled by express-session
           
           try {
-            // Set auth success flag cookie - both with and without sameSite/secure to ensure compatibility
-            // Standard version
-            res.cookie('auth_success', 'true', { 
+            // Add environment-specific cookie settings
+            const cookieOptions = {
               maxAge: 24 * 60 * 60 * 1000, // 24 hours
               httpOnly: false, // Allow JavaScript access for auth status check
               path: '/',
-              sameSite: 'lax'
-            });
+              sameSite: isRender ? 'none' : 'lax', // Use 'none' for cross-origin in Render
+              secure: isRender // HTTPS is required for sameSite='none'
+            };
             
-            // Fallback version specifically for Replit environment
+            // Set auth success flag cookie with environment-specific settings
+            res.cookie('auth_success', 'true', cookieOptions);
+            
+            // Fallback version specifically for cross-platform support
             res.cookie('manual_auth_success', 'true', { 
               maxAge: 24 * 60 * 60 * 1000, // 24 hours
               httpOnly: false,
               path: '/'
             });
             
-            // Cookie with user info for client-side experience - standard version
+            // Cookie with user info for client-side experience
             const userInfoCookie = JSON.stringify({ 
               id: user.id,
               username: user.username,
-              role: user.role
+              role: user.role,
+              fullName: user.fullName
             });
             
-            res.cookie('user_info', userInfoCookie, { 
-              maxAge: 24 * 60 * 60 * 1000, // 24 hours
-              httpOnly: false, // Client needs access
-              path: '/',
-              sameSite: 'lax'
-            });
+            // Set user info cookie with environment-specific settings
+            res.cookie('user_info', userInfoCookie, cookieOptions);
+            
+            // For Render specifically, add special CORS headers in response
+            if (isRender) {
+              res.setHeader('Access-Control-Allow-Credentials', 'true');
+              // Use the actual origin if available
+              if (req.headers.origin) {
+                res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+              }
+            }
             
             // Store the same session in local storage as a fallback
             console.log('Setting auth cookies', {
@@ -332,25 +362,43 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         
-        // Clear all authentication cookies with matching settings
-        // Try multiple cookie clearing strategies to ensure complete logout
+        // Clear all authentication cookies with environment-specific settings
         try {
-          // Standard version
-          res.clearCookie('auth_success', { path: '/' });
-          res.clearCookie('manual_auth_success', { path: '/' });
-          res.clearCookie('user_info', { path: '/' });
-          res.clearCookie('chitfund.sid', { path: '/' });
-          res.clearCookie('server_online', { path: '/' });
+          // Determine cookie clearing options based on environment
+          const standardOptions = { path: '/' };
+          const renderOptions = { 
+            path: '/', 
+            sameSite: 'none', 
+            secure: true 
+          };
           
-          // Also try with explicit sameSite and secure settings
+          // Use both standard and environment-specific clearing to ensure complete logout
+          
+          // Basic cookie clearing (works in most environments)
+          res.clearCookie('auth_success', standardOptions);
+          res.clearCookie('manual_auth_success', standardOptions);
+          res.clearCookie('user_info', standardOptions);
+          res.clearCookie('chitfund.sid', standardOptions);
+          res.clearCookie('server_online', standardOptions);
+          
+          // Render/cross-domain specific cookie clearing
+          res.clearCookie('auth_success', renderOptions);
+          res.clearCookie('manual_auth_success', renderOptions);
+          res.clearCookie('user_info', renderOptions);
+          res.clearCookie('chitfund.sid', renderOptions);
+          res.clearCookie('server_online', renderOptions);
+          
+          // Additional sameSite=lax specific clearing
           res.clearCookie('auth_success', { path: '/', sameSite: 'lax' });
           res.clearCookie('manual_auth_success', { path: '/', sameSite: 'lax' });
           res.clearCookie('user_info', { path: '/', sameSite: 'lax' });
           res.clearCookie('chitfund.sid', { path: '/', sameSite: 'lax' });
           
-          // And try with different formats to ensure all variants are cleared
-          res.clearCookie('auth_success', { path: '/', sameSite: 'none', secure: true });
-          res.clearCookie('user_info', { path: '/', sameSite: 'none', secure: true });
+          // If we're in Render, also set CORS headers for the logout response
+          if (isRender && req.headers.origin) {
+            res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+          }
         } catch (err) {
           console.error('Error clearing cookies:', err);
           // Continue anyway
