@@ -714,7 +714,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       userId;
       
     // User ID to use for createdBy field
-    const effectiveUserId = isSessionAdmin ? req.user.id : (isHeaderAdmin ? parseInt(userId as string) : null);
+    const effectiveUserId = isSessionAdmin && req.user ? req.user.id : (isHeaderAdmin ? parseInt(userId as string) : null);
     
     // Check if authenticated through any method
     if (!isSessionAdmin && !isHeaderAdmin) {
@@ -895,7 +895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             amount: item.amountDue,
             paymentType: "monthly",
             paymentMethod: paymentMethod || "cash",
-            recordedBy: req.user.id,
+            recordedBy: req.user?.id || 1, // Fallback to admin ID 1 if req.user is undefined
             notes: notes ? `${notes} (Group: ${group.name})` : `Group payment (${group.name})`,
             paymentDate: new Date(paymentDate),
             monthNumber: month,

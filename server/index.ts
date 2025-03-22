@@ -152,6 +152,13 @@ async function checkDatabaseConnectivity() {
 
 (async () => {
   try {
+    // Check for environment type
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isRender = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL;
+    const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
+    
+    console.log(`Environment detection: Production=${isProduction}, Render=${isRender}, Replit=${isReplit}`);
+    
     // Check database connectivity before starting the server
     await checkDatabaseConnectivity();
     
