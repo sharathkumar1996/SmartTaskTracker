@@ -204,9 +204,33 @@ app.use((req, res, next) => {
   next();
 });
 
-// Function to check database connectivity
+// Function to check database connectivity with URL validation
 async function checkDatabaseConnectivity() {
   try {
+    // Extra validation for Render environment to prevent URL constructor errors
+    if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+      console.log('Performing additional validation for Render environment');
+      
+      // Make sure DATABASE_URL is valid to prevent "Invalid URL" errors
+      if (process.env.DATABASE_URL) {
+        try {
+          // Test the URL constructor with a safe parsing approach
+          const url = new URL(process.env.DATABASE_URL);
+          console.log(`Database connection validated with protocol: ${url.protocol}, host: ${url.host}`);
+        } catch (urlError) {
+          console.error('Invalid DATABASE_URL format detected!', urlError);
+          console.log('This may cause "TypeError: Invalid URL" errors in database operations');
+          
+          // Don't expose the connection string but give diagnostic info
+          if (process.env.DATABASE_URL.includes('postgres')) {
+            console.log('DATABASE_URL contains "postgres" but has invalid format');
+          } else {
+            console.log('DATABASE_URL does not appear to be a PostgreSQL connection string');
+          }
+        }
+      }
+    }
+    
     const { storage } = await import('./storage');
     
     // Just check if we can access the database
@@ -216,6 +240,18 @@ async function checkDatabaseConnectivity() {
     return true;
   } catch (error) {
     console.error('Error connecting to database:', error);
+    
+    // Add more specific error handling for URL-related errors
+    if (error instanceof TypeError && error.message.includes('Invalid URL')) {
+      console.error('This appears to be an issue with the DATABASE_URL format.');
+      console.error('Please check your environment variables and ensure DATABASE_URL is properly formatted.');
+      
+      // For Render deployment, suggest checking environment variables
+      if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+        console.error('For Render deployment: Please verify your environment variables in the Render dashboard.');
+      }
+    }
+    
     return false;
   }
 }

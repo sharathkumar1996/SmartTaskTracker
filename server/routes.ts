@@ -456,7 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Login the user via passport to establish a session
               const userWithPassword = user as unknown as Express.User;
-              req.login(userWithPassword, (err) => {
+              req.login(userWithPassword, (err: Error) => {
                 if (err) {
                   console.error('Failed to login user from header auth:', err);
                 }
@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             // Login the user via passport to establish a session
             const userWithPassword = adminUser as unknown as Express.User;
-            req.login(userWithPassword, (err) => {
+            req.login(userWithPassword, (err: Error) => {
               if (err) {
                 console.error('Failed to login admin in dev mode:', err);
               }
@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const user = await storage.getUser(userInfo.id);
             if (user && (user.role === "admin" || user.role === "agent")) {
               // Re-establish session for admin/agent
-              req.login(user, async (err) => {
+              req.login(user, async (err: Error) => {
                 if (err) {
                   console.error('Failed to restore session from cookie:', err);
                   return res.status(403).json({ error: "Unauthorized" });
