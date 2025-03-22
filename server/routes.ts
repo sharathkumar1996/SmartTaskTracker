@@ -373,13 +373,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Current User Authentication Route
-  app.get("/api/user", async (req, res) => {
+  app.get("/api/user", async (req: any, res) => {
     try {
-      // Debug information for authentication troubleshooting
+      // Even more detailed debug information for authentication troubleshooting
       console.log('GET /api/user authentication check:', {
         authenticated: req.isAuthenticated(),
-        user: req.user ? { id: req.user.id, role: req.user.role } : null,
-        renderUser: req.renderUser ? { id: (req.renderUser as any).id, role: (req.renderUser as any).role } : null,
+        user: req.user ? { id: req.user.id, role: req.user.role, username: req.user.username } : null,
+        renderUser: req.renderUser ? { 
+          id: (req.renderUser as any).id, 
+          role: (req.renderUser as any).role, 
+          username: (req.renderUser as any).username 
+        } : null,
         headers: {
           'x-user-id': req.headers['x-user-id'],
           'x-user-role': req.headers['x-user-role'],
@@ -389,8 +393,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'x-deploy-type': req.headers['x-deploy-type'],
         },
         session: req.session ? { id: req.sessionID } : null,
-        cookies: req.cookies ? Object.keys(req.cookies) : null
+        cookies: req.cookies ? Object.keys(req.cookies) : null,
+        env: {
+          NODE_ENV: process.env.NODE_ENV,
+          REPL_ID: !!process.env.REPL_ID,
+          RENDER: !!process.env.RENDER
+        }
       });
+      
+      // Log important authentication details
+      console.log(`GET /api/user - isAuthenticated: ${req.isAuthenticated()}`);
+      console.log(`GET /api/user - Session ID: ${req.sessionID}`);
+      console.log(`GET /api/user - Request cookies: ${req.cookies ? JSON.stringify(req.cookies) : undefined}`);
+      console.log(`GET /api/user - Request headers:`, {
+        cookie: req.headers.cookie,
+        referer: req.headers.referer, 
+        origin: req.headers.origin,
+        'x-user-id': req.headers['x-user-id'],
+        'x-user-role': req.headers['x-user-role'],
+        'x-user-name': req.headers['x-user-name'],
+        'x-user-auth': req.headers['x-user-auth'],
+        'x-client-host': req.headers['x-client-host'],
+        'x-deploy-type': req.headers['x-deploy-type']
+      });
+      
+      // Environment detection
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      const isRender = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL;
+      console.log(`Current environment: ${isDevelopment ? 'development' : 'production'}, Render: ${isRender}`);
+      
       
       // 1. Check if user is already authenticated via session
       if (req.isAuthenticated() && req.user) {
