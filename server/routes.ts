@@ -21,6 +21,24 @@ const authenticateWithFallback = async (req: any, res: any, next: any) => {
     return next();
   }
   
+  // Check for the renderUser property set by our middleware in server/index.ts
+  if (req.renderUser) {
+    console.log('authenticateWithFallback - Found Render-specific user:', req.renderUser.id, req.renderUser.username);
+    
+    // Cast to proper type for TypeScript compatibility
+    const userWithPassword = req.renderUser as Express.User;
+    
+    // Authenticate the user via req.login
+    return req.login(userWithPassword, (err: any) => {
+      if (err) {
+        console.error('Failed to log in renderUser:', err);
+        return next();
+      }
+      console.log('Successfully authenticated renderUser:', req.renderUser.id);
+      return next();
+    });
+  }
+  
   // Check for Render.com or custom domain authentication via headers
   const isRenderRequest = 
     req.headers['x-deploy-type'] === 'render' || 
@@ -49,8 +67,11 @@ const authenticateWithFallback = async (req: any, res: any, next: any) => {
           if (user) {
             console.log('authenticateWithFallback - Successfully authenticated user from Render headers:', user.id, user.role);
             
+            // Cast properly for TypeScript
+            const userWithPassword = user as unknown as Express.User;
+            
             // Log the user in
-            return req.login(user, (err: any) => {
+            return req.login(userWithPassword, (err: any) => {
               if (err) {
                 console.error('Failed to log in user from Render headers:', err);
                 return next();
@@ -90,8 +111,9 @@ const authenticateWithFallback = async (req: any, res: any, next: any) => {
         if (user) {
           console.log('authenticateWithFallback - Successfully recovered user from cookie:', user.id);
           
-          // Log the user in
-          return req.login(user, (err: any) => {
+          // Log the user in - with proper TypeScript casting
+          const userWithPassword = user as unknown as Express.User;
+          return req.login(userWithPassword, (err: any) => {
             if (err) {
               console.error('Error logging in user from cookie data:', err);
               return res.status(401).json({ 

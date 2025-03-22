@@ -91,6 +91,54 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Enhanced middleware for Render.com deployments
+// This needs to be added before setupAuth so it can set up the render-specific user
+if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+  console.log("Configuring Render.com specific middleware");
+  
+  // Add Render authentication detection layer - checks for special headers
+  app.use(async (req, res, next) => {
+    // Skip if already authenticated
+    if (req.user) {
+      return next();
+    }
+    
+    // Check for Render-specific custom auth headers
+    const userId = req.headers['x-user-id'];
+    const userRole = req.headers['x-user-role'];
+    const userAuth = req.headers['x-user-auth'];
+    
+    if (userId && userRole && userAuth === 'true') {
+      try {
+        console.log(`Render auth: Attempting header-based authentication`, {
+          userId,
+          userRole,
+          path: req.path
+        });
+        
+        // Get user from database
+        const userIdNum = parseInt(userId.toString(), 10);
+        if (!isNaN(userIdNum)) {
+          const { storage } = await import('./storage');
+          const user = await storage.getUser(userIdNum);
+          
+          if (user && user.role === userRole.toString()) {
+            console.log(`Render auth: User authenticated via headers: ${user.id}, ${user.username}`);
+            
+            // Store user for the request processing
+            // @ts-ignore: Work around type safety for special render auth
+            req.renderUser = user;
+          }
+        }
+      } catch (err) {
+        console.error('Render auth: Error processing header authentication', err);
+      }
+    }
+    
+    next();
+  });
+}
+
 // Setup auth after CORS configuration
 setupAuth(app);
 
