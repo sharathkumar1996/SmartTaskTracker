@@ -38,11 +38,13 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest<T>({
   url,
   method = "GET",
-  body
+  body,
+  headers: customHeaders = {}
 }: {
   url: string;
   method?: string;
   body?: unknown;
+  headers?: Record<string, string>;
 }): Promise<T> {
   console.log(`API Request: ${method} ${url}`, body ? 'with data' : 'no data');
   
@@ -133,6 +135,7 @@ export async function apiRequest<T>({
   const headers: Record<string, string> = {
     "Accept": "application/json",
     "Cache-Control": "no-cache, no-store, must-revalidate",
+    ...customHeaders
   };
   
   // Add content-type for requests with body
@@ -355,7 +358,7 @@ export const getQueryFn: <T>(options: {
       ) : false;
       
       // Combine all headers
-      const headers = {
+      const headers: Record<string, string> = {
         "Accept": "application/json",
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",

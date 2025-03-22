@@ -69,20 +69,20 @@ export function MemberManagement() {
                        localStorage.getItem('deploy_platform') === 'render';
       
       // If on Render, add special headers for authentication
-      const headers: Record<string, string> = {};
+      const customHeaders: Record<string, string> = {};
       
       if (isRender && user) {
         console.log("Adding special Render.com headers for authentication");
-        headers['x-user-id'] = user.id.toString();
-        headers['x-user-role'] = user.role;
-        headers['x-deploy-type'] = 'render';
-        headers['x-special-render-access'] = 'true';
+        customHeaders['x-user-id'] = user.id.toString();
+        customHeaders['x-user-role'] = user.role;
+        customHeaders['x-deploy-type'] = 'render';
+        customHeaders['x-special-render-access'] = 'true';
       }
       
-      return apiRequest({
+      return apiRequest<User[]>({
         url: queryKey[0] as string,
         method: 'GET',
-        headers
+        headers: customHeaders
       });
     }
   });
@@ -161,7 +161,10 @@ export function MemberManagement() {
 
   const deleteMemberMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/users/${id}`);
+      await apiRequest<void>({
+        url: `/api/users/${id}`,
+        method: "DELETE"
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
