@@ -64,7 +64,7 @@ export function setupAuth(app: Express) {
     process.env.SESSION_SECRET = 'chitfund-dev-session-secret-' + Date.now();
   }
 
-  // Enhanced session configuration for both Replit and production environments
+  // Enhanced session configuration specifically optimized for Render deployment
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET,
     resave: true, // Always save the session to ensure persistence
@@ -73,11 +73,11 @@ export function setupAuth(app: Express) {
     store: storage.sessionStore,
     name: 'chitfund.sid',
     cookie: {
-      secure: false, // Set to false to work in all environments including HTTP
-      httpOnly: true, // Better security
+      secure: false, // Must be false for HTTP and Render development
+      httpOnly: false, // Set to false to allow client-side access (needed for cross-domain)
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for longer sessions
       path: '/',
-      sameSite: 'lax' // Lax is more compatible across browsers
+      sameSite: 'none' // 'none' is required for cross-domain cookies
     }
   };
 
