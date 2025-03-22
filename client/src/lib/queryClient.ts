@@ -46,22 +46,41 @@ export async function apiRequest<T>({
 }): Promise<T> {
   console.log(`API Request: ${method} ${url}`, body ? 'with data' : 'no data');
   
-  // Check for session in local storage - this is our alternative auth mechanism
+  // Get deployment environment details
+  const isRender = window.location.hostname.includes('.onrender.com');
+  const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
+                         window.location.hostname === 'www.srivasavifinancialservices.in';
+  
+  // Enable debugging for deployment environments
+  if (isRender || isCustomDomain) {
+    console.log(`Detected special deployment environment:`, {
+      isRender,
+      isCustomDomain,
+      hostname: window.location.hostname
+    });
+  }
+  
+  // Authentication sources - we check multiple sources with fallbacks
+  // for cross-domain deployments like Render
+  
+  // 1. Try sessionStorage (fastest, most reliable in same-domain)
   const sessionStorageKey = 'chitfund_user_session';
   const userSession = sessionStorage.getItem(sessionStorageKey);
-  let userObject = null;
+  let sessionUserObject = null;
   
   if (userSession) {
     try {
-      const sessionData = JSON.parse(userSession);
-      userObject = sessionData;
-      console.log("Using backup session for API request:", { userId: userObject?.id, role: userObject?.role });
+      sessionUserObject = JSON.parse(userSession);
+      console.log("Found session data for API request:", { 
+        userId: sessionUserObject?.id, 
+        username: sessionUserObject?.username 
+      });
     } catch (e) {
       console.error("Error parsing session data:", e);
     }
   }
   
-  // Debug info about cookies
+  // 2. Try cookies (standard auth mechanism)
   console.log(`Raw cookie string:`, document.cookie || 'No cookies');
   
   // Parse cookie string into object for better debugging
@@ -71,9 +90,9 @@ export async function apiRequest<T>({
     return acc;
   }, {} as Record<string, string>);
   
-  console.log(`Current cookies:`, cookies);
+  console.log(`Available cookies:`, cookies);
   
-  // Check for user info in cookie as first option
+  // Check for user info in cookie
   let cookieUserObject = null;
   try {
     if (cookies.user_info) {
@@ -84,13 +103,29 @@ export async function apiRequest<T>({
     console.error('Error parsing user_info cookie:', e);
   }
   
-  // Check for user in session storage as backup option
-  if (!cookieUserObject && userObject) {
-    console.log('Found backup user session in sessionStorage:', userObject?.username);
+  // 3. For Render/custom domain: Try localStorage as a last resort
+  // This is specifically for cross-domain deployments where cookies may fail
+  let localStorageUserObject = null;
+  if (isRender || isCustomDomain) {
+    try {
+      const localStorageKey = 'chitfund_render_user';
+      const localStorageData = localStorage.getItem(localStorageKey);
+      
+      if (localStorageData) {
+        localStorageUserObject = JSON.parse(localStorageData);
+        console.log('Found user data in localStorage (cross-domain fallback):', {
+          userId: localStorageUserObject?.id,
+          username: localStorageUserObject?.username
+        });
+      }
+    } catch (e) {
+      console.error('Error parsing localStorage user data:', e);
+    }
   }
   
-  // Use cookie data first, fall back to session storage
-  const finalUserObject = cookieUserObject || userObject;
+  // Use auth sources with priority: cookies > sessionStorage > localStorage
+  // This ensures we use the most reliable source first
+  const finalUserObject = cookieUserObject || sessionUserObject || localStorageUserObject;
   
   // Make sure we have auth headers if any auth data is available
   const authHeaders = {};

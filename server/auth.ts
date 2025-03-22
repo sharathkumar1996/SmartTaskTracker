@@ -289,11 +289,11 @@ export function setupAuth(app: Express) {
           
           try {
             // Add environment-specific cookie settings
-            const cookieOptions = {
+            const cookieOptions: any = {
               maxAge: 24 * 60 * 60 * 1000, // 24 hours
               httpOnly: false, // Allow JavaScript access for auth status check
               path: '/',
-              sameSite: isRender ? 'none' : 'lax', // Use 'none' for cross-origin in Render
+              sameSite: isRender ? 'none' as const : 'lax' as const, // Use 'none' for cross-origin in Render
               secure: isRender // HTTPS is required for sameSite='none'
             };
             
@@ -368,7 +368,7 @@ export function setupAuth(app: Express) {
           const standardOptions = { path: '/' };
           const renderOptions = { 
             path: '/', 
-            sameSite: 'none', 
+            sameSite: 'none' as const, 
             secure: true 
           };
           

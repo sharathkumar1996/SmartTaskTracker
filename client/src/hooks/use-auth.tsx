@@ -29,10 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [sessionStorageUser, setSessionStorageUser] = useState<SelectUser | null>(null);
   
-  // Load user from cookies or sessionStorage on initial render
+  // Load user from all possible storage locations (cookies, sessionStorage, localStorage)
   useEffect(() => {
     try {
-      // First check if we have user info in cookies
+      console.log("Checking for existing authentication on page load");
+      
+      // Get deployment environment details
+      const isRender = window.location.hostname.includes('.onrender.com');
+      const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
+                            window.location.hostname === 'www.srivasavifinancialservices.in';
+      
+      if (isRender || isCustomDomain) {
+        console.log(`Initial auth check for special deployment: ${window.location.hostname}`);
+      }
+      
+      // Authentication sources to check in priority order
+      let userData = null;
+      
+      // Source 1: Check cookies first
       const userInfoCookie = document.cookie
         .split(';')
         .find(cookie => cookie.trim().startsWith('user_info='));
@@ -41,32 +55,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const userInfoValue = userInfoCookie.split('=')[1];
           if (userInfoValue) {
-            const userData = JSON.parse(decodeURIComponent(userInfoValue));
-            setSessionStorageUser(userData);
-            // Prime the query cache with this data
-            queryClient.setQueryData(["/api/user"], userData);
-            console.log("Loaded user session from cookies:", userData?.username);
-            
-            // Also save to sessionStorage for redundancy
-            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userData));
-            return; // Cookie data found, no need to check sessionStorage
+            userData = JSON.parse(decodeURIComponent(userInfoValue));
+            console.log("Found user session in cookies:", userData?.username);
           }
         } catch (cookieErr) {
           console.error("Error parsing user_info cookie:", cookieErr);
         }
       }
       
-      // Fallback to sessionStorage if no cookie data
-      const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (savedSession) {
-        const userData = JSON.parse(savedSession);
+      // Source 2: Check sessionStorage if no cookies
+      if (!userData) {
+        const savedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (savedSession) {
+          userData = JSON.parse(savedSession);
+          console.log("Found user session in sessionStorage:", userData?.username);
+        }
+      }
+      
+      // Source 3: Check localStorage as last resort (for cross-domain environments)
+      if (!userData && (isRender || isCustomDomain)) {
+        try {
+          const localStorageKey = 'chitfund_render_user';
+          const localData = localStorage.getItem(localStorageKey);
+          if (localData) {
+            userData = JSON.parse(localData);
+            console.log("Found user session in localStorage (cross-domain fallback):", userData?.username);
+          }
+        } catch (localErr) {
+          console.error("Error accessing localStorage:", localErr);
+        }
+      }
+      
+      // If we found user data in any source, set it
+      if (userData) {
+        // Set the user in state and query cache
         setSessionStorageUser(userData);
-        // Prime the query cache with this data
         queryClient.setQueryData(["/api/user"], userData);
-        console.log("Loaded user session from sessionStorage:", userData?.username);
+        
+        // Ensure data is stored in all places for redundancy
+        try {
+          // Save to sessionStorage for fast access
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userData));
+          
+          // For Render environments, also save to localStorage
+          if (isRender || isCustomDomain) {
+            localStorage.setItem('chitfund_render_user', JSON.stringify(userData));
+          }
+          
+          console.log("Authentication data synchronized across available storage mechanisms");
+        } catch (err) {
+          console.warn("Error synchronizing auth data:", err);
+        }
+      } else {
+        console.log("No existing authentication found in any storage location");
       }
     } catch (err) {
-      console.error("Error loading session:", err);
+      console.error("Error during initial authentication check:", err);
     }
   }, []);
   const {
@@ -180,9 +224,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update session state
       setSessionStorageUser(user);
       
-      // Store session in sessionStorage as a fallback
+      // Get deployment environment details
+      const isRender = window.location.hostname.includes('.onrender.com');
+      const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
+                            window.location.hostname === 'www.srivasavifinancialservices.in';
+      
+      // Enable additional logging for special environments
+      if (isRender || isCustomDomain) {
+        console.log(`Login in special deployment environment:`, {
+          isRender,
+          isCustomDomain,
+          hostname: window.location.hostname
+        });
+      }
+      
       try {
-        // Store just the minimal user info we need for authentication in sessionStorage
+        // Create auth info object for storage
         const userAuthInfo = {
           id: user.id,
           username: user.username, 
@@ -190,24 +247,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fullName: user.fullName
         };
         
-        // Save to sessionStorage for our custom header auth
+        // 1. Save to sessionStorage (works in same domain)
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userAuthInfo));
         console.log("Saved user session to sessionStorage");
         
-        // Set manual client-side cookies since the server ones might not work
+        // 2. Set manual client-side cookies 
         const cookieExpiration = new Date();
         cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
         
+        // Cookie options based on environment
+        const cookieOptions = isRender || isCustomDomain 
+          ? `path=/; expires=${cookieExpiration.toUTCString()}; SameSite=None; Secure`
+          : `path=/; expires=${cookieExpiration.toUTCString()}`;
+        
         // Set authentication flag cookie
-        document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+        document.cookie = `manual_auth_success=true; ${cookieOptions}`;
         
         // Set user info cookie for fallback authentication
         const userInfoCookie = JSON.stringify(userAuthInfo);
-        document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+        document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; ${cookieOptions}`;
         
-        console.log("Set manual auth cookies for fallback:", {
-          auth_cookie: "manual_auth_success=true",
-          user_info: {id: user.id, username: user.username, role: user.role}
+        // 3. For Render: Also save to localStorage as additional fallback
+        if (isRender || isCustomDomain) {
+          const localStorageKey = 'chitfund_render_user';
+          localStorage.setItem(localStorageKey, JSON.stringify(userAuthInfo));
+          console.log("Saved user data to localStorage for cross-domain support");
+        }
+        
+        console.log("Authentication data saved to multiple storage mechanisms:", {
+          sessionStorage: "Saved",
+          cookies: "Saved",
+          localStorage: isRender || isCustomDomain ? "Saved" : "Not needed"
         });
         
         // Update local state
@@ -261,9 +331,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update session state
       setSessionStorageUser(user);
       
-      // Store session in sessionStorage as a fallback
+      // Get deployment environment details
+      const isRender = window.location.hostname.includes('.onrender.com');
+      const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
+                            window.location.hostname === 'www.srivasavifinancialservices.in';
+      
       try {
-        // Store just the minimal user info we need for authentication in sessionStorage
+        // Create auth info object
         const userAuthInfo = {
           id: user.id,
           username: user.username, 
@@ -271,20 +345,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fullName: user.fullName
         };
         
-        // Save to sessionStorage for our custom header auth
+        // 1. Save to sessionStorage (primary storage for same domain)
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userAuthInfo));
         console.log("Saved user session to sessionStorage");
         
-        // Set manual client-side cookies since the server ones might not work
+        // 2. Set cookies with environment-specific options
         const cookieExpiration = new Date();
         cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
         
-        // Set authentication flag cookie
-        document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+        // Cookie options based on environment
+        const cookieOptions = isRender || isCustomDomain 
+          ? `path=/; expires=${cookieExpiration.toUTCString()}; SameSite=None; Secure`
+          : `path=/; expires=${cookieExpiration.toUTCString()}`;
         
-        // Set user info cookie for fallback authentication
+        // Set auth cookies
+        document.cookie = `manual_auth_success=true; ${cookieOptions}`;
+        
         const userInfoCookie = JSON.stringify(userAuthInfo);
-        document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+        document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; ${cookieOptions}`;
+        
+        // 3. For Render: Save to localStorage as additional fallback for cross-domain
+        if (isRender || isCustomDomain) {
+          const localStorageKey = 'chitfund_render_user';
+          localStorage.setItem(localStorageKey, JSON.stringify(userAuthInfo));
+          console.log("Saved user data to localStorage for cross-domain support");
+        }
+        
+        console.log("Registration successful - auth data stored in multiple places");
       } catch (err) {
         console.error("Failed to save session to storage:", err);
       }
@@ -315,12 +402,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], null);
       queryClient.clear();
       
-      // Clear sessionStorage
+      // Get deployment environment details
+      const isRender = window.location.hostname.includes('.onrender.com');
+      const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
+                            window.location.hostname === 'www.srivasavifinancialservices.in';
+      
       try {
+        // 1. Clear sessionStorage
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
         console.log("Cleared user session from sessionStorage");
         
-        // Clear all cookies - use multiple formats to ensure they're cleared
+        // 2. Clear localStorage if in cross-domain environment
+        if (isRender || isCustomDomain) {
+          const localStorageKey = 'chitfund_render_user';
+          localStorage.removeItem(localStorageKey);
+          console.log("Cleared user data from localStorage (cross-domain support)");
+        }
+        
+        // 3. Clear all cookies - use multiple formats to ensure they're cleared
         // Standard cookies (no secure/sameSite flags)
         document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
         document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
@@ -328,7 +427,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         document.cookie = 'chitfund.sid=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
         document.cookie = 'server_online=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
         
-        // Also try with secure flag variants
+        // Also try with secure flag variants for cross-domain support
         document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
         document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
         document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure;';
@@ -337,8 +436,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Update local state
         setSessionStorageUser(null);
+        
+        console.log("Logout successful - cleared all authentication data");
       } catch (err) {
-        console.error("Failed to clear session storage:", err);
+        console.error("Failed to clear auth data during logout:", err);
       }
     },
     onError: (error: Error) => {
@@ -363,9 +464,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Update session state
     setSessionStorageUser(userData);
     
-    // Store in sessionStorage
+    // Get deployment environment details
+    const isRender = window.location.hostname.includes('.onrender.com');
+    const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
+                          window.location.hostname === 'www.srivasavifinancialservices.in';
+    
     try {
-      // Create minimal auth info for the header authentication
+      // Create user auth info object
       const userAuthInfo = {
         id: userData.id,
         username: userData.username, 
@@ -373,18 +478,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fullName: userData.fullName
       };
       
-      // Save to sessionStorage for our custom header auth
+      // 1. Save to sessionStorage (main storage for same domain)
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userAuthInfo));
       
-      // Set manual cookies
+      // 2. Set cookies with proper options for the environment
       const cookieExpiration = new Date();
       cookieExpiration.setTime(cookieExpiration.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
       
-      document.cookie = `manual_auth_success=true; path=/; expires=${cookieExpiration.toUTCString()}`;
+      // Set cookie options based on environment
+      const cookieOptions = isRender || isCustomDomain
+        ? `path=/; expires=${cookieExpiration.toUTCString()}; SameSite=None; Secure`
+        : `path=/; expires=${cookieExpiration.toUTCString()}`;
       
+      // Set auth cookies
+      document.cookie = `manual_auth_success=true; ${cookieOptions}`;
       const userInfoCookie = JSON.stringify(userAuthInfo);
-      document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; path=/; expires=${cookieExpiration.toUTCString()}`;
+      document.cookie = `user_info=${encodeURIComponent(userInfoCookie)}; ${cookieOptions}`;
       
+      // 3. For Render: Also save to localStorage for cross-domain support
+      if (isRender || isCustomDomain) {
+        const localStorageKey = 'chitfund_render_user';
+        localStorage.setItem(localStorageKey, JSON.stringify(userAuthInfo));
+        console.log("Saved user data to localStorage for cross-domain environment");
+      }
+      
+      // Display welcome message
       toast({
         title: "Logged in",
         description: `Welcome, ${userData.fullName || userData.username}!`,
@@ -393,6 +511,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Invalidate queries that might need refreshing with the new user
       queryClient.invalidateQueries({queryKey: ["/api/chitfunds"]});
       queryClient.invalidateQueries({queryKey: ["/api/users"]});
+      
+      console.log("Manual login successful - stored auth data across multiple mechanisms");
     } catch (err) {
       console.error("Failed to save manual user data:", err);
     }
