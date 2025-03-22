@@ -1,0 +1,647 @@
+}
+Session Debug: {
+  sessionId: 'gSQDESrMzaV5tl_FCa_nxyM9QdE_c3-R',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:13 PM [express] RESPONSE: GET /api/payments 403 in 2ms :: {"error":"Unauthorized"}
+2:15:14 PM [express] REQUEST: POST /api/logout
+2:15:14 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Render auth: Attempting header-based authentication { userId: '1', userRole: 'admin', path: '/api/logout' }
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Session Debug: {
+  sessionId: 'gSQDESrMzaV5tl_FCa_nxyM9QdE_c3-R',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Using header-based auth: User ID 1, Role: admin
+Logging out user: undefined
+Session disposed: gSQDESrM...
+All cookies cleared, user logged out
+2:15:15 PM [express] REQUEST: GET /favicon.ico
+2:15:15 PM [express] Headers: {"cookie":"No cookie","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"}
+Session Debug: {
+  sessionId: 'slQk4br1rkzFbL6ebRZBzqEzoH6idmwd',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: 'slQk4br1rkzFbL6ebRZBzqEzoH6idmwd',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:22 PM [express] REQUEST: GET /favicon.ico
+2:15:22 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:31 PM [express] REQUEST: GET /
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:31 PM [express] REQUEST: GET /assets/index-uv0FnNQL.js
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:31 PM [express] REQUEST: GET /assets/index-z_vbGXFl.css
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"text/css,*/*;q=0.1"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:31 PM [express] REQUEST: GET /api/chitfunds
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in getChitFunds: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+2:15:31 PM [express] RESPONSE: GET /api/chitfunds 304 in 4ms :: []
+2:15:31 PM [express] REQUEST: GET /api/payments
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+Session Debug: {
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+2:15:31 PM [express] REQUEST: GET /api/users
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+2:15:31 PM [express] RESPONSE: GET /api/payments 403 in 2ms :: {"error":"Unauthorized"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+Header-based authentication for Render: User ID 1, Role: admin
+Header-based authentication for Render successful - getting users
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in getUsers: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+2:15:31 PM [express] RESPONSE: GET /api/users 200 in 2ms :: []
+2:15:31 PM [express] Response headers: {"x-powered-by":"Express","vary":"Origin","access-control-allow-credentials":"true","access-control-expose-headers":"Set-Cookie,Access-Control-Allow-Origin,Access-Control-Allow-Credentials","content-type":"application/json; charset=utf-8","content-length":"2","etag":"W/\"2-l9Fw4VUO7kr8CvBlt4zaMCqXZ0w\"","set-cookie":["chitfund.sid=s%3A2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc.KX0i7qOUN8HzYuBlryluKpN8x6bmiwoYZ0e0KVhSJQo; Path=/; Expires=Mon, 21 Apr 2025 14:15:31 GMT; Secure; SameSite=None"]}
+2:15:31 PM [express] REQUEST: GET /favicon.ico
+2:15:31 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:32 PM [express] REQUEST: GET /api/payments
+2:15:32 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:32 PM [express] RESPONSE: GET /api/payments 403 in 2ms :: {"error":"Unauthorized"}
+2:15:33 PM [express] REQUEST: GET /api/payments
+2:15:33 PM [express] Headers: {"cookie":"Cookie present","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"*/*"}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:15:33 PM [express] RESPONSE: GET /api/payments 403 in 1ms :: {"error":"Unauthorized"}
+2:15:46 PM [express] REQUEST: POST /api/chitfunds
+2:15:46 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Render auth: Attempting header-based authentication { userId: '1', userRole: 'admin', path: '/api/chitfunds' }
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+URL Constructor Error: Invalid URL
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Chit fund creation request details: {
+  authenticated: false,
+  user: null,
+  headers: { 'x-user-id': '1', 'x-user-role': 'admin', 'x-user-auth': 'true' },
+  cookies: null,
+  isReplit: false,
+  sessionID: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc'
+}
+Chit fund creation authorized via render headers
+Received data for ChitFund creation: {
+  name: '1 Lakh Fund- March-25',
+  amount: '100000',
+  duration: 12,
+  startDate: '2025-03-22T14:15:37.609Z',
+  endDate: '2026-03-22T14:15:37.609Z',
+  memberCount: 10,
+  monthlyContribution: '5000',
+  monthlyBonus: '1000',
+  baseCommission: '5000',
+  status: 'active'
+}
+URL Constructor Error: Invalid URL
+Error in createChitFund: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Error creating chit fund: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+2:15:46 PM [express] RESPONSE: POST /api/chitfunds 500 in 6ms :: {"message":"Failed to create chit fund","error":"Invalid URL"}
+2:15:54 PM [express] REQUEST: POST /api/logout
+2:15:54 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Render auth: Attempting header-based authentication { userId: '1', userRole: 'admin', path: '/api/logout' }
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Session Debug: {
+  sessionId: '2X4y0YXDVQ4YnoExixCBO8MtmqCKRNEc',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Using header-based auth: User ID 1, Role: admin
+URL Constructor Error: Invalid URL
+Error in getUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Logging out user: undefined
+Session disposed: 2X4y0YXD...
+All cookies cleared, user logged out
+2:15:55 PM [express] REQUEST: GET /favicon.ico
+2:15:55 PM [express] Headers: {"cookie":"No cookie","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"}
+Session Debug: {
+  sessionId: 'eVKGR7au7237I3JqtHSsqagb3C560yXf',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+Session Debug: {
+  sessionId: 'eVKGR7au7237I3JqtHSsqagb3C560yXf',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+2:16:19 PM [express] REQUEST: POST /api/register
+2:16:19 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Session Debug: {
+  sessionId: 'eVKGR7au7237I3JqtHSsqagb3C560yXf',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+URL Constructor Error: Invalid URL
+Error in getUserCount: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in getUserByUsername: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in createUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Registration error: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+2:16:19 PM [express] Error: Invalid URL
+2:16:20 PM [express] REQUEST: POST /api/register
+2:16:20 PM [express] Headers: {"cookie":"Cookie present","origin":"https://smarttasktracker.onrender.com","referer":"https://smarttasktracker.onrender.com/auth","host":"smarttasktracker.onrender.com","accept":"application/json"}
+Session Debug: {
+  sessionId: 'eVKGR7au7237I3JqtHSsqagb3C560yXf',
+  isAuthenticated: false,
+  user: undefined,
+  cookies: undefined
+}
+URL Constructor Error: Invalid URL
+Error in getUserCount: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in getUserByUsername: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+URL Constructor Error: Invalid URL
+Error in createUser: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+Registration error: TypeError: Invalid URL
+    at new URL (node:internal/url:818:25)
+    at new global.URL (file:///opt/render/project/src/dist/index.js:374:16)
+    at Object.parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:841:225)
+    at parse (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:848:1)
+    at new ConnectionParameters (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:869:23)
+    at new Client (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1226:35)
+    at new NeonClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1570:121)
+    at Cn.newClient (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:74)
+    at Cn.connect (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1378:23)
+    at Cn.query (file:///opt/render/project/src/node_modules/@neondatabase/serverless/index.mjs:1407:63) {
+  code: 'ERR_INVALID_URL',
+  input: 'e42f0b69ff654499208881c2fde6415c'
+}
+2:16:21 PM [express] Error: Invalid URL
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
