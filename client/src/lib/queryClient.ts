@@ -47,16 +47,21 @@ export async function apiRequest<T>({
   console.log(`API Request: ${method} ${url}`, body ? 'with data' : 'no data');
   
   // Get deployment environment details
-  const isRender = window.location.hostname.includes('.onrender.com');
-  const isCustomDomain = window.location.hostname === 'srivasavifinancialservices.in' || 
-                         window.location.hostname === 'www.srivasavifinancialservices.in';
+  // Handle server-side rendering where window may be undefined
+  const isRender = typeof window !== 'undefined' && window.location?.hostname ? 
+    window.location.hostname.includes('.onrender.com') : false;
+  
+  const isCustomDomain = typeof window !== 'undefined' && window.location?.hostname ? (
+    window.location.hostname === 'srivasavifinancialservices.in' || 
+    window.location.hostname === 'www.srivasavifinancialservices.in'
+  ) : false;
   
   // Enable debugging for deployment environments
   if (isRender || isCustomDomain) {
     console.log(`Detected special deployment environment:`, {
       isRender,
       isCustomDomain,
-      hostname: window.location.hostname
+      hostname: typeof window !== 'undefined' && window.location?.hostname ? window.location.hostname : 'unknown'
     });
   }
   
@@ -156,7 +161,8 @@ export async function apiRequest<T>({
   
   // For debugging on Render, add special headers to track origin of request
   if (isRender || isCustomDomain) {
-    headers["X-Client-Host"] = window.location.hostname;
+    headers["X-Client-Host"] = typeof window !== 'undefined' && window.location?.hostname ? 
+      window.location.hostname : 'unknown';
     headers["X-Deploy-Type"] = isRender ? "render" : "custom-domain";
   }
   
