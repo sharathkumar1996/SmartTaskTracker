@@ -93,7 +93,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Enhanced middleware for Render.com deployments
 // This needs to be added before setupAuth so it can set up the render-specific user
-if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_DEPLOYMENT) {
   console.log("Configuring Render.com specific middleware");
   
   // Add Render authentication detection layer - checks for special headers
@@ -208,7 +208,7 @@ app.use((req, res, next) => {
 async function checkDatabaseConnectivity() {
   try {
     // Extra validation for Render environment to prevent URL constructor errors
-    if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) {
+    if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_DEPLOYMENT) {
       console.log('Performing additional validation for Render environment');
       
       // Make sure DATABASE_URL is valid to prevent "Invalid URL" errors
@@ -260,7 +260,7 @@ async function checkDatabaseConnectivity() {
   try {
     // Check for environment type
     const isProduction = process.env.NODE_ENV === 'production';
-    const isRender = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL;
+    const isRender = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL || !!process.env.RENDER_DEPLOYMENT;
     const isReplit = !!process.env.REPL_ID || !!process.env.REPL_SLUG;
     
     console.log(`Environment detection: Production=${isProduction}, Render=${isRender}, Replit=${isReplit}`);

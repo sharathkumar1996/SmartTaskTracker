@@ -1,0 +1,18 @@
+# render.yaml - Configuration for Render.com deployment
+services:
+  - type: web
+    name: chitfund-manager
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: node render-start.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RENDER_DEPLOYMENT
+        value: true
+      - key: DATABASE_URL
+        sync: false  # Render will provide this
+      - key: DIRECT_URL
+        sync: false  # Render will provide this, should match DATABASE_URL
+      - key: PGSSLMODE
+        value: no-verify  # Helps with connection issues on free plans
