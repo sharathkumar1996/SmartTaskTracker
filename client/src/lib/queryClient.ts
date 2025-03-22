@@ -60,51 +60,48 @@ export async function apiRequest<T>({
     });
   }
   
-  // Authentication sources - we check multiple sources with fallbacks
-  // for cross-domain deployments like Render
+  // Collect authentication info from all possible sources
   
-  // 1. Try sessionStorage (fastest, most reliable in same-domain)
+  // 1. Try sessionStorage first (fastest, most reliable for same domain)
   const sessionStorageKey = 'chitfund_user_session';
-  const userSession = sessionStorage.getItem(sessionStorageKey);
   let sessionUserObject = null;
-  
-  if (userSession) {
-    try {
+  try {
+    const userSession = sessionStorage.getItem(sessionStorageKey);
+    if (userSession) {
       sessionUserObject = JSON.parse(userSession);
-      console.log("Found session data for API request:", { 
+      console.log("Found user in sessionStorage:", { 
         userId: sessionUserObject?.id, 
         username: sessionUserObject?.username 
       });
-    } catch (e) {
-      console.error("Error parsing session data:", e);
-    }
-  }
-  
-  // 2. Try cookies (standard auth mechanism)
-  console.log(`Raw cookie string:`, document.cookie || 'No cookies');
-  
-  // Parse cookie string into object for better debugging
-  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split('=');
-    if (key) acc[key] = value;
-    return acc;
-  }, {} as Record<string, string>);
-  
-  console.log(`Available cookies:`, cookies);
-  
-  // Check for user info in cookie
-  let cookieUserObject = null;
-  try {
-    if (cookies.user_info) {
-      cookieUserObject = JSON.parse(decodeURIComponent(cookies.user_info));
-      console.log('Found user info in cookie:', cookieUserObject);
     }
   } catch (e) {
-    console.error('Error parsing user_info cookie:', e);
+    console.error("Error reading from sessionStorage:", e);
   }
   
-  // 3. For Render/custom domain: Try localStorage as a last resort
-  // This is specifically for cross-domain deployments where cookies may fail
+  // 2. Look for user info in cookies 
+  let cookieUserObject = null;
+  try {
+    const cookies = {};
+    document.cookie.split(';').forEach(cookie => {
+      const parts = cookie.trim().split('=');
+      if (parts.length === 2) {
+        cookies[parts[0]] = parts[1];
+      }
+    });
+    
+    // Check for user info cookie (more reliable than just auth flag)
+    if (cookies.user_info) {
+      cookieUserObject = JSON.parse(decodeURIComponent(cookies.user_info));
+      console.log('Found user in cookies:', { 
+        userId: cookieUserObject?.id, 
+        username: cookieUserObject?.username 
+      });
+    }
+  } catch (e) {
+    console.error('Error parsing cookie data:', e);
+  }
+  
+  // 3. For Render/custom domain: Check localStorage as fallback
   let localStorageUserObject = null;
   if (isRender || isCustomDomain) {
     try {
@@ -113,73 +110,129 @@ export async function apiRequest<T>({
       
       if (localStorageData) {
         localStorageUserObject = JSON.parse(localStorageData);
-        console.log('Found user data in localStorage (cross-domain fallback):', {
+        console.log('Found user in localStorage (cross-domain):', {
           userId: localStorageUserObject?.id,
           username: localStorageUserObject?.username
         });
       }
     } catch (e) {
-      console.error('Error parsing localStorage user data:', e);
+      console.error('Error reading from localStorage:', e);
     }
   }
   
-  // Use auth sources with priority: cookies > sessionStorage > localStorage
-  // This ensures we use the most reliable source first
-  const finalUserObject = cookieUserObject || sessionUserObject || localStorageUserObject;
+  // Use the first valid auth source we find, in order of reliability
+  const userObject = cookieUserObject || sessionUserObject || localStorageUserObject;
   
-  // Make sure we have auth headers if any auth data is available
-  const authHeaders = {};
-  if (finalUserObject) {
-    console.log(`Adding auth headers for user ID: ${finalUserObject.id}, role: ${finalUserObject.role}`);
-    Object.assign(authHeaders, {
-      "X-User-ID": finalUserObject.id.toString(),
-      "X-User-Role": finalUserObject.role,
-    });
+  // Authentication headers are critical for cross-domain environments
+  // where cookies don't always work correctly
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+  };
+  
+  // Add content-type for requests with body
+  if (body) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Add auth headers if we found a user from any source
+  if (userObject) {
+    console.log(`Adding auth headers for user ID: ${userObject.id}`);
+    
+    // These custom headers help with cross-domain auth when cookies fail
+    headers["X-User-ID"] = userObject.id.toString();
+    headers["X-User-Role"] = userObject.role;
+    headers["X-User-Auth"] = "true";
+    
+    // For auth endpoints, add more details to help with verification
+    if (url.includes('/login') || url.includes('/register') || url.includes('/user')) {
+      headers["X-User-Name"] = userObject.username;
+      
+      if (userObject.fullName) {
+        headers["X-User-FullName"] = userObject.fullName;
+      }
+    }
+  }
+  
+  // For debugging on Render, add special headers to track origin of request
+  if (isRender || isCustomDomain) {
+    headers["X-Client-Host"] = window.location.hostname;
+    headers["X-Deploy-Type"] = isRender ? "render" : "custom-domain";
   }
   
   try {
+    // Perform the fetch request with our enhanced headers
     const response = await fetch(url, {
       method,
-      headers: {
-        ...(body ? { "Content-Type": "application/json" } : {}),
-        "Accept": "application/json",
-        "Cache-Control": "no-cache, no-store, must-revalidate", // Prevent caching
-        ...authHeaders // Add our authentication headers
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
       credentials: "include", // Always include cookies
     });
     
-    console.log(`API Response: ${response.status} ${response.statusText}`, 
-                {url, method, status: response.status});
+    console.log(`API ${method} ${url} response:`, {
+      status: response.status,
+      statusText: response.statusText,
+      authenticated: !!userObject
+    });
     
+    // Handle error responses
     if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = errorText;
+      let errorMessage = response.statusText;
       
       try {
-        // Try to parse as JSON if possible
-        const errorJson = JSON.parse(errorText);
-        errorMessage = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+        } else {
+          errorMessage = await response.text();
+        }
       } catch (e) {
-        // If not JSON, just use the text
+        console.error("Error parsing error response:", e);
       }
       
-      console.error(`API Error (${response.status}): ${errorMessage}`);
+      // Special handling for auth-related errors
+      if (response.status === 401) {
+        console.error(`Authentication error (401): ${errorMessage}`);
+        
+        // For auth endpoints, sync up our storage to match server state (not authenticated)
+        if (url.includes('/user') || url.includes('/login')) {
+          try {
+            console.log('Clearing inconsistent auth data after 401 error');
+            sessionStorage.removeItem(sessionStorageKey);
+            
+            if (isRender || isCustomDomain) {
+              localStorage.removeItem('chitfund_render_user');
+            }
+            
+            // Clear auth cookies
+            document.cookie = 'auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            document.cookie = 'manual_auth_success=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+            document.cookie = 'user_info=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+          } catch (e) {
+            console.error('Error clearing auth data:', e);
+          }
+        }
+      }
+      
       throw new Error(errorMessage || `Request failed with status ${response.status}`);
     }
     
-    // Special handling for auth endpoints
+    // Special handling for successful auth endpoints - ensure data is synced
     if (url.includes('/login') || url.includes('/register')) {
-      console.log('Auth operation successful');
+      console.log('Auth operation successful - preserving auth state across all channels');
+      
+      // For login/register success, server should already set proper cookies
+      // but we don't need to handle that here
     }
     
+    // Parse and return the response body
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       return await response.json() as T;
     }
     
-    // Handle non-JSON responses
+    // Handle non-JSON responses (rare)
     return {} as T;
   } catch (error) {
     console.error(`API Request failed: ${method} ${url}`, error);
