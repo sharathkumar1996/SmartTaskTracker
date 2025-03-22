@@ -417,94 +417,146 @@ export function setupAuth(app: Express) {
     console.log('GET /api/user - Request headers:', {
       cookie: req.headers.cookie,
       referer: req.headers.referer,
-      origin: req.headers.origin
+      origin: req.headers.origin,
+      'x-user-id': req.headers['x-user-id'],
+      'x-user-role': req.headers['x-user-role'],
+      'x-user-name': req.headers['x-user-name'],
+      'x-user-auth': req.headers['x-user-auth'],
+      'x-client-host': req.headers['x-client-host'],
+      'x-deploy-type': req.headers['x-deploy-type']
     });
     
-    // Check if user is authenticated via session
-    if (!req.isAuthenticated() || !req.user) {
-      // Enhanced error response with CORS headers to ensure client receives this properly
-      console.log('GET /api/user - No authenticated user found in session');
-      
-      // Check for our backup authentication cookies - if they exist, we might have a session issue
-      const hasAuthCookie = req.cookies.auth_success === 'true';
-      const hasManualAuthCookie = req.cookies.manual_auth_success === 'true';
-      const hasUserInfoCookie = !!req.cookies.user_info;
-      
-      // If we have auth cookies but no session, try to parse the user from cookies
-      if (hasAuthCookie || hasManualAuthCookie || hasUserInfoCookie) {
-        console.log('Auth cookies found but no valid session - attempting to recover');
-        
-        // Try to recover user data from cookie
-        try {
-          if (hasUserInfoCookie) {
-            const userInfo = JSON.parse(req.cookies.user_info);
-            if (userInfo && userInfo.id) {
-              console.log('Found user info in cookie, attempting to load user:', userInfo.id);
-              
-              // If we can load the user, manually log them in
-              const user = await storage.getUser(userInfo.id);
-              if (user) {
-                console.log('Successfully loaded user from cookie data:', user.id, user.username);
-                
-                // Regenerate session - this should fix any session issues
-                return req.login(user, (err) => {
-                  if (err) {
-                    console.error('Error logging in user from cookie data:', err);
-                    // Clear stale cookies
-                    res.clearCookie('auth_success', { path: '/' });
-                    res.clearCookie('manual_auth_success', { path: '/' });
-                    res.clearCookie('user_info', { path: '/' });
-                    
-                    return res.status(401).json({ 
-                      authenticated: false,
-                      message: "Session expired. Please log in again."
-                    });
-                  }
-                  
-                  console.log('Successfully recreated session for user:', user.id);
-                  const { password, ...userWithoutPassword } = user;
-                  return res.json({
-                    ...userWithoutPassword,
-                    authenticated: true
-                  });
-                });
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Error parsing user info cookie:', e);
-        }
-        
-        // If we got here, we couldn't recover the session
-        // Clear stale cookies
-        res.clearCookie('auth_success', { path: '/' });
-        res.clearCookie('manual_auth_success', { path: '/' });
-        res.clearCookie('user_info', { path: '/' });
-        
-        return res.status(401).json({ 
-          authenticated: false,
-          message: "Session expired. Please log in again."
-        });
-      }
-      
-      return res.status(401).json({ 
-        authenticated: false,
-        message: "Not authenticated"
-      });
-    }
+    // Debug environment information
+    const isRender = !!process.env.RENDER || !!process.env.RENDER_EXTERNAL_URL;
+    console.log(`Current environment: ${process.env.NODE_ENV || 'development'}, Render: ${isRender}`);
     
-    // User is authenticated, refresh session to extend expiration
-    req.session.touch();
-    req.session.save((err) => {
-      if (err) console.error('Error saving session during /api/user call:', err);
+    // Check authentication from multiple sources
+    // 1. First check standard session authentication (most reliable)
+    if (req.isAuthenticated() && req.user) {
+      console.log('User authenticated through session:', req.user.id, req.user.username);
+      const { password, ...userWithoutPassword } = req.user;
       
-      console.log('GET /api/user - User found:', req.user?.id, req.user?.username);
-      const { password, ...userWithoutPassword } = req.user!;
+      // Force save session to ensure it persists correctly
+      req.session.save((err) => {
+        if (err) console.error('Error saving session during /api/user call:', err);
+      });
       
-      res.json({
+      return res.json({
         ...userWithoutPassword,
         authenticated: true
       });
+    }
+    
+    // 2. Check for custom auth headers (for cross-domain where cookies fail)
+    const userId = req.headers['x-user-id'];
+    const userRole = req.headers['x-user-role'];
+    const userName = req.headers['x-user-name'];
+    const userAuth = req.headers['x-user-auth'];
+    
+    if (userId && userRole && userAuth === 'true') {
+      console.log('Attempting header-based authentication:', userId, userName);
+      
+      try {
+        // Convert userId to number
+        const userIdNum = parseInt(userId.toString(), 10);
+        
+        if (!isNaN(userIdNum)) {
+          // Try to get user from storage
+          const user = await storage.getUser(userIdNum);
+          
+          if (user && user.role === userRole.toString()) {
+            console.log('User authenticated via headers:', user.id, user.username);
+            
+            // Manually log user in to create session
+            req.login(user, (err) => {
+              if (err) {
+                console.error('Error establishing session from headers:', err);
+              } else {
+                // Save session for future requests
+                req.session.save();
+              }
+            });
+            
+            // Return user data (even if session save might fail)
+            const { password, ...userWithoutPassword } = user;
+            return res.json({
+              ...userWithoutPassword,
+              authenticated: true
+            });
+          } else {
+            console.log('User not found or role mismatch with provided headers');
+          }
+        }
+      } catch (err) {
+        console.error('Error processing header authentication:', err);
+      }
+    }
+    
+    // 3. Check backup cookies as last resort
+    const hasAuthCookie = req.cookies.auth_success === 'true';
+    const hasManualAuthCookie = req.cookies.manual_auth_success === 'true';
+    const hasUserInfoCookie = !!req.cookies.user_info;
+    
+    if (hasAuthCookie || hasManualAuthCookie || hasUserInfoCookie) {
+      console.log('Auth cookies found but no valid session - attempting to recover');
+      
+      // Try to recover user data from cookie
+      try {
+        if (hasUserInfoCookie) {
+          const userInfo = JSON.parse(req.cookies.user_info);
+          if (userInfo && userInfo.id) {
+            console.log('Found user info in cookie, attempting to load user:', userInfo.id);
+            
+            // If we can load the user, manually log them in
+            const user = await storage.getUser(userInfo.id);
+            if (user) {
+              console.log('Successfully loaded user from cookie data:', user.id, user.username);
+              
+              // Regenerate session - this should fix any session issues
+              return req.login(user, (err) => {
+                if (err) {
+                  console.error('Error logging in user from cookie data:', err);
+                  // Clear stale cookies
+                  res.clearCookie('auth_success', { path: '/' });
+                  res.clearCookie('manual_auth_success', { path: '/' });
+                  res.clearCookie('user_info', { path: '/' });
+                  
+                  return res.status(401).json({ 
+                    authenticated: false,
+                    message: "Session expired. Please log in again."
+                  });
+                }
+                
+                console.log('Successfully recreated session for user:', user.id);
+                const { password, ...userWithoutPassword } = user;
+                return res.json({
+                  ...userWithoutPassword,
+                  authenticated: true
+                });
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing user info cookie:', e);
+      }
+      
+      // If we got here, we couldn't recover the session
+      // Clear stale cookies
+      res.clearCookie('auth_success', { path: '/' });
+      res.clearCookie('manual_auth_success', { path: '/' });
+      res.clearCookie('user_info', { path: '/' });
+      
+      return res.status(401).json({ 
+        authenticated: false,
+        message: "Session expired. Please log in again."
+      });
+    }
+    
+    // No authentication found from any source
+    return res.status(401).json({ 
+      authenticated: false,
+      message: "Not authenticated"
     });
   });
 }

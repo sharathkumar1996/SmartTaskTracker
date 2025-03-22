@@ -81,7 +81,7 @@ export async function apiRequest<T>({
   // 2. Look for user info in cookies 
   let cookieUserObject = null;
   try {
-    const cookies = {};
+    const cookies: Record<string, string> = {};
     document.cookie.split(';').forEach(cookie => {
       const parts = cookie.trim().split('=');
       if (parts.length === 2) {
@@ -90,8 +90,8 @@ export async function apiRequest<T>({
     });
     
     // Check for user info cookie (more reliable than just auth flag)
-    if (cookies.user_info) {
-      cookieUserObject = JSON.parse(decodeURIComponent(cookies.user_info));
+    if ('user_info' in cookies) {
+      cookieUserObject = JSON.parse(decodeURIComponent(cookies['user_info']));
       console.log('Found user in cookies:', { 
         userId: cookieUserObject?.id, 
         username: cookieUserObject?.username 
