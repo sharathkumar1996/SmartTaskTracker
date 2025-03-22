@@ -15,7 +15,12 @@ const getApiBaseUrl = () => {
   
   // Use absolute URL only when deployed to Render or custom domain
   if (isRender) {
-    return 'https://smarttasktracker.onrender.com';
+    // Extract the hostname and create a proper API URL for the Render deployment
+    // This dynamically constructs the API URL from the current hostname
+    // For example, if deployed at "chitfund-manager.onrender.com", it will use that
+    const hostname = window.location.hostname;
+    // Use the same hostname for API requests - this handles any Render subdomain
+    return `https://${hostname}`;
   } else if (isCustomDomain) {
     return 'https://srivasavifinancialservices.in';
   }
