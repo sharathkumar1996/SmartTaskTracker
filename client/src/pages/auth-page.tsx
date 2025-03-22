@@ -308,40 +308,10 @@ export default function AuthPage() {
                       )}
                     </Button>
                     
-                    {/* Direct Admin Login */}
-                    <Button
-                      type="button"
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        // Create a hardcoded admin user for direct access with all required fields
-                        const adminUser = {
-                          id: 1,
-                          username: "admin",
-                          password: "", // Don't store passwords in frontend
-                          role: "admin" as const,
-                          fullName: "System Administrator",
-                          email: "admin@example.com",
-                          phone: "1234567890",
-                          address: null,
-                          city: null,
-                          state: null,
-                          pincode: null,
-                          fundPreferences: null,
-                          agentId: null,
-                          agentCommission: null,
-                          status: "active" as const
-                        };
-                        
-                        // Use our direct authentication method - this will trigger the useEffect above
-                        setManualUser(adminUser);
-                        
-                        // No need to call setLocation directly, the useEffect will handle it
-                      }}
-                      disabled={loginMutation.isPending}
-                    >
-                      Quick Admin Access
-                    </Button>
+                    {/* Login details tip */}
+                    <p className="text-center text-sm text-muted-foreground mt-4">
+                      Please log in with your registered credentials
+                    </p>
                   </form>
                 </Form>
               </TabsContent>

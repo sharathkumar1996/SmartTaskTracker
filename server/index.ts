@@ -82,39 +82,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// Function to ensure admin user exists
-async function ensureAdminUserExists() {
+// Function to check database connectivity
+async function checkDatabaseConnectivity() {
   try {
     const { storage } = await import('./storage');
-    const { hashPassword } = await import('./auth');
     
-    // Check if admin user already exists
-    const adminUser = await storage.getUserByUsername('admin');
-    if (!adminUser) {
-      console.log('No admin user found, creating default admin account');
-      const hashedPassword = await hashPassword('admin123');
-      const newAdmin = await storage.createUser({
-        username: 'admin',
-        password: hashedPassword,
-        role: 'admin',
-        fullName: 'System Admin',
-        email: 'admin@chitfund.com',
-        phone: '1234567890',
-        status: 'active'
-      });
-      console.log('Default admin user created with ID:', newAdmin.id);
-    } else {
-      console.log('Admin user already exists with ID:', adminUser.id);
-    }
+    // Just check if we can access the database
+    const userCount = await storage.getUserCount();
+    console.log('Database connection successful. User count:', userCount);
+    
+    return true;
   } catch (error) {
-    console.error('Error ensuring admin user exists:', error);
+    console.error('Error connecting to database:', error);
+    return false;
   }
 }
 
 (async () => {
   try {
-    // Ensure we have an admin user before starting the server
-    await ensureAdminUserExists();
+    // Check database connectivity before starting the server
+    await checkDatabaseConnectivity();
     
     const server = await registerRoutes(app);
 
