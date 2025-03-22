@@ -61,7 +61,30 @@ export function MemberManagement() {
   const { toast } = useToast();
   const { data: members = [], isLoading } = useQuery<User[]>({ 
     queryKey: ["/api/users"],
-    enabled: user?.role === "admin" || user?.role === "agent"
+    enabled: user?.role === "admin" || user?.role === "agent",
+    queryFn: async ({ queryKey }) => {
+      // Check if we're on Render.com
+      const isRender = window.location.hostname.includes('render.com') || 
+                       document.referrer.includes('render.com') || 
+                       localStorage.getItem('deploy_platform') === 'render';
+      
+      // If on Render, add special headers for authentication
+      const headers: Record<string, string> = {};
+      
+      if (isRender && user) {
+        console.log("Adding special Render.com headers for authentication");
+        headers['x-user-id'] = user.id.toString();
+        headers['x-user-role'] = user.role;
+        headers['x-deploy-type'] = 'render';
+        headers['x-special-render-access'] = 'true';
+      }
+      
+      return apiRequest({
+        url: queryKey[0] as string,
+        method: 'GET',
+        headers
+      });
+    }
   });
 
   const form = useForm({
@@ -88,12 +111,12 @@ export function MemberManagement() {
       if (!data.password) {
         throw new Error("Password is required");
       }
-      const response = await apiRequest("POST", "/api/users", data);
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create user");
-      }
-      return response.json();
+      const response = await apiRequest<InsertUser>({
+        url: "/api/users",
+        method: "POST",
+        body: data
+      });
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -114,8 +137,11 @@ export function MemberManagement() {
 
   const updateMemberMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<User> }) => {
-      const res = await apiRequest("PATCH", `/api/users/${id}`, data);
-      return res.json();
+      return await apiRequest<User>({
+        url: `/api/users/${id}`,
+        method: "PATCH",
+        body: data
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });

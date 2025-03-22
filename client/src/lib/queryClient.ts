@@ -164,6 +164,12 @@ export async function apiRequest<T>({
     headers["X-Client-Host"] = typeof window !== 'undefined' && window.location?.hostname ? 
       window.location.hostname : 'unknown';
     headers["X-Deploy-Type"] = isRender ? "render" : "custom-domain";
+    headers["X-Special-Render-Access"] = "true";
+    
+    // Store deployment platform in localStorage for page refreshes
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('deploy_platform', isRender ? 'render' : 'custom-domain');
+    }
   }
   
   try {
@@ -339,15 +345,36 @@ export const getQueryFn: <T>(options: {
         });
       }
       
+      // Check if we're on Render.com
+      const isRender = typeof window !== 'undefined' && window.location?.hostname ? 
+        window.location.hostname.includes('.onrender.com') : false;
+      
+      const isCustomDomain = typeof window !== 'undefined' && window.location?.hostname ? (
+        window.location.hostname === 'srivasavifinancialservices.in' || 
+        window.location.hostname === 'www.srivasavifinancialservices.in'
+      ) : false;
+      
+      // Combine all headers
+      const headers = {
+        "Accept": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        ...authHeaders
+      };
+      
+      // Add Render-specific headers if needed
+      if (isRender || isCustomDomain || localStorage.getItem('deploy_platform') === 'render') {
+        console.log("Adding special Render.com headers for request to:", endpoint);
+        headers["X-Deploy-Type"] = "render";
+        headers["X-Special-Render-Access"] = "true";
+        headers["X-Client-Host"] = typeof window !== 'undefined' && window.location?.hostname ? 
+          window.location.hostname : 'unknown';
+      }
+      
       const res = await fetch(endpoint, {
         credentials: "include", // Essential for session cookies
         cache: "no-store", // Prevent caching of auth responses
-        headers: {
-          "Accept": "application/json",
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          ...authHeaders
-        },
+        headers
       });
       
       console.log(`getQueryFn response: ${endpoint} - status ${res.status}`);

@@ -319,9 +319,9 @@ export default function AuthPage() {
               state: null,
               pincode: null,
               fundPreferences: null,
-              createdBy: null,
-              status: 'active' as const,
-              createdAt: new Date().toISOString()
+              agentId: null,
+              agentCommission: null,
+              status: 'active' as const
             };
             
             // Use direct login
